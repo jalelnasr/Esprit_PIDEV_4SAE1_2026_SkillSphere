@@ -1,0 +1,57 @@
+<div class="admin-container">
+  <!-- Top Navigation Bar -->
+  <nav class="admin-navbar">
+    <div class="navbar-left">
+      <button class="sidebar-toggle" (click)="toggleSidebar()">
+        <span>☰</span>
+      </button>
+      <div class="navbar-logo">
+        <span class="logo-icon">⚡</span>
+        <span class="logo-text">SkillSphere Admin</span>
+      </div>
+    </div>
+    
+    <div class="navbar-right">
+      <div class="admin-profile">
+        <div class="profile-info">
+          <div class="profile-name">{{ currentUser.name }}</div>
+          <div class="profile-role">{{ currentUser.role }}</div>
+        </div>
+        <div class="profile-avatar">{{ currentUser.avatar }}</div>
+      </div>
+      <button class="logout-btn" (click)="logout()">Logout</button>
+    </div>
+  </nav>
+
+  <!-- Main Container -->
+  <div class="admin-main">
+    <!-- Sidebar Navigation -->
+    <aside class="admin-sidebar" [class.open]="sidebarOpen">
+      <div class="sidebar-header">
+        <h3>Menu</h3>
+        <button class="close-sidebar" (click)="toggleSidebar()">✕</button>
+      </div>
+
+      <ul class="sidebar-menu">
+        <li *ngFor="let item of menuItems">
+          <a [routerLink]="item.path" class="menu-item">
+            <span class="menu-icon">{{ item.icon }}</span>
+            <span class="menu-label">{{ item.label }}</span>
+          </a>
+        </li>
+      </ul>
+
+      <div class="sidebar-footer">
+        <div class="sidebar-info">
+          <p>© 2026 SkillSphere</p>
+          <p>Admin Dashboard v1.0</p>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Content Area -->
+    <main class="admin-content">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+</div>

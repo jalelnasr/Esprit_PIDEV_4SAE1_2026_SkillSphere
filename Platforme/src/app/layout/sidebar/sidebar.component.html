@@ -1,0 +1,53 @@
+<div class="sidebar" [class.collapsed]="isCollapsed">
+  <div class="sidebar-header">
+    <button class="toggle-btn" (click)="toggleSidebar()" title="Toggle Sidebar">
+      <span class="icon">{{ isCollapsed ? '→' : '←' }}</span>
+    </button>
+    <div class="logo" *ngIf="!isCollapsed">
+      <span class="logo-icon">🌐</span>
+      <span class="logo-text">SkillSphere</span>
+    </div>
+  </div>
+
+  <nav class="sidebar-menu">
+    <div *ngFor="let item of menuItems" class="menu-item-wrapper">
+      <button 
+        class="menu-item" 
+        (click)="item.subItems ? toggleSubmenu(item) : navigate(item.route)"
+        [routerLink]="!item.subItems ? item.route : null"
+        routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: false }"
+      >
+        <span class="menu-icon">{{ item.icon }}</span>
+        <span class="menu-label" *ngIf="!isCollapsed">{{ item.label }}</span>
+        <span class="menu-arrow" *ngIf="item.subItems && !isCollapsed">
+          {{ expandedItems[item.label] ? '▼' : '▶' }}
+        </span>
+      </button>
+
+      <div class="submenu" *ngIf="item.subItems && expandedItems[item.label] && !isCollapsed">
+        <a 
+          *ngFor="let subItem of item.subItems"
+          [routerLink]="subItem.route"
+          routerLinkActive="active"
+          class="submenu-item"
+        >
+          {{ subItem.label }}
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="sidebar-footer" *ngIf="!isCollapsed && (currentUser$ | async) as user">
+    <div class="user-info">
+      <div class="user-avatar">{{ user.firstName.charAt(0) }}</div>
+      <div class="user-details">
+        <p class="user-name">{{ user.firstName }} {{ user.lastName }}</p>
+        <p class="user-role">{{ user.role }}</p>
+      </div>
+    </div>
+    <button class="logout-btn" (click)="logout()" title="Logout">
+      🚪
+    </button>
+  </div>
+</div>

@@ -1,0 +1,89 @@
+<div class="users-container">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div>
+      <h1>User Management</h1>
+      <p>Manage and monitor all platform users</p>
+    </div>
+    <button class="btn-primary">➕ Add New User</button>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters-section">
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input 
+        type="text" 
+        placeholder="Search by name or email..." 
+        [(ngModel)]="searchQuery"
+        (input)="onSearch()"
+        class="search-input"
+      />
+    </div>
+    <select [(ngModel)]="selectedStatus" (change)="onStatusChange()" class="filter-select">
+      <option value="all">All Status</option>
+      <option value="active">Active</option>
+      <option value="inactive">Inactive</option>
+    </select>
+  </div>
+
+  <!-- Users Table -->
+  <div class="table-container">
+    <table class="users-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Role</th>
+          <th>Status</th>
+          <th>Join Date</th>
+          <th>Courses</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let user of filteredUsers" class="table-row">
+          <td class="name-col">
+            <div class="user-info">
+              <div class="user-avatar">{{ user.name.charAt(0) }}</div>
+              <div class="user-details">
+                <div class="user-name">{{ user.name }}</div>
+              </div>
+            </div>
+          </td>
+          <td>{{ user.email }}</td>
+          <td>
+            <span class="badge" [ngClass]="getRoleColor(user.role)">{{ user.role }}</span>
+          </td>
+          <td>
+            <span class="status-badge" [ngClass]="user.status === 'active' ? 'active' : 'inactive'">
+              {{ user.status }}
+            </span>
+          </td>
+          <td>{{ user.joinDate }}</td>
+          <td class="text-center">{{ user.courses }}</td>
+          <td class="actions-col">
+            <button class="btn-icon" (click)="editUser(user)" title="Edit">✏️</button>
+            <button class="btn-icon danger" (click)="deleteUser(user)" title="Delete">🗑️</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    
+    <div *ngIf="filteredUsers.length === 0" class="empty-state">
+      <div class="empty-icon">👤</div>
+      <p>No users found</p>
+    </div>
+  </div>
+
+  <!-- Pagination -->
+  <div class="pagination">
+    <button class="pagination-btn">← Previous</button>
+    <div class="pagination-numbers">
+      <button class="pagination-btn active">1</button>
+      <button class="pagination-btn">2</button>
+      <button class="pagination-btn">3</button>
+    </div>
+    <button class="pagination-btn">Next →</button>
+  </div>
+</div>
