@@ -31,7 +31,7 @@ export class AuthModalComponent implements OnInit {
   showPassword = false;
   isLoading = false;
   showModules = false;
-  userRole: 'learner' | 'instructor' | 'enterprise' | null = null;
+  userRole: 'learner' | 'instructor' | 'enterprise' | 'admin' | null = null;
 
   modules: ModuleInfo[] = [
     {
@@ -87,7 +87,8 @@ export class AuthModalComponent implements OnInit {
   roleOptions = [
     { value: 'learner', label: 'Learner', icon: '👨‍🎓' },
     { value: 'instructor', label: 'Instructor', icon: '👨‍🏫' },
-    { value: 'enterprise', label: 'Enterprise', icon: '🏢' }
+    { value: 'enterprise', label: 'Enterprise', icon: '🏢' },
+    { value: 'admin', label: 'Admin', icon: '🛡️' }
   ];
 
   constructor(
@@ -129,11 +130,17 @@ export class AuthModalComponent implements OnInit {
       this.isLoading = true;
       const email = this.loginForm.get('email')?.value;
       const password = this.loginForm.get('password')?.value;
-      const role = this.loginForm.get('role')?.value as 'learner' | 'instructor' | 'enterprise';
+      const role = this.loginForm.get('role')?.value as 'learner' | 'instructor' | 'enterprise' | 'admin';
       
       this.authService.loginWithRole(email, password, role).subscribe({
         next: (user) => {
           this.isLoading = false;
+          if (role === 'admin') {
+            this.router.navigate(['/admin/dashboard']);
+            this.closeModal.emit();
+            return;
+          }
+
           this.showModules = true;
           this.userRole = role;
         },
@@ -148,6 +155,11 @@ export class AuthModalComponent implements OnInit {
     if (this.registerForm.valid) {
       this.isLoading = true;
       const formValue = this.registerForm.value;
+
+      if (formValue.password !== formValue.confirmPassword) {
+        this.isLoading = false;
+        return;
+      }
       
       this.authService.registerWithRole(
         formValue.firstName,
@@ -158,6 +170,12 @@ export class AuthModalComponent implements OnInit {
       ).subscribe({
         next: (user) => {
           this.isLoading = false;
+          if (formValue.role === 'admin') {
+            this.router.navigate(['/admin/dashboard']);
+            this.closeModal.emit();
+            return;
+          }
+
           this.showModules = true;
           this.userRole = formValue.role;
         },

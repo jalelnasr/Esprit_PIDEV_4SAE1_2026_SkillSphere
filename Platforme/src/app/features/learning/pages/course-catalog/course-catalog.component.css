@@ -154,24 +154,25 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: white;
+  background: var(--bg-secondary);
   padding: 1.5rem;
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .results-count {
   font-size: 13px;
-  color: #666;
+  color: var(--text-primary);
   font-weight: 500;
 }
 
 .sort-select {
   padding: 0.5rem 1rem;
-  border: 2px solid #e0e0e0;
+  border: 2px solid var(--border-color);
   border-radius: 6px;
   font-size: 13px;
-  background: white;
+  background: var(--bg-primary);
+  color: var(--text-primary);
   cursor: pointer;
 
   &:focus {

@@ -9,7 +9,7 @@ interface MenuItem {
   label: string;
   route: string;
   badge?: string | null;
-  roles: ('learner' | 'instructor' | 'enterprise')[];
+  roles: ('learner' | 'instructor' | 'enterprise' | 'admin')[];
   subItems?: SubItem[];
 }
 
@@ -28,14 +28,14 @@ interface SubItem {
 export class SidebarComponent implements OnInit {
   isCollapsed = false;
   isDarkMode = false;
-  userRole: 'learner' | 'instructor' | 'enterprise' | null = null;
+  userRole: 'learner' | 'instructor' | 'enterprise' | 'admin' | null = null;
 
   get currentUser$() {
     return this.authService.currentUser$;
   }
 
   allMenuItems: MenuItem[] = [
-    { icon: '🏠', label: 'Dashboard', route: '/dashboard', badge: null, roles: ['learner', 'instructor', 'enterprise'] },
+    { icon: '🏠', label: 'Home', route: '/dashboard', badge: null, roles: ['learner', 'instructor', 'enterprise'] },
     { 
       icon: '📚', 
       label: 'Learning', 

@@ -5,6 +5,8 @@ import { RoleGuard } from './core/guards/role.guard';
 export const routes: Routes = [
   {
     path: 'admin',
+    canActivate: [RoleGuard],
+    data: { roles: ['admin'] },
     loadChildren: () => import('./admin/admin.routes').then(m => m.ADMIN_ROUTES)
   },
   { path: 'home', loadComponent: () => import('./features/home/home.component').then(m => m.HomeComponent) },

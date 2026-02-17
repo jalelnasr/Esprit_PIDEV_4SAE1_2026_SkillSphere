@@ -3,7 +3,7 @@ import { BehaviorSubject, Observable, of } from 'rxjs';
 import { LoginRequest, LoginResponse, SignUpRequest, AuthUser } from '@shared/models';
 
 export interface AuthUserExtended extends AuthUser {
-  userRole?: 'learner' | 'instructor' | 'enterprise';
+  userRole?: 'learner' | 'instructor' | 'enterprise' | 'admin';
 }
 
 @Injectable({
@@ -16,7 +16,7 @@ export class AuthService {
   private isAuthenticatedSubject = new BehaviorSubject<boolean>(!!this.loadUserFromLocalStorage());
   public isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
 
-  private userRoleSubject = new BehaviorSubject<'learner' | 'instructor' | 'enterprise' | null>(
+  private userRoleSubject = new BehaviorSubject<'learner' | 'instructor' | 'enterprise' | 'admin' | null>(
     this.loadUserFromLocalStorage()?.userRole ?? null
   );
   public userRole$ = this.userRoleSubject.asObservable();
@@ -49,13 +49,14 @@ export class AuthService {
     return of(mockResponse);
   }
 
-  loginWithRole(email: string, password: string, role: 'learner' | 'instructor' | 'enterprise'): Observable<AuthUserExtended> {
+  loginWithRole(email: string, password: string, role: 'learner' | 'instructor' | 'enterprise' | 'admin'): Observable<AuthUserExtended> {
     return new Observable(observer => {
       setTimeout(() => {
         const roleMap: { [key: string]: string } = {
           'learner': 'STUDENT',
           'instructor': 'INSTRUCTOR',
-          'enterprise': 'ENTERPRISE'
+          'enterprise': 'ENTERPRISE',
+          'admin': 'ADMIN'
         };
         
         const user: AuthUserExtended = {
@@ -85,13 +86,14 @@ export class AuthService {
     return of({ success: true, message: 'Sign up successful' });
   }
 
-  registerWithRole(firstName: string, lastName: string, email: string, role: 'learner' | 'instructor' | 'enterprise', password: string): Observable<AuthUserExtended> {
+  registerWithRole(firstName: string, lastName: string, email: string, role: 'learner' | 'instructor' | 'enterprise' | 'admin', password: string): Observable<AuthUserExtended> {
     return new Observable(observer => {
       setTimeout(() => {
         const roleMap: { [key: string]: string } = {
           'learner': 'STUDENT',
           'instructor': 'INSTRUCTOR',
-          'enterprise': 'ENTERPRISE'
+          'enterprise': 'ENTERPRISE',
+          'admin': 'ADMIN'
         };
         
         const user: AuthUserExtended = {
@@ -128,7 +130,7 @@ export class AuthService {
     return this.currentUserSubject.value;
   }
 
-  getUserRole(): 'learner' | 'instructor' | 'enterprise' | null {
+  getUserRole(): 'learner' | 'instructor' | 'enterprise' | 'admin' | null {
     return this.userRoleSubject.value;
   }
 

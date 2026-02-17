@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Location } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
+import { AuthService, ToastService } from '@core/services';
 
 @Component({
   selector: 'app-register',
@@ -15,15 +16,21 @@ export class RegisterComponent implements OnInit {
   registerForm!: FormGroup;
   isLoading = false;
   showPassword = false;
-  userRole: string = 'STUDENT';
 
   roleOptions = [
-    { value: 'STUDENT', label: 'Student', icon: '👨‍🎓' },
-    { value: 'INSTRUCTOR', label: 'Instructor', icon: '👨‍🏫' },
-    { value: 'CORPORATE_HR', label: 'Corporate HR', icon: '👔' }
+    { value: 'learner', label: 'Learner', icon: '👨‍🎓' },
+    { value: 'instructor', label: 'Instructor', icon: '👨‍🏫' },
+    { value: 'enterprise', label: 'Enterprise', icon: '🏢' },
+    { value: 'admin', label: 'Admin', icon: '🛡️' }
   ];
 
-  constructor(private fb: FormBuilder, private router: Router, private location: Location) {}
+  constructor(
+    private fb: FormBuilder,
+    private router: Router,
+    private location: Location,
+    private authService: AuthService,
+    private toastService: ToastService
+  ) {}
 
   ngOnInit(): void {
     this.initializeForm();
@@ -36,19 +43,31 @@ export class RegisterComponent implements OnInit {
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required, Validators.minLength(8)]],
       confirmPassword: ['', Validators.required],
-      role: ['STUDENT', Validators.required],
+      role: ['learner', Validators.required],
       terms: [false, Validators.requiredTrue]
     });
   }
 
   onRegister(): void {
     if (this.registerForm.valid) {
+      const { password, confirmPassword, firstName, lastName, email, role } = this.registerForm.value;
+      if (password !== confirmPassword) {
+        this.toastService.error('Passwords do not match');
+        return;
+      }
+
       this.isLoading = true;
-      // TODO: Call registration service
-      setTimeout(() => {
-        this.isLoading = false;
-        this.router.navigate(['/auth/login']);
-      }, 1000);
+      this.authService.registerWithRole(firstName, lastName, email, role, password).subscribe({
+        next: () => {
+          this.isLoading = false;
+          this.toastService.success('Account created successfully!');
+          this.router.navigate([role === 'admin' ? '/admin/dashboard' : '/dashboard']);
+        },
+        error: () => {
+          this.isLoading = false;
+          this.toastService.error('Registration failed. Please try again.');
+        }
+      });
     }
   }
 

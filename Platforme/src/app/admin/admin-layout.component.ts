@@ -1,12 +1,13 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink, RouterOutlet } from '@angular/router';
+import { RouterModule, Router, RouterLink, RouterOutlet, RouterLinkActive } from '@angular/router';
 import { ThemeService } from '../services/theme.service';
+import { AuthService } from '../core/services/auth.service';
 
 @Component({
   selector: 'app-admin-layout',
   standalone: true,
-  imports: [CommonModule, RouterLink, RouterOutlet],
+  imports: [CommonModule, RouterModule, RouterLink, RouterOutlet, RouterLinkActive],
   templateUrl: './admin-layout.component.html',
   styleUrls: ['./admin-layout.component.css']
 })
@@ -14,12 +15,9 @@ export class AdminLayoutComponent implements OnInit {
   sidebarOpen = true;
   isDarkMode = false;
   
-  currentUser = {
-    name: 'Administrator',
-    email: 'admin@skillsphere.com',
-    role: 'Super Admin',
-    avatar: '👨‍💼'
-  };
+  get currentUser$() {
+    return this.authService.currentUser$;
+  }
 
   menuItems = [
     { icon: '📊', label: 'Dashboard', path: '/admin/dashboard' },
@@ -31,20 +29,28 @@ export class AdminLayoutComponent implements OnInit {
     { icon: '⚙️', label: 'Settings', path: '/admin/settings' }
   ];
 
-  constructor(public themeService: ThemeService) {}
+  constructor(
+    public themeService: ThemeService,
+    private authService: AuthService,
+    private router: Router
+  ) {}
 
   ngOnInit() {
     this.themeService.isDarkMode$.subscribe(isDark => {
       this.isDarkMode = isDark;
     });
-    // Load admin data
   }
 
   toggleSidebar() {
     this.sidebarOpen = !this.sidebarOpen;
   }
 
+  toggleTheme() {
+    this.themeService.toggleDarkMode();
+  }
+
   logout() {
-    // Handle logout
+    this.authService.logout();
+    this.router.navigate(['/auth/login']);
   }
 }

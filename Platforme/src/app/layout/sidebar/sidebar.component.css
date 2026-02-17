@@ -1,42 +1,27 @@
 .sidebar {
-  width: 280px;
-  height: 100vh;
+  width: 100%;
+  height: auto;
   background: linear-gradient(135deg, #0891b2 0%, #06b6d4 100%);
   color: white;
   display: flex;
-  flex-direction: column;
-  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  flex-direction: row;
+  align-items: center;
+  border-right: none;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-  transition: width 0.3s ease;
-  overflow-y: auto;
+  transition: all 0.3s ease;
+  overflow-x: auto;
+  overflow-y: visible;
   z-index: 1001;
   position: sticky;
   top: 0;
-
-  &.collapsed {
-    width: 80px;
-
-    .menu-label,
-    .menu-arrow {
-      display: none;
-    }
-
-    .logo-text {
-      display: none;
-    }
-
-    .sidebar-footer .user-details {
-      display: none;
-    }
-  }
 }
 
 .sidebar-header {
-  padding: 1.5rem 1rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 0.75rem 1.5rem;
+  border-bottom: none;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 1rem;
 }
 
@@ -78,18 +63,21 @@
 
 .sidebar-menu {
   flex: 1;
-  padding: 1.5rem 0;
+  padding: 0 1.5rem;
   list-style: none;
   margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .menu-item-wrapper {
-  margin-bottom: 0.5rem;
+  margin-bottom: 0;
 }
 
 .menu-item {
-  width: 100%;
-  padding: 1rem 1.5rem;
+  width: auto;
+  padding: 0.75rem 1rem;
   background: none;
   border: none;
   color: rgba(255, 255, 255, 0.8);

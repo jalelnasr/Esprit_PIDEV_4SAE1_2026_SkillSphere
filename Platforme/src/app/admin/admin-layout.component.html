@@ -12,12 +12,19 @@
     </div>
     
     <div class="navbar-right">
-      <div class="admin-profile">
+      <button 
+        class="theme-toggle-btn" 
+        (click)="toggleTheme()" 
+        [title]="isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'"
+      >
+        <span class="theme-icon">{{ isDarkMode ? '☀️' : '🌙' }}</span>
+      </button>
+      <div class="admin-profile" *ngIf="currentUser$ | async as user">
         <div class="profile-info">
-          <div class="profile-name">{{ currentUser.name }}</div>
-          <div class="profile-role">{{ currentUser.role }}</div>
+          <div class="profile-name">{{ user.firstName }} {{ user.lastName }}</div>
+          <div class="profile-role">{{ user.role }}</div>
         </div>
-        <div class="profile-avatar">{{ currentUser.avatar }}</div>
+        <div class="profile-avatar">{{ user.firstName.charAt(0) }}</div>
       </div>
       <button class="logout-btn" (click)="logout()">Logout</button>
     </div>
@@ -34,7 +41,7 @@
 
       <ul class="sidebar-menu">
         <li *ngFor="let item of menuItems">
-          <a [routerLink]="item.path" class="menu-item">
+          <a [routerLink]="item.path" routerLinkActive="router-link-active" [routerLinkActiveOptions]="{exact: false}" class="menu-item">
             <span class="menu-icon">{{ item.icon }}</span>
             <span class="menu-label">{{ item.label }}</span>
           </a>

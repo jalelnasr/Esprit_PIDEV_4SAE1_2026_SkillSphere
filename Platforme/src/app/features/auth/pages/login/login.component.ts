@@ -22,7 +22,8 @@ export class LoginComponent implements OnInit {
   roleOptions = [
     { value: 'learner', label: 'Learner', icon: '👨‍🎓' },
     { value: 'instructor', label: 'Instructor', icon: '👨‍🏫' },
-    { value: 'enterprise', label: 'Enterprise', icon: '🏢' }
+    { value: 'enterprise', label: 'Enterprise', icon: '🏢' },
+    { value: 'admin', label: 'Admin', icon: '🛡️' }
   ];
 
   constructor(
@@ -59,7 +60,7 @@ export class LoginComponent implements OnInit {
         next: (response) => {
           this.isLoading = false;
           this.toastService.success('Login successful!');
-          this.router.navigate(['/dashboard']);
+          this.router.navigate([role === 'admin' ? '/admin/dashboard' : '/dashboard']);
         },
         error: (error) => {
           this.isLoading = false;
