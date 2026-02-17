@@ -73,21 +73,18 @@ export class LoginComponent implements OnInit {
     this.showPassword = !this.showPassword;
   }
 
-  goBack(): void {
-    this.location.back();
-  }
-
   getFieldError(fieldName: string): string {
     const field = this.loginForm.get(fieldName);
-    if (field?.hasError('required')) {
-      return `${fieldName} is required`;
-    }
-    if (field?.hasError('email')) {
-      return 'Please enter a valid email';
-    }
-    if (field?.hasError('minlength')) {
-      return `${fieldName} must be at least 6 characters`;
+    if (field?.hasError('required')) return 'This field is required';
+    if (field?.hasError('email')) return 'Please enter a valid email';
+    if (field?.hasError('minLength')) {
+      const minLength = field.getError('minLength').requiredLength;
+      return `Minimum ${minLength} characters required`;
     }
     return '';
+  }
+
+  goBack(): void {
+    this.router.navigate(['/home']);
   }
 }

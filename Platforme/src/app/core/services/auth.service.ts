@@ -52,12 +52,18 @@ export class AuthService {
   loginWithRole(email: string, password: string, role: 'learner' | 'instructor' | 'enterprise'): Observable<AuthUserExtended> {
     return new Observable(observer => {
       setTimeout(() => {
+        const roleMap: { [key: string]: string } = {
+          'learner': 'STUDENT',
+          'instructor': 'INSTRUCTOR',
+          'enterprise': 'ENTERPRISE'
+        };
+        
         const user: AuthUserExtended = {
           id: Math.random().toString(36).substr(2, 9),
           email,
           firstName: 'User',
           lastName: 'Account',
-          role: 'STUDENT',
+          role: roleMap[role],
           userRole: role
         };
         
@@ -82,12 +88,18 @@ export class AuthService {
   registerWithRole(firstName: string, lastName: string, email: string, role: 'learner' | 'instructor' | 'enterprise', password: string): Observable<AuthUserExtended> {
     return new Observable(observer => {
       setTimeout(() => {
+        const roleMap: { [key: string]: string } = {
+          'learner': 'STUDENT',
+          'instructor': 'INSTRUCTOR',
+          'enterprise': 'ENTERPRISE'
+        };
+        
         const user: AuthUserExtended = {
           id: Math.random().toString(36).substr(2, 9),
           email,
           firstName,
           lastName,
-          role: 'STUDENT',
+          role: roleMap[role],
           userRole: role
         };
         

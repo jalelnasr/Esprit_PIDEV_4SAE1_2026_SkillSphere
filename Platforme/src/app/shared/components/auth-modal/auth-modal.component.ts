@@ -109,6 +109,7 @@ export class AuthModalComponent implements OnInit {
     this.loginForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required, Validators.minLength(6)]],
+      role: ['learner', Validators.required],
       rememberMe: [false]
     });
 
@@ -126,11 +127,20 @@ export class AuthModalComponent implements OnInit {
   onLogin() {
     if (this.loginForm.valid) {
       this.isLoading = true;
-      setTimeout(() => {
-        this.isLoading = false;
-        this.showModules = true;
-        this.userRole = 'learner';
-      }, 1000);
+      const email = this.loginForm.get('email')?.value;
+      const password = this.loginForm.get('password')?.value;
+      const role = this.loginForm.get('role')?.value as 'learner' | 'instructor' | 'enterprise';
+      
+      this.authService.loginWithRole(email, password, role).subscribe({
+        next: (user) => {
+          this.isLoading = false;
+          this.showModules = true;
+          this.userRole = role;
+        },
+        error: () => {
+          this.isLoading = false;
+        }
+      });
     }
   }
 

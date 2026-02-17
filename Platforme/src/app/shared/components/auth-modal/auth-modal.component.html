@@ -74,6 +74,23 @@
           </span>
         </div>
 
+        <!-- Role Selection -->
+        <div class="form-group">
+          <label class="form-label">I am a</label>
+          <div class="role-selector">
+            <button 
+              *ngFor="let role of roleOptions"
+              type="button"
+              class="role-btn"
+              [class.active]="loginForm.get('role')?.value === role.value"
+              (click)="loginForm.get('role')?.setValue(role.value)"
+            >
+              <span class="role-icon">{{ role.icon }}</span>
+              <span class="role-text">{{ role.label }}</span>
+            </button>
+          </div>
+        </div>
+
         <!-- Remember Me -->
         <label class="checkbox">
           <input type="checkbox" formControlName="rememberMe" />

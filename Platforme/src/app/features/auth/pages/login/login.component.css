@@ -312,3 +312,66 @@
   }
 }
 
+/* Role Selector Styles */
+.role-selector {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.role-selector-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: block;
+  margin-bottom: 0.75rem;
+  grid-column: 1 / -1;
+}
+
+.role-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  border: 2px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--bg-primary);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+
+  &:hover {
+    border-color: #0891b2;
+    background: rgba(8, 145, 178, 0.08);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(8, 145, 178, 0.2);
+  }
+
+  &.active {
+    border-color: #0891b2;
+    background: rgba(8, 145, 178, 0.15);
+    color: #0891b2;
+    box-shadow: 0 4px 16px rgba(8, 145, 178, 0.3);
+  }
+}
+
+.role-icon {
+  font-size: 32px;
+  line-height: 1;
+}
+
+.role-text {
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+}
+
