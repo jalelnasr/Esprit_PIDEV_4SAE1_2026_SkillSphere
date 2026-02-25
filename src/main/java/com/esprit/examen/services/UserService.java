@@ -1,18 +1,28 @@
 package com.esprit.examen.services;
 
-import com.esprit.examen.entities.User;
+import com.esprit.examen.dto.*;
+import com.esprit.examen.entities.Role;
 
 import java.util.List;
 
 public interface UserService {
 
-    User createUser(User user);
+    // Everyone (connected)
+    UserResponse getMe(String email);
+    UserResponse updateMe(String email, UserUpdateRequest req);
+    void changeMyPassword(String email, ChangePasswordRequest req);
 
-    User getUserById(Long id);
+    // Admin only (CRUD)
+    UserResponse adminCreateUser(AdminCreateUserRequest req);
+    List<UserResponse> adminListUsers();
+    UserResponse adminGetUser(Long id);
 
-    List<User> getAllUsers();
+    // Update parts
+    UserResponse adminUpdateUser(Long id, AdminUpdateUserRequest req);
+    UserResponse adminUpdateRole(Long id, Role role);
+    UserResponse adminSetActive(Long id, Boolean active);
 
-    User updateUser(Long id, User user);
-
-    void deleteUser(Long id);
+    // Extra admin actions
+    void adminResetPassword(Long id, AdminResetPasswordRequest req);
+    void adminDeleteUser(Long id);
 }

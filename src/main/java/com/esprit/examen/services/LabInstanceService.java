@@ -21,4 +21,10 @@ public interface LabInstanceService {
     LabInstance updateLabInstance(Long id, LabInstance instance);
 
     void deleteLabInstance(Long id);
+
+    LabInstance startLab(Long userId, Long labId);
+
+    LabInstance stopLab(Long instanceId);
+
+    LabInstance getLabStatus(Long instanceId);
 }

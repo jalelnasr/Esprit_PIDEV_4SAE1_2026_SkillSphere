@@ -9,11 +9,11 @@ import java.util.List;
 @Repository
 public interface UserProgressRepository extends JpaRepository<UserProgress, Long> {
 
-    List<UserProgress> findByUserUserId(Long userId);
+    List<UserProgress> findByUserIdUser(Long idUser);
 
     List<UserProgress> findByLabStepStepId(Long stepId);
 
-    List<UserProgress> findByUserUserIdAndLabStepLabLabId(Long userId, Long labId);
+    List<UserProgress> findByUserIdUserAndLabStepLabLabId(Long idUser, Long labId);
 
-    List<UserProgress> findByUserUserIdAndCompletedTrue(Long userId);
+    List<UserProgress> findByUserIdUserAndCompletedTrue(Long idUser);
 }

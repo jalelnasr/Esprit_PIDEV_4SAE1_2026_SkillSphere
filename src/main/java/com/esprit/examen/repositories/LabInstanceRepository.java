@@ -9,11 +9,11 @@ import java.util.List;
 @Repository
 public interface LabInstanceRepository extends JpaRepository<LabInstance, Long> {
 
-    List<LabInstance> findByUserUserId(Long userId);
+    List<LabInstance> findByUserIdUser(Long idUser);
 
     List<LabInstance> findByLabLabId(Long labId);
 
     List<LabInstance> findByStatus(String status);
 
-    List<LabInstance> findByUserUserIdAndStatus(Long userId, String status);
+    List<LabInstance> findByUserIdUserAndStatus(Long idUser, String status);
 }

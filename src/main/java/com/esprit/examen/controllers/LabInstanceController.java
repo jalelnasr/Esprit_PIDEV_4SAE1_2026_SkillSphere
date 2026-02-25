@@ -66,4 +66,22 @@ public class LabInstanceController {
         labInstanceService.deleteLabInstance(id);
         return ResponseEntity.ok().build();
     }
+
+    @PostMapping("/start/{userId}/{labId}")
+    @Operation(summary = "Start a lab - spins up a real Docker container")
+    public ResponseEntity<LabInstance> startLab(@PathVariable Long userId, @PathVariable Long labId) {
+        return ResponseEntity.ok(labInstanceService.startLab(userId, labId));
+    }
+
+    @PostMapping("/stop/{instanceId}")
+    @Operation(summary = "Stop a running lab - kills and removes the Docker container")
+    public ResponseEntity<LabInstance> stopLab(@PathVariable Long instanceId) {
+        return ResponseEntity.ok(labInstanceService.stopLab(instanceId));
+    }
+
+    @GetMapping("/status/{instanceId}")
+    @Operation(summary = "Get live container status for a lab instance")
+    public ResponseEntity<LabInstance> getLabStatus(@PathVariable Long instanceId) {
+        return ResponseEntity.ok(labInstanceService.getLabStatus(instanceId));
+    }
 }

@@ -40,12 +40,12 @@ public class UserProgressServiceImpl implements UserProgressService {
 
     @Override
     public List<UserProgress> getProgressByUser(Long userId) {
-        return userProgressRepository.findByUserUserId(userId);
+        return userProgressRepository.findByUserIdUser(userId);
     }
 
     @Override
     public List<UserProgress> getProgressByUserAndLab(Long userId, Long labId) {
-        return userProgressRepository.findByUserUserIdAndLabStepLabLabId(userId, labId);
+        return userProgressRepository.findByUserIdUserAndLabStepLabLabId(userId, labId);
     }
 
     @Override
