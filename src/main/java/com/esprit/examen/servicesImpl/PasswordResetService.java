@@ -4,9 +4,12 @@ import com.esprit.examen.dto.ForgotPasswordRequest;
 import com.esprit.examen.dto.ResetPasswordRequest;
 import com.esprit.examen.entities.PasswordResetToken;
 import com.esprit.examen.entities.User;
+import com.esprit.examen.exceptions.BadRequestException;
+import com.esprit.examen.exceptions.ResourceNotFoundException;
 import com.esprit.examen.repositories.PasswordResetTokenRepository;
 import com.esprit.examen.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,6 +18,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class PasswordResetService {
@@ -44,30 +48,20 @@ public class PasswordResetService {
 
             tokenRepo.save(prt);
 
-            System.out.println("\n================ FORGOT PASSWORD ================");
-            System.out.println("Reset link for: " + user.getEmail());
-            System.out.println("http://localhost:4200/auth/reset-password?token=" + token);
-            System.out.println("=================================================\n");
+            log.info("Password reset token generated for user: {}", user.getEmail());
         });
     }
 
     @Transactional
     public void resetPassword(ResetPasswordRequest req) {
-        if (req == null || req.token() == null || req.token().isBlank()) {
-            throw new RuntimeException("Token is required");
-        }
-        if (req.newPassword() == null || req.newPassword().length() < 8) {
-            throw new RuntimeException("New password must be at least 8 characters");
-        }
-
         PasswordResetToken token = tokenRepo.findByToken(req.token())
-                .orElseThrow(() -> new RuntimeException("Invalid token"));
+                .orElseThrow(() -> new ResourceNotFoundException("Invalid token"));
 
         if (Boolean.TRUE.equals(token.getUsed())) {
-            throw new RuntimeException("Token already used");
+            throw new BadRequestException("Token already used");
         }
         if (token.getExpiresAt().isBefore(Instant.now())) {
-            throw new RuntimeException("Token expired");
+            throw new BadRequestException("Token expired");
         }
 
         User user = token.getUser();

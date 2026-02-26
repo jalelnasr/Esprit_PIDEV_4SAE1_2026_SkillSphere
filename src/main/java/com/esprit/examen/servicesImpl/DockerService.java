@@ -9,15 +9,15 @@ import com.github.dockerjava.api.model.*;
 import com.github.dockerjava.core.DefaultDockerClientConfig;
 import com.github.dockerjava.core.DockerClientConfig;
 import com.github.dockerjava.core.DockerClientImpl;
-import com.github.dockerjava.httpclient5.ApacheDockerHttpClient;
+import com.github.dockerjava.okhttp.OkDockerHttpClient;
 import com.github.dockerjava.transport.DockerHttpClient;
+import com.esprit.examen.exceptions.BadRequestException;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.net.URI;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -51,15 +51,48 @@ public class DockerService {
                 .withDockerTlsVerify(tlsVerify)
                 .build();
 
-        DockerHttpClient httpClient = new ApacheDockerHttpClient.Builder()
-                .dockerHost(URI.create(dockerHost))
-                .maxConnections(100)
-                .connectionTimeout(Duration.ofSeconds(30))
-                .responseTimeout(Duration.ofSeconds(45))
+        DockerHttpClient httpClient = new OkDockerHttpClient.Builder()
+                .dockerHost(config.getDockerHost())
+                .connectTimeout((int) Duration.ofSeconds(30).toMillis())
+                .readTimeout((int) Duration.ofSeconds(45).toMillis())
                 .build();
 
         dockerClient = DockerClientImpl.getInstance(config, httpClient);
-        log.info("Docker client initialized with host: {}", dockerHost);
+        log.info("Docker client initialized with host: {}", config.getDockerHost());
+
+        // Scan running containers to recover allocated ports from previous sessions
+        recoverAllocatedPorts();
+    }
+
+    /** Scan all running gamix containers and mark their host ports as allocated */
+    private void recoverAllocatedPorts() {
+        try {
+            List<Container> containers = dockerClient.listContainersCmd()
+                    .withStatusFilter(List.of("running", "created", "paused"))
+                    .exec();
+            for (Container container : containers) {
+                String[] names = container.getNames();
+                boolean isGamixContainer = names != null &&
+                        java.util.Arrays.stream(names).anyMatch(n -> n.contains("gamix-lab"));
+                if (!isGamixContainer) continue;
+
+                ContainerPort[] ports = container.getPorts();
+                if (ports == null) continue;
+                for (ContainerPort port : ports) {
+                    Integer publicPort = port.getPublicPort();
+                    if (publicPort != null && publicPort >= portRangeStart && publicPort <= portRangeEnd) {
+                        allocatedPorts.add(publicPort);
+                        log.info("Recovered allocated port {} from container {}", publicPort,
+                                names[0].replaceFirst("/", ""));
+                    }
+                }
+            }
+            if (!allocatedPorts.isEmpty()) {
+                log.info("Recovered {} allocated port(s) from running containers", allocatedPorts.size());
+            }
+        } catch (Exception e) {
+            log.warn("Could not scan running containers for port recovery: {}", e.getMessage());
+        }
     }
 
     @PreDestroy
@@ -75,19 +108,18 @@ public class DockerService {
 
     public void pullImage(String imageName, String tag) {
         String fullImage = imageName + ":" + tag;
+
+        // Use inspectImageCmd for a reliable local check
         try {
-            List<Image> images = dockerClient.listImagesCmd()
-                    .withImageNameFilter(fullImage)
-                    .exec();
-            if (!images.isEmpty()) {
-                log.info("Image {} already exists locally", fullImage);
-                return;
-            }
+            dockerClient.inspectImageCmd(fullImage).exec();
+            log.info("Image {} already exists locally", fullImage);
+            return;
+        } catch (com.github.dockerjava.api.exception.NotFoundException e) {
+            log.info("Image {} not found locally, pulling...", fullImage);
         } catch (Exception e) {
-            log.debug("Could not check for existing image, will attempt pull");
+            log.debug("Could not inspect image, will attempt pull: {}", e.getMessage());
         }
 
-        log.info("Pulling image: {}", fullImage);
         try {
             dockerClient.pullImageCmd(imageName)
                     .withTag(tag)
@@ -96,7 +128,7 @@ public class DockerService {
             log.info("Successfully pulled image: {}", fullImage);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new RuntimeException("Image pull interrupted for: " + fullImage, e);
+            throw new BadRequestException("Image pull interrupted for: " + fullImage);
         }
     }
 
@@ -155,7 +187,6 @@ public class DockerService {
         dockerClient.startContainerCmd(containerId).exec();
         log.info("Started container: {} on port {}", containerName, hostPort);
 
-        allocatedPorts.add(hostPort);
         return new ContainerInfo(containerId, hostPort);
     }
 
@@ -217,13 +248,14 @@ public class DockerService {
         return "RUNNING".equals(getContainerStatus(containerId));
     }
 
-    public int findAvailablePort() {
+    public synchronized int findAvailablePort() {
         for (int port = portRangeStart; port <= portRangeEnd; port++) {
             if (!allocatedPorts.contains(port)) {
+                allocatedPorts.add(port);
                 return port;
             }
         }
-        throw new RuntimeException("No available ports in range " + portRangeStart + "-" + portRangeEnd);
+        throw new BadRequestException("No available ports in range " + portRangeStart + "-" + portRangeEnd);
     }
 
     public record ContainerInfo(String containerId, int assignedPort) {}

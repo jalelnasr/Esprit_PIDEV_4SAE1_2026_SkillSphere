@@ -1,9 +1,12 @@
 package com.esprit.examen.controllers;
 
+import com.esprit.examen.dto.SubmitFlagRequest;
 import com.esprit.examen.entities.UserProgress;
+import com.esprit.examen.services.GamificationService;
 import com.esprit.examen.services.UserProgressService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,10 +21,22 @@ public class UserProgressController {
     @Autowired
     private UserProgressService userProgressService;
 
+    @Autowired
+    private GamificationService gamificationService;
+
     @PostMapping("/{userId}/{stepId}")
     @Operation(summary = "Create progress for a user on a lab step")
     public ResponseEntity<UserProgress> createProgress(@RequestBody UserProgress progress, @PathVariable Long userId, @PathVariable Long stepId) {
         return ResponseEntity.ok(userProgressService.createProgress(progress, userId, stepId));
+    }
+
+    @PostMapping("/submit-flag/{userId}/{stepId}")
+    @Operation(summary = "Submit a flag for a lab step - validates flag, awards points, levels up, and grants badges")
+    public ResponseEntity<UserProgress> submitFlag(
+            @PathVariable Long userId,
+            @PathVariable Long stepId,
+            @Valid @RequestBody SubmitFlagRequest req) {
+        return ResponseEntity.ok(gamificationService.submitFlag(userId, stepId, req.submittedFlag()));
     }
 
     @GetMapping("/{id}")

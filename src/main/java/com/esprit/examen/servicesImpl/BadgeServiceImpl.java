@@ -2,11 +2,13 @@ package com.esprit.examen.servicesImpl;
 
 import com.esprit.examen.entities.Badge;
 import com.esprit.examen.entities.User;
+import com.esprit.examen.exceptions.ResourceNotFoundException;
 import com.esprit.examen.repositories.BadgeRepository;
 import com.esprit.examen.repositories.UserRepository;
 import com.esprit.examen.services.BadgeService;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -26,7 +28,8 @@ public class BadgeServiceImpl implements BadgeService {
 
     @Override
     public Badge getBadgeById(Long id) {
-        return badgeRepository.findById(id).orElse(null);
+        return badgeRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Badge not found: " + id));
     }
 
     @Override
@@ -46,40 +49,43 @@ public class BadgeServiceImpl implements BadgeService {
 
     @Override
     public Badge updateBadge(Long id, Badge badge) {
-        Badge existing = badgeRepository.findById(id).orElse(null);
-        if (existing != null) {
-            existing.setName(badge.getName());
-            existing.setDescription(badge.getDescription());
-            existing.setIconUrl(badge.getIconUrl());
-            existing.setRequiredPoints(badge.getRequiredPoints());
-            existing.setRequiredLevel(badge.getRequiredLevel());
-            return badgeRepository.save(existing);
-        }
-        return null;
+        Badge existing = badgeRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Badge not found: " + id));
+        existing.setName(badge.getName());
+        existing.setDescription(badge.getDescription());
+        existing.setIconUrl(badge.getIconUrl());
+        existing.setRequiredPoints(badge.getRequiredPoints());
+        existing.setRequiredLevel(badge.getRequiredLevel());
+        return badgeRepository.save(existing);
     }
 
     @Override
     public void deleteBadge(Long id) {
+        if (!badgeRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Badge not found: " + id);
+        }
         badgeRepository.deleteById(id);
     }
 
     @Override
+    @Transactional
     public void assignBadgeToUser(Long badgeId, Long userId) {
-        Badge badge = badgeRepository.findById(badgeId).orElse(null);
-        User user = userRepository.findById(userId).orElse(null);
-        if (badge != null && user != null) {
-            user.getBadges().add(badge);
-            userRepository.save(user);
-        }
+        Badge badge = badgeRepository.findById(badgeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Badge not found: " + badgeId));
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userId));
+        user.getBadges().add(badge);
+        userRepository.save(user);
     }
 
     @Override
+    @Transactional
     public void removeBadgeFromUser(Long badgeId, Long userId) {
-        Badge badge = badgeRepository.findById(badgeId).orElse(null);
-        User user = userRepository.findById(userId).orElse(null);
-        if (badge != null && user != null) {
-            user.getBadges().remove(badge);
-            userRepository.save(user);
-        }
+        Badge badge = badgeRepository.findById(badgeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Badge not found: " + badgeId));
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userId));
+        user.getBadges().remove(badge);
+        userRepository.save(user);
     }
 }

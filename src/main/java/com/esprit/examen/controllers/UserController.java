@@ -3,6 +3,7 @@ package com.esprit.examen.controllers;
 import com.esprit.examen.dto.*;
 import com.esprit.examen.entities.Role;
 import com.esprit.examen.services.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -27,12 +28,12 @@ public class UserController {
     }
 
     @PutMapping("/me")
-    public UserResponse updateMe(Authentication auth, @RequestBody UserUpdateRequest req) {
+    public UserResponse updateMe(Authentication auth, @Valid @RequestBody UserUpdateRequest req) {
         return userService.updateMe(auth.getName(), req);
     }
 
     @PutMapping("/me/password")
-    public void changePassword(Authentication auth, @RequestBody ChangePasswordRequest req) {
+    public void changePassword(Authentication auth, @Valid @RequestBody ChangePasswordRequest req) {
         userService.changeMyPassword(auth.getName(), req);
     }
 
@@ -42,7 +43,7 @@ public class UserController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/admin")
-    public UserResponse adminCreate(@RequestBody AdminCreateUserRequest req) {
+    public UserResponse adminCreate(@Valid @RequestBody AdminCreateUserRequest req) {
         return userService.adminCreateUser(req);
     }
 
@@ -60,7 +61,7 @@ public class UserController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/admin/{id}")
-    public UserResponse adminUpdate(@PathVariable Long id, @RequestBody AdminUpdateUserRequest req) {
+    public UserResponse adminUpdate(@PathVariable Long id, @Valid @RequestBody AdminUpdateUserRequest req) {
         return userService.adminUpdateUser(id, req);
     }
 
@@ -78,7 +79,7 @@ public class UserController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/admin/{id}/password")
-    public void adminResetPassword(@PathVariable Long id, @RequestBody AdminResetPasswordRequest req) {
+    public void adminResetPassword(@PathVariable Long id, @Valid @RequestBody AdminResetPasswordRequest req) {
         userService.adminResetPassword(id, req);
     }
 

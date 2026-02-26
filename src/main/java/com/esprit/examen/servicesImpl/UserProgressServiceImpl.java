@@ -3,6 +3,7 @@ package com.esprit.examen.servicesImpl;
 import com.esprit.examen.entities.LabStep;
 import com.esprit.examen.entities.User;
 import com.esprit.examen.entities.UserProgress;
+import com.esprit.examen.exceptions.ResourceNotFoundException;
 import com.esprit.examen.repositories.LabStepRepository;
 import com.esprit.examen.repositories.UserProgressRepository;
 import com.esprit.examen.repositories.UserRepository;
@@ -26,8 +27,10 @@ public class UserProgressServiceImpl implements UserProgressService {
 
     @Override
     public UserProgress createProgress(UserProgress progress, Long userId, Long stepId) {
-        User user = userRepository.findById(userId).orElse(null);
-        LabStep labStep = labStepRepository.findById(stepId).orElse(null);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userId));
+        LabStep labStep = labStepRepository.findById(stepId)
+                .orElseThrow(() -> new ResourceNotFoundException("Lab step not found: " + stepId));
         progress.setUser(user);
         progress.setLabStep(labStep);
         return userProgressRepository.save(progress);
@@ -35,7 +38,8 @@ public class UserProgressServiceImpl implements UserProgressService {
 
     @Override
     public UserProgress getProgressById(Long id) {
-        return userProgressRepository.findById(id).orElse(null);
+        return userProgressRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User progress not found: " + id));
     }
 
     @Override
@@ -50,19 +54,20 @@ public class UserProgressServiceImpl implements UserProgressService {
 
     @Override
     public UserProgress updateProgress(Long id, UserProgress progress) {
-        UserProgress existing = userProgressRepository.findById(id).orElse(null);
-        if (existing != null) {
-            existing.setCompleted(progress.getCompleted());
-            existing.setSubmittedFlag(progress.getSubmittedFlag());
-            existing.setCompletedAt(progress.getCompletedAt());
-            existing.setAttempts(progress.getAttempts());
-            return userProgressRepository.save(existing);
-        }
-        return null;
+        UserProgress existing = userProgressRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User progress not found: " + id));
+        existing.setCompleted(progress.getCompleted());
+        existing.setSubmittedFlag(progress.getSubmittedFlag());
+        existing.setCompletedAt(progress.getCompletedAt());
+        existing.setAttempts(progress.getAttempts());
+        return userProgressRepository.save(existing);
     }
 
     @Override
     public void deleteProgress(Long id) {
+        if (!userProgressRepository.existsById(id)) {
+            throw new ResourceNotFoundException("User progress not found: " + id);
+        }
         userProgressRepository.deleteById(id);
     }
 }

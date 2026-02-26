@@ -52,4 +52,8 @@ public class Lab {
     @JsonIgnore
     @OneToMany(mappedBy = "lab", cascade = CascadeType.ALL)
     private List<LabInstance> labInstances;
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "lab", cascade = CascadeType.ALL)
+    private List<LabReview> labReviews;
 }

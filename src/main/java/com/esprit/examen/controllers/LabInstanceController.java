@@ -79,7 +79,7 @@ public class LabInstanceController {
         return ResponseEntity.ok(labInstanceService.stopLab(instanceId));
     }
 
-    @GetMapping("/status/{instanceId}")
+    @GetMapping("/check-status/{instanceId}")
     @Operation(summary = "Get live container status for a lab instance")
     public ResponseEntity<LabInstance> getLabStatus(@PathVariable Long instanceId) {
         return ResponseEntity.ok(labInstanceService.getLabStatus(instanceId));

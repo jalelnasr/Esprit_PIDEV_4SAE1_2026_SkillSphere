@@ -3,6 +3,9 @@ package com.esprit.examen.servicesImpl;
 import com.esprit.examen.dto.*;
 import com.esprit.examen.entities.Role;
 import com.esprit.examen.entities.User;
+import com.esprit.examen.exceptions.BadRequestException;
+import com.esprit.examen.exceptions.DuplicateResourceException;
+import com.esprit.examen.exceptions.ResourceNotFoundException;
 import com.esprit.examen.repositories.UserRepository;
 import com.esprit.examen.services.UserService;
 import lombok.RequiredArgsConstructor;
@@ -37,12 +40,12 @@ public class UserServiceImpl implements UserService {
 
     private User getByEmail(String email) {
         return userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
     }
 
     private User getById(Long id) {
         return userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + id));
     }
 
     // ---------- Everyone ----------
@@ -66,10 +69,7 @@ public class UserServiceImpl implements UserService {
     public void changeMyPassword(String email, ChangePasswordRequest req) {
         User u = getByEmail(email);
         if (!passwordEncoder.matches(req.oldPassword(), u.getPasswordHash())) {
-            throw new RuntimeException("Old password incorrect");
-        }
-        if (req.newPassword() == null || req.newPassword().length() < 8) {
-            throw new RuntimeException("New password must be at least 8 characters");
+            throw new BadRequestException("Old password incorrect");
         }
         u.setPasswordHash(passwordEncoder.encode(req.newPassword()));
         userRepository.save(u);
@@ -80,10 +80,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserResponse adminCreateUser(AdminCreateUserRequest req) {
         if (userRepository.existsByEmail(req.email())) {
-            throw new RuntimeException("Email already exists");
-        }
-        if (req.password() == null || req.password().length() < 8) {
-            throw new RuntimeException("Password must be at least 8 characters");
+            throw new DuplicateResourceException("Email already exists");
         }
         Role role = (req.role() != null) ? req.role() : Role.APPRENANT;
 
@@ -119,7 +116,7 @@ public class UserServiceImpl implements UserService {
         User u = getById(id);
         if (req.email() != null && !req.email().isBlank()) {
             if (userRepository.existsByEmailAndIdUserNot(req.email(), id)) {
-                throw new RuntimeException("Email already exists");
+                throw new DuplicateResourceException("Email already exists");
             }
             u.setEmail(req.email());
         }
@@ -146,9 +143,6 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void adminResetPassword(Long id, AdminResetPasswordRequest req) {
-        if (req == null || req.newPassword() == null || req.newPassword().length() < 8) {
-            throw new RuntimeException("New password must be at least 8 characters");
-        }
         User u = getById(id);
         u.setPasswordHash(passwordEncoder.encode(req.newPassword()));
         userRepository.save(u);
@@ -157,7 +151,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public void adminDeleteUser(Long id) {
         if (!userRepository.existsById(id)) {
-            throw new RuntimeException("User not found");
+            throw new ResourceNotFoundException("User not found: " + id);
         }
         userRepository.deleteById(id);
     }

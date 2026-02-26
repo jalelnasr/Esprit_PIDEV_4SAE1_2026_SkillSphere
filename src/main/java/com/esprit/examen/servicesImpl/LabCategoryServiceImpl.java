@@ -1,6 +1,7 @@
 package com.esprit.examen.servicesImpl;
 
 import com.esprit.examen.entities.LabCategory;
+import com.esprit.examen.exceptions.ResourceNotFoundException;
 import com.esprit.examen.repositories.LabCategoryRepository;
 import com.esprit.examen.services.LabCategoryService;
 import jakarta.annotation.Resource;
@@ -21,7 +22,8 @@ public class LabCategoryServiceImpl implements LabCategoryService {
 
     @Override
     public LabCategory getCategoryById(Long id) {
-        return labCategoryRepository.findById(id).orElse(null);
+        return labCategoryRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Lab category not found: " + id));
     }
 
     @Override
@@ -31,18 +33,19 @@ public class LabCategoryServiceImpl implements LabCategoryService {
 
     @Override
     public LabCategory updateCategory(Long id, LabCategory category) {
-        LabCategory existing = labCategoryRepository.findById(id).orElse(null);
-        if (existing != null) {
-            existing.setName(category.getName());
-            existing.setDescription(category.getDescription());
-            existing.setIconUrl(category.getIconUrl());
-            return labCategoryRepository.save(existing);
-        }
-        return null;
+        LabCategory existing = labCategoryRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Lab category not found: " + id));
+        existing.setName(category.getName());
+        existing.setDescription(category.getDescription());
+        existing.setIconUrl(category.getIconUrl());
+        return labCategoryRepository.save(existing);
     }
 
     @Override
     public void deleteCategory(Long id) {
+        if (!labCategoryRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Lab category not found: " + id);
+        }
         labCategoryRepository.deleteById(id);
     }
 }

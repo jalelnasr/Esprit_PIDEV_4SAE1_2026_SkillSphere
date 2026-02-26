@@ -5,6 +5,8 @@ import com.esprit.examen.dto.LoginRequest;
 import com.esprit.examen.dto.RegisterRequest;
 import com.esprit.examen.entities.Role;
 import com.esprit.examen.entities.User;
+import com.esprit.examen.exceptions.DuplicateResourceException;
+import com.esprit.examen.exceptions.ResourceNotFoundException;
 import com.esprit.examen.repositories.UserRepository;
 import com.esprit.examen.security.JwtService;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +26,7 @@ public class AuthService {
 
     public AuthResponse register(RegisterRequest req) {
         if (userRepository.existsByEmail(req.email())) {
-            throw new RuntimeException("Email already exists");
+            throw new DuplicateResourceException("Email already exists");
         }
 
         User user = User.builder()
@@ -60,7 +62,7 @@ public class AuthService {
         );
 
         User user = userRepository.findByEmail(req.email())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         String token = jwtService.generateToken(user.getEmail());
 

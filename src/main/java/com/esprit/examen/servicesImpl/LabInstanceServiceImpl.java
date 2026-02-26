@@ -4,6 +4,8 @@ import com.esprit.examen.entities.DockerTemplate;
 import com.esprit.examen.entities.Lab;
 import com.esprit.examen.entities.LabInstance;
 import com.esprit.examen.entities.User;
+import com.esprit.examen.exceptions.BadRequestException;
+import com.esprit.examen.exceptions.ResourceNotFoundException;
 import com.esprit.examen.repositories.LabInstanceRepository;
 import com.esprit.examen.repositories.LabRepository;
 import com.esprit.examen.repositories.UserRepository;
@@ -11,6 +13,7 @@ import com.esprit.examen.services.LabInstanceService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -33,8 +36,10 @@ public class LabInstanceServiceImpl implements LabInstanceService {
 
     @Override
     public LabInstance createLabInstance(LabInstance instance, Long userId, Long labId) {
-        User user = userRepository.findById(userId).orElse(null);
-        Lab lab = labRepository.findById(labId).orElse(null);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userId));
+        Lab lab = labRepository.findById(labId)
+                .orElseThrow(() -> new ResourceNotFoundException("Lab not found: " + labId));
         instance.setUser(user);
         instance.setLab(lab);
         return labInstanceRepository.save(instance);
@@ -42,7 +47,8 @@ public class LabInstanceServiceImpl implements LabInstanceService {
 
     @Override
     public LabInstance getLabInstanceById(Long id) {
-        return labInstanceRepository.findById(id).orElse(null);
+        return labInstanceRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Lab instance not found: " + id));
     }
 
     @Override
@@ -67,37 +73,39 @@ public class LabInstanceServiceImpl implements LabInstanceService {
 
     @Override
     public LabInstance updateLabInstance(Long id, LabInstance instance) {
-        LabInstance existing = labInstanceRepository.findById(id).orElse(null);
-        if (existing != null) {
-            existing.setContainerId(instance.getContainerId());
-            existing.setContainerName(instance.getContainerName());
-            existing.setStatus(instance.getStatus());
-            existing.setAccessUrl(instance.getAccessUrl());
-            existing.setAssignedPort(instance.getAssignedPort());
-            existing.setStartedAt(instance.getStartedAt());
-            existing.setStoppedAt(instance.getStoppedAt());
-            existing.setCompletedAt(instance.getCompletedAt());
-            existing.setErrorMessage(instance.getErrorMessage());
-            existing.setScore(instance.getScore());
-            return labInstanceRepository.save(existing);
-        }
-        return null;
+        LabInstance existing = labInstanceRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Lab instance not found: " + id));
+        existing.setContainerId(instance.getContainerId());
+        existing.setContainerName(instance.getContainerName());
+        existing.setStatus(instance.getStatus());
+        existing.setAccessUrl(instance.getAccessUrl());
+        existing.setAssignedPort(instance.getAssignedPort());
+        existing.setStartedAt(instance.getStartedAt());
+        existing.setStoppedAt(instance.getStoppedAt());
+        existing.setCompletedAt(instance.getCompletedAt());
+        existing.setErrorMessage(instance.getErrorMessage());
+        existing.setScore(instance.getScore());
+        return labInstanceRepository.save(existing);
     }
 
     @Override
     public void deleteLabInstance(Long id) {
+        if (!labInstanceRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Lab instance not found: " + id);
+        }
         labInstanceRepository.deleteById(id);
     }
 
     @Override
+    @Transactional
     public LabInstance startLab(Long userId, Long labId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userId));
         Lab lab = labRepository.findById(labId)
-                .orElseThrow(() -> new RuntimeException("Lab not found: " + labId));
+                .orElseThrow(() -> new ResourceNotFoundException("Lab not found: " + labId));
         DockerTemplate template = lab.getDockerTemplate();
         if (template == null) {
-            throw new RuntimeException("No DockerTemplate configured for lab: " + lab.getTitle());
+            throw new BadRequestException("No DockerTemplate configured for lab: " + lab.getTitle());
         }
 
         String containerName = "gamix-lab" + labId + "-user" + userId + "-" + System.currentTimeMillis();
@@ -126,9 +134,10 @@ public class LabInstanceServiceImpl implements LabInstanceService {
     }
 
     @Override
+    @Transactional
     public LabInstance stopLab(Long instanceId) {
         LabInstance instance = labInstanceRepository.findById(instanceId)
-                .orElseThrow(() -> new RuntimeException("LabInstance not found: " + instanceId));
+                .orElseThrow(() -> new ResourceNotFoundException("Lab instance not found: " + instanceId));
 
         if (instance.getContainerId() != null) {
             dockerService.stopContainer(instance.getContainerId());
@@ -146,7 +155,7 @@ public class LabInstanceServiceImpl implements LabInstanceService {
     @Override
     public LabInstance getLabStatus(Long instanceId) {
         LabInstance instance = labInstanceRepository.findById(instanceId)
-                .orElseThrow(() -> new RuntimeException("LabInstance not found: " + instanceId));
+                .orElseThrow(() -> new ResourceNotFoundException("Lab instance not found: " + instanceId));
 
         if (instance.getContainerId() != null && !"STOPPED".equals(instance.getStatus())) {
             String dockerStatus = dockerService.getContainerStatus(instance.getContainerId());
