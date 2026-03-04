@@ -444,6 +444,12 @@
   font-size: 12px;
 }
 
+.group-media-loading {
+  margin-top: 0.55rem;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
 .group-media-preview-grid {
   margin-top: 0.65rem;
   display: grid;

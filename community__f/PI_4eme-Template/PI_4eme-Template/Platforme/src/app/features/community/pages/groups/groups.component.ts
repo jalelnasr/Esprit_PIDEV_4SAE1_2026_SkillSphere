@@ -55,10 +55,14 @@ export class GroupsComponent implements OnInit, OnDestroy {
   private readonly groupMediaErrors = new Map<number, string>();
   private readonly groupImagePreviewUrls = new Map<number, string>();
   private readonly groupVideoPreviewUrls = new Map<number, string>();
+  private readonly groupImageDataUrls = new Map<number, string>();
+  private readonly groupVideoDataUrls = new Map<number, string>();
+  private readonly processingGroupImageIds = new Set<number>();
+  private readonly processingGroupVideoIds = new Set<number>();
   private readonly groupImageNames = new Map<number, string>();
   private readonly groupVideoNames = new Map<number, string>();
   private readonly localMediaByPostId = new Map<number, { imageUrl: string | null; videoUrl: string | null }>();
-  private readonly retainedMediaUrls = new Set<string>();
+  private readonly localMediaStorageKey = 'community.localPostMedia.v1';
   private readonly joinedGroupIds = new Set<number>();
   private readonly groupRoles = new Map<number, string>();
   private readonly joiningGroupIds = new Set<number>();
@@ -82,6 +86,7 @@ export class GroupsComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.restoreState();
+    this.restoreLocalMediaRegistry();
     this.loadGroups();
   }
 
@@ -92,10 +97,8 @@ export class GroupsComponent implements OnInit, OnDestroy {
 
     this.groupImagePreviewUrls.forEach((url) => URL.revokeObjectURL(url));
     this.groupVideoPreviewUrls.forEach((url) => URL.revokeObjectURL(url));
-    this.retainedMediaUrls.forEach((url) => URL.revokeObjectURL(url));
     this.groupImagePreviewUrls.clear();
     this.groupVideoPreviewUrls.clear();
-    this.retainedMediaUrls.clear();
 
     this.persistState();
   }
@@ -578,7 +581,11 @@ export class GroupsComponent implements OnInit, OnDestroy {
     return this.groupMediaErrors.get(groupId) ?? '';
   }
 
-  onGroupImageSelected(groupId: number, event: Event): void {
+  isProcessingGroupMedia(groupId: number): boolean {
+    return this.processingGroupImageIds.has(groupId) || this.processingGroupVideoIds.has(groupId);
+  }
+
+  async onGroupImageSelected(groupId: number, event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     input.value = '';
@@ -600,10 +607,22 @@ export class GroupsComponent implements OnInit, OnDestroy {
     this.groupMediaErrors.delete(groupId);
     this.revokeGroupImagePreview(groupId);
     this.groupImagePreviewUrls.set(groupId, URL.createObjectURL(file));
-    this.groupImageNames.set(groupId, file.name);
+    this.processingGroupImageIds.add(groupId);
+
+    try {
+      this.groupImageDataUrls.set(groupId, await this.readFileAsDataUrl(file));
+      this.groupImageNames.set(groupId, file.name);
+    } catch {
+      this.revokeGroupImagePreview(groupId);
+      this.groupImageDataUrls.delete(groupId);
+      this.groupImageNames.delete(groupId);
+      this.groupMediaErrors.set(groupId, 'Failed to prepare image. Please try another file.');
+    } finally {
+      this.processingGroupImageIds.delete(groupId);
+    }
   }
 
-  onGroupVideoSelected(groupId: number, event: Event): void {
+  async onGroupVideoSelected(groupId: number, event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     input.value = '';
@@ -625,22 +644,38 @@ export class GroupsComponent implements OnInit, OnDestroy {
     this.groupMediaErrors.delete(groupId);
     this.revokeGroupVideoPreview(groupId);
     this.groupVideoPreviewUrls.set(groupId, URL.createObjectURL(file));
-    this.groupVideoNames.set(groupId, file.name);
+    this.processingGroupVideoIds.add(groupId);
+
+    try {
+      this.groupVideoDataUrls.set(groupId, await this.readFileAsDataUrl(file));
+      this.groupVideoNames.set(groupId, file.name);
+    } catch {
+      this.revokeGroupVideoPreview(groupId);
+      this.groupVideoDataUrls.delete(groupId);
+      this.groupVideoNames.delete(groupId);
+      this.groupMediaErrors.set(groupId, 'Failed to prepare video. Please try another file.');
+    } finally {
+      this.processingGroupVideoIds.delete(groupId);
+    }
   }
 
   removeGroupImage(groupId: number): void {
     this.revokeGroupImagePreview(groupId);
+    this.groupImageDataUrls.delete(groupId);
     this.groupImageNames.delete(groupId);
   }
 
   removeGroupVideo(groupId: number): void {
     this.revokeGroupVideoPreview(groupId);
+    this.groupVideoDataUrls.delete(groupId);
     this.groupVideoNames.delete(groupId);
   }
 
   clearGroupMedia(groupId: number): void {
     this.removeGroupImage(groupId);
     this.removeGroupVideo(groupId);
+    this.processingGroupImageIds.delete(groupId);
+    this.processingGroupVideoIds.delete(groupId);
     this.groupMediaErrors.delete(groupId);
   }
 
@@ -656,8 +691,15 @@ export class GroupsComponent implements OnInit, OnDestroy {
       return;
     }
 
+    if (this.isProcessingGroupMedia(group.id)) {
+      this.toast.warning('Please wait until media files are ready');
+      return;
+    }
+
     const selectedImageUrl = this.groupImagePreview(group.id);
     const selectedVideoUrl = this.groupVideoPreview(group.id);
+    const localImageDataUrl = this.groupImageDataUrls.get(group.id) ?? null;
+    const localVideoDataUrl = this.groupVideoDataUrls.get(group.id) ?? null;
 
     const payload: CreatePostRequest = {
       content: control.value.trim(),
@@ -670,7 +712,7 @@ export class GroupsComponent implements OnInit, OnDestroy {
       next: (createdPost) => {
         this.errorMessage = '';
         const mappedPost = this.mapPost(createdPost);
-        this.retainGroupMediaForPost(mappedPost.id, group.id);
+        this.retainGroupMediaForPost(mappedPost.id, group.id, localImageDataUrl, localVideoDataUrl);
         this.applyLocalMedia(mappedPost);
         group.posts = [mappedPost, ...group.posts];
         this.hydrateGroupPostAuthors([mappedPost]);
@@ -849,27 +891,29 @@ export class GroupsComponent implements OnInit, OnDestroy {
     return normalized;
   }
 
-  private retainGroupMediaForPost(postId: number, groupId: number): void {
-    const imageUrl = this.groupImagePreview(groupId);
-    const videoUrl = this.groupVideoPreview(groupId);
+  private retainGroupMediaForPost(
+    postId: number,
+    groupId: number,
+    imageDataUrl: string | null,
+    videoDataUrl: string | null
+  ): void {
+    const normalizedImage = this.normalizeDataUrl(imageDataUrl);
+    const normalizedVideo = this.normalizeDataUrl(videoDataUrl);
 
-    if (imageUrl) {
-      this.retainedMediaUrls.add(imageUrl);
-    }
-
-    if (videoUrl) {
-      this.retainedMediaUrls.add(videoUrl);
-    }
-
-    if (imageUrl || videoUrl) {
+    if (normalizedImage || normalizedVideo) {
       this.localMediaByPostId.set(postId, {
-        imageUrl,
-        videoUrl
+        imageUrl: normalizedImage,
+        videoUrl: normalizedVideo
       });
+      this.persistLocalMediaRegistry();
     }
 
-    this.groupImagePreviewUrls.delete(groupId);
-    this.groupVideoPreviewUrls.delete(groupId);
+    this.revokeGroupImagePreview(groupId);
+    this.revokeGroupVideoPreview(groupId);
+    this.groupImageDataUrls.delete(groupId);
+    this.groupVideoDataUrls.delete(groupId);
+    this.processingGroupImageIds.delete(groupId);
+    this.processingGroupVideoIds.delete(groupId);
     this.groupImageNames.delete(groupId);
     this.groupVideoNames.delete(groupId);
     this.groupMediaErrors.delete(groupId);
@@ -888,6 +932,91 @@ export class GroupsComponent implements OnInit, OnDestroy {
     if (!post.video_url && localMedia.videoUrl) {
       post.video_url = localMedia.videoUrl;
     }
+  }
+
+  private async readFileAsDataUrl(file: File): Promise<string> {
+    return await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result === 'string' && reader.result.trim().length > 0) {
+          resolve(reader.result);
+          return;
+        }
+
+        reject(new Error('Empty data URL'));
+      };
+
+      reader.onerror = () => reject(reader.error ?? new Error('Failed to read file'));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  private persistLocalMediaRegistry(): void {
+    if (typeof window === 'undefined' || typeof window.localStorage === 'undefined') {
+      return;
+    }
+
+    const entries = Array.from(this.localMediaByPostId.entries())
+      .map(([postId, media]) => {
+        const imageUrl = this.normalizeDataUrl(media.imageUrl);
+        const videoUrl = this.normalizeDataUrl(media.videoUrl);
+        return [postId, { imageUrl, videoUrl }] as const;
+      })
+      .filter(([, media]) => Boolean(media.imageUrl || media.videoUrl));
+
+    while (entries.length > 0) {
+      const snapshot: Record<string, { imageUrl: string | null; videoUrl: string | null }> = {};
+      entries.slice(-30).forEach(([postId, media]) => {
+        snapshot[String(postId)] = media;
+      });
+
+      try {
+        localStorage.setItem(this.localMediaStorageKey, JSON.stringify(snapshot));
+        return;
+      } catch {
+        entries.shift();
+      }
+    }
+  }
+
+  private restoreLocalMediaRegistry(): void {
+    if (typeof window === 'undefined' || typeof window.localStorage === 'undefined') {
+      return;
+    }
+
+    const raw = localStorage.getItem(this.localMediaStorageKey);
+    if (!raw) {
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(raw) as Record<string, { imageUrl?: string | null; videoUrl?: string | null }>;
+      Object.entries(parsed).forEach(([rawPostId, media]) => {
+        const postId = Number(rawPostId);
+        if (!Number.isFinite(postId)) {
+          return;
+        }
+
+        const imageUrl = this.normalizeDataUrl(media?.imageUrl ?? null);
+        const videoUrl = this.normalizeDataUrl(media?.videoUrl ?? null);
+        if (!imageUrl && !videoUrl) {
+          return;
+        }
+
+        this.localMediaByPostId.set(postId, { imageUrl, videoUrl });
+      });
+    } catch {
+      localStorage.removeItem(this.localMediaStorageKey);
+    }
+  }
+
+  private normalizeDataUrl(value: string | null | undefined): string | null {
+    if (typeof value !== 'string') {
+      return null;
+    }
+
+    const normalized = value.trim();
+    return normalized.startsWith('data:') ? normalized : null;
   }
 
   private revokeGroupImagePreview(groupId: number): void {

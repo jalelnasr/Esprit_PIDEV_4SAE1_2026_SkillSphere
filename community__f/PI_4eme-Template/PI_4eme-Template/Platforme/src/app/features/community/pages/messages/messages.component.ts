@@ -6,6 +6,7 @@ import { Subscription, catchError, of } from 'rxjs';
 import { ToastService } from '@core/services';
 import { Conversation, Message } from '../../models/message.model';
 import { MessageService } from '../../services/message.service';
+import { ChatSocketService, LiveTypingEvent } from '../../services/chat-socket.service';
 import {
   CommunityUserDirectoryService,
   CommunityUserDisplay
@@ -44,9 +45,13 @@ export class MessagesComponent implements OnInit, OnDestroy {
   isViewingSpecificUser = false;
   isLoadingConversation = false;
   isLoadingFollowedUsers = false;
+  isSocketConnected = false;
+  isSocketConnecting = false;
+  typingUserId: number | null = null;
   errorMessage = '';
 
   private readonly currentUserId: number | null;
+  private readonly typingStopDelayMs = 1200;
 
   readonly searchControl = this.fb.nonNullable.control('');
   readonly messageForm = this.fb.nonNullable.group({
@@ -54,11 +59,22 @@ export class MessagesComponent implements OnInit, OnDestroy {
   });
 
   private routeSubscription: Subscription | null = null;
+  private socketStateSubscription: Subscription | null = null;
+  private socketMessageSubscription: Subscription | null = null;
+  private socketTypingSubscription: Subscription | null = null;
+  private typingResetHandle: ReturnType<typeof setTimeout> | null = null;
+  private typingStopEmitHandle: ReturnType<typeof setTimeout> | null = null;
+  private pollingHandle: ReturnType<typeof setInterval> | null = null;
+  private pollingTick = 0;
+  private readonly pollingIntervalMs = 3000;
+  private readonly selectionStorageKey = 'community.messages.selectedUser.v1';
+  private restoredSelectionUserId: number | null = null;
 
   constructor(
     private readonly route: ActivatedRoute,
     private readonly router: Router,
     private readonly messageService: MessageService,
+    private readonly chatSocketService: ChatSocketService,
     private readonly followService: FollowService,
     private readonly userDirectory: CommunityUserDirectoryService,
     private readonly toast: ToastService
@@ -67,6 +83,9 @@ export class MessagesComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.restoredSelectionUserId = this.readSelectedConversationUserId();
+    this.initSocketConnection();
+    this.initFallbackPolling();
     this.loadConversations();
 
     this.routeSubscription = this.route.paramMap.subscribe((params) => {
@@ -82,6 +101,23 @@ export class MessagesComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.routeSubscription?.unsubscribe();
+    this.socketStateSubscription?.unsubscribe();
+    this.socketMessageSubscription?.unsubscribe();
+    this.socketTypingSubscription?.unsubscribe();
+
+    if (this.typingResetHandle) {
+      clearTimeout(this.typingResetHandle);
+    }
+
+    if (this.typingStopEmitHandle) {
+      clearTimeout(this.typingStopEmitHandle);
+    }
+
+    if (this.pollingHandle) {
+      clearInterval(this.pollingHandle);
+    }
+
+    this.chatSocketService.disconnect();
   }
 
   get filteredConversations(): ConversationView[] {
@@ -108,6 +144,115 @@ export class MessagesComponent implements OnInit, OnDestroy {
     return Array.from(suggestions).slice(0, 12);
   }
 
+  get isSelectedUserTyping(): boolean {
+    return this.typingUserId !== null && this.typingUserId === this.selectedConversation?.other_user.id;
+  }
+
+  private initSocketConnection(): void {
+    if (this.currentUserId === null) {
+      this.isSocketConnected = false;
+      this.isSocketConnecting = false;
+      return;
+    }
+
+    this.socketStateSubscription = this.chatSocketService.connectionState$.subscribe((state) => {
+      this.isSocketConnected = state === 'connected';
+      this.isSocketConnecting = state === 'connecting';
+    });
+
+    this.socketMessageSubscription = this.chatSocketService.incomingMessages$.subscribe((message) => {
+      this.handleIncomingSocketMessage(message);
+    });
+
+    this.socketTypingSubscription = this.chatSocketService.typingEvents$.subscribe((event) => {
+      this.handleIncomingTypingEvent(event);
+    });
+
+    void this.chatSocketService.connect(this.currentUserId);
+  }
+
+  private initFallbackPolling(): void {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    if (this.pollingHandle) {
+      clearInterval(this.pollingHandle);
+    }
+
+    this.pollingHandle = setInterval(() => {
+      if (this.isSocketConnected || this.isSocketConnecting) {
+        return;
+      }
+
+      if (!this.selectedConversation || this.isLoadingConversation) {
+        return;
+      }
+
+      this.loadConversationMessages(this.selectedConversation.other_user.id, { background: true });
+
+      this.pollingTick += 1;
+      if (this.pollingTick % 4 === 0) {
+        this.loadConversations();
+      }
+    }, this.pollingIntervalMs);
+  }
+
+  private handleIncomingSocketMessage(message: Message): void {
+    this.errorMessage = '';
+
+    const mapped = this.mapMessage(message);
+    mapped.delivery_status = 'sent';
+    this.hydrateMessageUsers([mapped]);
+
+    const conversation = this.ensureConversationForMessage(mapped);
+    this.replaceOrAppendMessage(conversation, mapped);
+
+    const messageTargetsCurrentUser = this.currentUserId !== null && mapped.receiver_id === this.currentUserId;
+    const isSelectedConversation = this.selectedConversation?.other_user.id === conversation.other_user.id;
+
+    if (isSelectedConversation) {
+      conversation.unread_count = 0;
+      this.selectedConversation = conversation;
+      this.typingUserId = null;
+      this.scrollToLatest();
+    } else if (messageTargetsCurrentUser) {
+      conversation.unread_count = (conversation.unread_count ?? 0) + 1;
+    }
+
+    this.conversations = this.sortConversationsByLatest(this.conversations);
+    this.followedUsers = this.followedUsers.filter((item) => item.other_user.id !== conversation.other_user.id);
+  }
+
+  private handleIncomingTypingEvent(event: LiveTypingEvent): void {
+    if (this.currentUserId === null || !this.selectedConversation) {
+      return;
+    }
+
+    if (event.toUserId !== this.currentUserId || event.fromUserId !== this.selectedConversation.other_user.id) {
+      return;
+    }
+
+    if (!event.isTyping) {
+      this.typingUserId = null;
+      if (this.typingResetHandle) {
+        clearTimeout(this.typingResetHandle);
+        this.typingResetHandle = null;
+      }
+      return;
+    }
+
+    this.typingUserId = event.fromUserId;
+    if (this.typingResetHandle) {
+      clearTimeout(this.typingResetHandle);
+    }
+
+    this.typingResetHandle = setTimeout(() => {
+      this.typingUserId = null;
+      this.typingResetHandle = null;
+    }, 1800);
+  }
+
   loadConversations(): void {
     this.messageService.getConversations().subscribe({
       next: (conversations) => {
@@ -116,6 +261,7 @@ export class MessagesComponent implements OnInit, OnDestroy {
           conversations.map((conversation) => this.mapConversation(conversation))
         );
         this.hydrateConversationUsers(this.conversations);
+        this.restoreSelectedConversationIfNeeded();
         this.loadFollowedUsers();
       },
       error: (error: Error) => {
@@ -129,7 +275,13 @@ export class MessagesComponent implements OnInit, OnDestroy {
     const selected = this.upsertConversation(conversation);
     selected.isFollowSuggestion = false;
     this.selectedConversation = selected;
+    this.persistSelectedConversationUserId(selected.other_user.id);
     selected.unread_count = 0;
+    this.typingUserId = null;
+    if (this.typingResetHandle) {
+      clearTimeout(this.typingResetHandle);
+      this.typingResetHandle = null;
+    }
     this.loadConversationMessages(selected.other_user.id);
   }
 
@@ -169,51 +321,66 @@ export class MessagesComponent implements OnInit, OnDestroy {
 
     const content = this.messageForm.controls.content.value.trim();
     const receiverId = this.selectedConversation.other_user.id;
+    const optimisticMessage = this.createOptimisticMessage(receiverId, content);
+    this.appendMessageToConversation(this.selectedConversation, optimisticMessage);
+
+    this.messageForm.reset({ content: '' });
+    this.sendTypingSignal(false);
+    this.scrollToLatest();
+
+    const published = this.chatSocketService.sendMessage({
+      receiverId,
+      content,
+      conversationId: this.selectedConversation.id,
+      clientMessageId: optimisticMessage.client_id
+    });
+
+    if (published) {
+      this.updateMessageDeliveryStatus(this.selectedConversation, optimisticMessage, 'sent');
+      return;
+    }
 
     this.messageService.sendMessage(receiverId, content).subscribe({
       next: (message) => {
         this.errorMessage = '';
-        const mappedMessage = this.mapMessage(message);
+        const mappedMessage = this.mapMessage({ ...message, client_id: optimisticMessage.client_id });
+        mappedMessage.delivery_status = 'sent';
         this.hydrateMessageUsers([mappedMessage]);
 
-        if (!this.selectedConversation) {
+        if (!this.selectedConversation || this.selectedConversation.other_user.id !== receiverId) {
           return;
         }
 
-        const alreadyExists = this.selectedConversation.messages.some((item) => item.id === mappedMessage.id);
-        if (!alreadyExists) {
-          this.selectedConversation.messages = [...this.selectedConversation.messages, mappedMessage];
-        }
-
-        this.selectedConversation.messages = [...this.selectedConversation.messages].sort((a, b) =>
-          a.created_at.localeCompare(b.created_at)
-        );
-        this.selectedConversation.last_message = mappedMessage.content;
-        this.selectedConversation.last_message_time = mappedMessage.created_at;
-        this.selectedConversation.isFollowSuggestion = false;
-
-        this.upsertConversation(this.selectedConversation);
-        this.conversations = this.sortConversationsByLatest(this.conversations);
-        this.followedUsers = this.followedUsers.filter(
-          (conversation) => conversation.other_user.id !== this.selectedConversation?.other_user.id
-        );
-
-        this.messageForm.reset({ content: '' });
-        this.scrollToLatest();
+        this.replaceMessage(this.selectedConversation, optimisticMessage, mappedMessage);
       },
       error: (error: Error) => {
         this.errorMessage = error.message;
-        this.toast.error('Failed to send message');
+        this.updateMessageDeliveryStatus(this.selectedConversation, optimisticMessage, 'failed');
+        this.toast.error('Live channel unavailable. Message was not delivered.');
       }
     });
   }
 
+  onMessageInput(): void {
+    this.sendTypingSignal(true);
+  }
+
   isOwnMessage(message: Message): boolean {
-    if (!this.selectedConversation) {
-      return false;
+    if (this.selectedConversation) {
+      if (message.sender_id === this.selectedConversation.other_user.id) {
+        return false;
+      }
+
+      if (message.receiver_id === this.selectedConversation.other_user.id) {
+        return true;
+      }
     }
 
-    return message.sender_id !== this.selectedConversation.other_user.id;
+    if (this.currentUserId !== null) {
+      return message.sender_id === this.currentUserId;
+    }
+
+    return false;
   }
 
   messageAvatar(message: Message): string {
@@ -267,8 +434,11 @@ export class MessagesComponent implements OnInit, OnDestroy {
       });
   }
 
-  private loadConversationMessages(otherUserId: number): void {
-    this.isLoadingConversation = true;
+  private loadConversationMessages(otherUserId: number, options?: { background?: boolean }): void {
+    const isBackground = options?.background === true;
+    if (!isBackground) {
+      this.isLoadingConversation = true;
+    }
 
     this.messageService.getConversation(otherUserId).subscribe({
       next: (messages) => {
@@ -293,17 +463,231 @@ export class MessagesComponent implements OnInit, OnDestroy {
 
         if (this.selectedConversation?.other_user.id === otherUserId) {
           this.selectedConversation = conversation;
-          this.scrollToLatest();
+          if (!isBackground) {
+            this.scrollToLatest();
+          }
         }
+
+        this.conversations = this.sortConversationsByLatest(this.conversations);
       },
       error: (error: Error) => {
         this.errorMessage = error.message;
-        this.toast.error('Failed to load conversation history');
+        if (!isBackground) {
+          this.toast.error('Failed to load conversation history');
+        }
       },
       complete: () => {
-        this.isLoadingConversation = false;
+        if (!isBackground) {
+          this.isLoadingConversation = false;
+        }
       }
     });
+  }
+
+  private restoreSelectedConversationIfNeeded(): void {
+    const preferredUserId = this.selectedConversation?.other_user.id ?? this.restoredSelectionUserId;
+    if (!preferredUserId || !Number.isFinite(preferredUserId)) {
+      return;
+    }
+
+    const target = this.mergedConversations().find((conversation) => conversation.other_user.id === preferredUserId);
+    if (!target) {
+      return;
+    }
+
+    const selected = this.upsertConversation(target);
+    selected.unread_count = 0;
+    this.selectedConversation = selected;
+    this.persistSelectedConversationUserId(preferredUserId);
+
+    if (!selected.messages.length) {
+      this.loadConversationMessages(preferredUserId, { background: true });
+    }
+
+    this.restoredSelectionUserId = null;
+  }
+
+  private persistSelectedConversationUserId(userId: number): void {
+    if (typeof window === 'undefined' || typeof window.sessionStorage === 'undefined') {
+      return;
+    }
+
+    sessionStorage.setItem(this.selectionStorageKey, String(userId));
+  }
+
+  private readSelectedConversationUserId(): number | null {
+    if (typeof window === 'undefined' || typeof window.sessionStorage === 'undefined') {
+      return null;
+    }
+
+    const raw = sessionStorage.getItem(this.selectionStorageKey);
+    if (!raw) {
+      return null;
+    }
+
+    const parsed = Number(raw);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+  }
+
+  private createOptimisticMessage(receiverId: number, content: string): Message {
+    const senderId = this.currentUserId ?? 0;
+    const clientId = `tmp-${Date.now()}-${Math.round(Math.random() * 100000)}`;
+
+    return this.mapMessage({
+      id: -Math.floor(Date.now() + Math.random() * 1000),
+      sender_id: senderId,
+      receiver_id: receiverId,
+      content,
+      created_at: new Date().toISOString(),
+      is_read: true,
+      client_id: clientId,
+      delivery_status: 'sending'
+    });
+  }
+
+  private appendMessageToConversation(conversation: ConversationView, message: Message): void {
+    this.replaceOrAppendMessage(conversation, message);
+    conversation.unread_count = 0;
+    this.selectedConversation = conversation;
+    this.followedUsers = this.followedUsers.filter((item) => item.other_user.id !== conversation.other_user.id);
+    this.conversations = this.sortConversationsByLatest(this.conversations);
+  }
+
+  private updateMessageDeliveryStatus(
+    conversation: ConversationView | null,
+    target: Message,
+    status: 'sending' | 'sent' | 'failed'
+  ): void {
+    if (!conversation) {
+      return;
+    }
+
+    const index = conversation.messages.findIndex((item) => this.isSameMessage(item, target));
+    if (index < 0) {
+      return;
+    }
+
+    conversation.messages[index] = {
+      ...conversation.messages[index],
+      delivery_status: status
+    };
+
+    this.selectedConversation = conversation;
+  }
+
+  private replaceMessage(conversation: ConversationView, target: Message, replacement: Message): void {
+    const index = conversation.messages.findIndex((item) => this.isSameMessage(item, target));
+    if (index >= 0) {
+      conversation.messages[index] = replacement;
+    } else {
+      conversation.messages = [...conversation.messages, replacement];
+    }
+
+    conversation.messages = this.sortMessages(this.uniqueById(conversation.messages));
+    conversation.last_message = replacement.content;
+    conversation.last_message_time = replacement.created_at;
+    conversation.isFollowSuggestion = false;
+
+    this.upsertConversation(conversation);
+    this.selectedConversation = conversation;
+    this.conversations = this.sortConversationsByLatest(this.conversations);
+    this.followedUsers = this.followedUsers.filter((item) => item.other_user.id !== conversation.other_user.id);
+  }
+
+  private replaceOrAppendMessage(conversation: ConversationView, message: Message): void {
+    const index = conversation.messages.findIndex((item) => this.isSameMessage(item, message));
+    if (index >= 0) {
+      conversation.messages[index] = {
+        ...conversation.messages[index],
+        ...message,
+        delivery_status: message.delivery_status ?? 'sent'
+      };
+    } else {
+      conversation.messages = [...conversation.messages, message];
+    }
+
+    conversation.messages = this.sortMessages(this.uniqueById(conversation.messages));
+    conversation.last_message = message.content;
+    conversation.last_message_time = message.created_at;
+    conversation.isFollowSuggestion = false;
+    this.upsertConversation(conversation);
+  }
+
+  private ensureConversationForMessage(message: Message): ConversationView {
+    const otherUserId = this.resolveOtherUserId(message);
+    const existing = this.mergedConversations().find((conversation) => conversation.other_user.id === otherUserId);
+    if (existing) {
+      const promoted = this.upsertConversation(existing);
+      promoted.isFollowSuggestion = false;
+      return promoted;
+    }
+
+    const created = this.createPlaceholderConversation(otherUserId);
+    created.last_message = 'No messages yet';
+    created.isFollowSuggestion = false;
+    return this.upsertConversation(created);
+  }
+
+  private resolveOtherUserId(message: Message): number {
+    if (this.currentUserId !== null && message.sender_id === this.currentUserId) {
+      return message.receiver_id;
+    }
+
+    return message.sender_id;
+  }
+
+  private isSameMessage(left: Message, right: Message): boolean {
+    if (left.id > 0 && right.id > 0 && left.id === right.id) {
+      return true;
+    }
+
+    if (left.client_id && right.client_id && left.client_id === right.client_id) {
+      return true;
+    }
+
+    if (
+      left.sender_id === right.sender_id &&
+      left.receiver_id === right.receiver_id &&
+      left.content === right.content
+    ) {
+      const leftTime = this.createdAtTimestamp(left.created_at);
+      const rightTime = this.createdAtTimestamp(right.created_at);
+      const deltaMs = Math.abs(leftTime - rightTime);
+
+      if ((left.id < 0 || right.id < 0) && deltaMs <= 15000) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  private sortMessages(messages: Message[]): Message[] {
+    return [...messages].sort((a, b) => a.created_at.localeCompare(b.created_at));
+  }
+
+  private sendTypingSignal(isTyping: boolean): void {
+    if (!this.selectedConversation || this.currentUserId === null) {
+      return;
+    }
+
+    if (this.typingStopEmitHandle) {
+      clearTimeout(this.typingStopEmitHandle);
+      this.typingStopEmitHandle = null;
+    }
+
+    this.chatSocketService.sendTyping({
+      fromUserId: this.currentUserId,
+      toUserId: this.selectedConversation.other_user.id,
+      isTyping,
+      conversationId: this.selectedConversation.id
+    });
+
+    if (isTyping) {
+      this.typingStopEmitHandle = setTimeout(() => {
+        this.sendTypingSignal(false);
+      }, this.typingStopDelayMs);
+    }
   }
 
   private mapConversation(conversation: Conversation): ConversationView {
@@ -328,9 +712,13 @@ export class MessagesComponent implements OnInit, OnDestroy {
   }
 
   private mapMessage(message: Message): Message {
+    const createdAt = (message.created_at || '').trim();
+
     return {
       ...message,
-      created_at: message.created_at || 'now',
+      created_at: createdAt || new Date().toISOString(),
+      client_id: message.client_id,
+      delivery_status: message.delivery_status ?? 'sent',
       sender_name: message.sender_name || `User #${message.sender_id}`,
       receiver_name: message.receiver_name || `User #${message.receiver_id}`,
       sender_avatar: message.sender_avatar || this.initials(message.sender_name, message.sender_id),
@@ -505,15 +893,27 @@ export class MessagesComponent implements OnInit, OnDestroy {
   }
 
   private uniqueById(messages: Message[]): Message[] {
-    const seen = new Set<number>();
+    const seenIds = new Set<number>();
+    const seenClientIds = new Set<string>();
     const unique: Message[] = [];
 
     messages.forEach((message) => {
-      if (seen.has(message.id)) {
+      if (message.client_id && seenClientIds.has(message.client_id)) {
         return;
       }
 
-      seen.add(message.id);
+      if (message.id > 0 && seenIds.has(message.id)) {
+        return;
+      }
+
+      if (message.client_id) {
+        seenClientIds.add(message.client_id);
+      }
+
+      if (message.id > 0) {
+        seenIds.add(message.id);
+      }
+
       unique.push(message);
     });
 

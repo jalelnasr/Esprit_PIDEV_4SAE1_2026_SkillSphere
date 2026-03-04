@@ -56,6 +56,8 @@ export class FeedComponent implements OnInit, OnDestroy {
   mediaErrorMessage = '';
   imagePreviewUrl: string | null = null;
   videoPreviewUrl: string | null = null;
+  pendingImageDataUrl: string | null = null;
+  pendingVideoDataUrl: string | null = null;
   selectedImageName = '';
   selectedVideoName = '';
   processingImage = false;
@@ -69,7 +71,7 @@ export class FeedComponent implements OnInit, OnDestroy {
   private readonly loadingComments = new Set<number>();
   private readonly commentControls = new Map<number, FormControl<string>>();
   private readonly localMediaByPostId = new Map<number, { imageUrl: string | null; videoUrl: string | null }>();
-  private readonly retainedPreviewUrls = new Set<string>();
+  private readonly localMediaStorageKey = 'community.localPostMedia.v1';
   private readonly pageCache = new Map<number, FeedPost[]>();
   private readonly stateStorageKey = 'community.feed.pagination.v1';
   private restoreScrollY: number | null = null;
@@ -90,6 +92,7 @@ export class FeedComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.restoreState();
+    this.restoreLocalMediaRegistry();
     this.refreshTrendingTopics();
     this.loadPosts();
   }
@@ -101,8 +104,6 @@ export class FeedComponent implements OnInit, OnDestroy {
 
     this.revokeImagePreviewUrl();
     this.revokeVideoPreviewUrl();
-    this.retainedPreviewUrls.forEach((url) => URL.revokeObjectURL(url));
-    this.retainedPreviewUrls.clear();
     this.persistState();
   }
 
@@ -438,18 +439,15 @@ export class FeedComponent implements OnInit, OnDestroy {
     this.mediaErrorMessage = '';
 
     if (preserveCurrentPreviewUrls) {
-      if (this.imagePreviewUrl && !this.retainedPreviewUrls.has(this.imagePreviewUrl)) {
-        URL.revokeObjectURL(this.imagePreviewUrl);
-      }
-
-      if (this.videoPreviewUrl && !this.retainedPreviewUrls.has(this.videoPreviewUrl)) {
-        URL.revokeObjectURL(this.videoPreviewUrl);
-      }
+      this.revokeImagePreviewUrl();
+      this.revokeVideoPreviewUrl();
 
       this.selectedImageName = '';
       this.selectedVideoName = '';
       this.processingImage = false;
       this.processingVideo = false;
+      this.pendingImageDataUrl = null;
+      this.pendingVideoDataUrl = null;
       this.imagePreviewUrl = null;
       this.videoPreviewUrl = null;
       this.createPostForm.patchValue({ image_url: '', video_url: '' });
@@ -462,7 +460,7 @@ export class FeedComponent implements OnInit, OnDestroy {
     this.createPostForm.markAsUntouched();
   }
 
-  onImageSelected(event: Event): void {
+  async onImageSelected(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     input.value = '';
@@ -487,11 +485,21 @@ export class FeedComponent implements OnInit, OnDestroy {
     this.revokeImagePreviewUrl();
     this.imagePreviewUrl = URL.createObjectURL(file);
 
-    this.createPostForm.patchValue({ image_url: this.imagePreviewUrl });
-    this.processingImage = false;
+    try {
+      this.pendingImageDataUrl = await this.readFileAsDataUrl(file);
+      this.createPostForm.patchValue({ image_url: this.imagePreviewUrl });
+    } catch {
+      this.pendingImageDataUrl = null;
+      this.mediaErrorMessage = 'Failed to prepare image. Please try another file.';
+      this.revokeImagePreviewUrl();
+      this.selectedImageName = '';
+      this.createPostForm.patchValue({ image_url: '' });
+    } finally {
+      this.processingImage = false;
+    }
   }
 
-  onVideoSelected(event: Event): void {
+  async onVideoSelected(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     input.value = '';
@@ -516,18 +524,30 @@ export class FeedComponent implements OnInit, OnDestroy {
     this.revokeVideoPreviewUrl();
     this.videoPreviewUrl = URL.createObjectURL(file);
 
-    this.createPostForm.patchValue({ video_url: this.videoPreviewUrl });
-    this.processingVideo = false;
+    try {
+      this.pendingVideoDataUrl = await this.readFileAsDataUrl(file);
+      this.createPostForm.patchValue({ video_url: this.videoPreviewUrl });
+    } catch {
+      this.pendingVideoDataUrl = null;
+      this.mediaErrorMessage = 'Failed to prepare video. Please try another file.';
+      this.revokeVideoPreviewUrl();
+      this.selectedVideoName = '';
+      this.createPostForm.patchValue({ video_url: '' });
+    } finally {
+      this.processingVideo = false;
+    }
   }
 
   removeImage(): void {
     this.selectedImageName = '';
+    this.pendingImageDataUrl = null;
     this.createPostForm.patchValue({ image_url: '' });
     this.revokeImagePreviewUrl();
   }
 
   removeVideo(): void {
     this.selectedVideoName = '';
+    this.pendingVideoDataUrl = null;
     this.createPostForm.patchValue({ video_url: '' });
     this.revokeVideoPreviewUrl();
   }
@@ -551,8 +571,8 @@ export class FeedComponent implements OnInit, OnDestroy {
     this.mediaErrorMessage = '';
 
     const { content, image_url, video_url } = this.createPostForm.getRawValue();
-    const localImageUrl = this.extractLocalBlobUrl(image_url) ?? this.extractLocalBlobUrl(this.imagePreviewUrl);
-    const localVideoUrl = this.extractLocalBlobUrl(video_url) ?? this.extractLocalBlobUrl(this.videoPreviewUrl);
+    const localImageUrl = this.pendingImageDataUrl;
+    const localVideoUrl = this.pendingVideoDataUrl;
     const payload: CreatePostRequest = {
       content: content.trim(),
       image_url: this.toPersistedMediaUrl(image_url),
@@ -843,32 +863,20 @@ export class FeedComponent implements OnInit, OnDestroy {
     return normalized;
   }
 
-  private extractLocalBlobUrl(value: string | null | undefined): string | null {
-    if (typeof value !== 'string') {
-      return null;
-    }
-
-    const normalized = value.trim();
-    return normalized.startsWith('blob:') ? normalized : null;
-  }
-
   private retainLocalMediaForPost(postId: number, imageUrl: string | null, videoUrl: string | null): void {
-    if (!imageUrl && !videoUrl) {
+    const normalizedImage = this.normalizeDataUrl(imageUrl);
+    const normalizedVideo = this.normalizeDataUrl(videoUrl);
+
+    if (!normalizedImage && !normalizedVideo) {
       return;
     }
 
-    if (imageUrl) {
-      this.retainedPreviewUrls.add(imageUrl);
-    }
-
-    if (videoUrl) {
-      this.retainedPreviewUrls.add(videoUrl);
-    }
-
     this.localMediaByPostId.set(postId, {
-      imageUrl,
-      videoUrl
+      imageUrl: normalizedImage,
+      videoUrl: normalizedVideo
     });
+
+    this.persistLocalMediaRegistry();
   }
 
   private applyLocalMedia(post: FeedPost): void {
@@ -884,6 +892,91 @@ export class FeedComponent implements OnInit, OnDestroy {
     if (!post.video_url && localMedia.videoUrl) {
       post.video_url = localMedia.videoUrl;
     }
+  }
+
+  private async readFileAsDataUrl(file: File): Promise<string> {
+    return await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result === 'string' && reader.result.trim().length > 0) {
+          resolve(reader.result);
+          return;
+        }
+
+        reject(new Error('Empty data URL'));
+      };
+
+      reader.onerror = () => reject(reader.error ?? new Error('Failed to read file'));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  private persistLocalMediaRegistry(): void {
+    if (typeof window === 'undefined' || typeof window.localStorage === 'undefined') {
+      return;
+    }
+
+    const entries = Array.from(this.localMediaByPostId.entries())
+      .map(([postId, media]) => {
+        const imageUrl = this.normalizeDataUrl(media.imageUrl);
+        const videoUrl = this.normalizeDataUrl(media.videoUrl);
+        return [postId, { imageUrl, videoUrl }] as const;
+      })
+      .filter(([, media]) => Boolean(media.imageUrl || media.videoUrl));
+
+    while (entries.length > 0) {
+      const snapshot: Record<string, { imageUrl: string | null; videoUrl: string | null }> = {};
+      entries.slice(-30).forEach(([postId, media]) => {
+        snapshot[String(postId)] = media;
+      });
+
+      try {
+        localStorage.setItem(this.localMediaStorageKey, JSON.stringify(snapshot));
+        return;
+      } catch {
+        entries.shift();
+      }
+    }
+  }
+
+  private restoreLocalMediaRegistry(): void {
+    if (typeof window === 'undefined' || typeof window.localStorage === 'undefined') {
+      return;
+    }
+
+    const raw = localStorage.getItem(this.localMediaStorageKey);
+    if (!raw) {
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(raw) as Record<string, { imageUrl?: string | null; videoUrl?: string | null }>;
+      Object.entries(parsed).forEach(([rawPostId, media]) => {
+        const postId = Number(rawPostId);
+        if (!Number.isFinite(postId)) {
+          return;
+        }
+
+        const imageUrl = this.normalizeDataUrl(media?.imageUrl ?? null);
+        const videoUrl = this.normalizeDataUrl(media?.videoUrl ?? null);
+        if (!imageUrl && !videoUrl) {
+          return;
+        }
+
+        this.localMediaByPostId.set(postId, { imageUrl, videoUrl });
+      });
+    } catch {
+      localStorage.removeItem(this.localMediaStorageKey);
+    }
+  }
+
+  private normalizeDataUrl(value: string | null | undefined): string | null {
+    if (typeof value !== 'string') {
+      return null;
+    }
+
+    const normalized = value.trim();
+    return normalized.startsWith('data:') ? normalized : null;
   }
 
   private revokeImagePreviewUrl(): void {

@@ -271,6 +271,10 @@
   font-size: 12px;
 }
 
+.chat-status.offline {
+  color: var(--text-muted);
+}
+
 .messages-container {
   flex: 1;
   overflow-y: auto;
@@ -278,6 +282,16 @@
   display: flex;
   flex-direction: column;
   gap: 0.8rem;
+}
+
+.typing-indicator {
+  align-self: flex-start;
+  font-size: 12px;
+  color: var(--text-muted);
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid var(--card-border);
+  background: color-mix(in srgb, var(--surface-muted) 84%, var(--primary) 16%);
 }
 
 .message {
@@ -312,7 +326,28 @@
 }
 
 .message-time {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
   font-size: 11px;
+}
+
+.delivery-state {
+  font-size: 10px;
+  border-radius: 999px;
+  padding: 0.08rem 0.42rem;
+  border: 1px solid var(--card-border);
+  color: var(--text-muted);
+}
+
+.delivery-state.sending {
+  color: var(--primary);
+  border-color: color-mix(in srgb, var(--primary) 45%, var(--card-border));
+}
+
+.delivery-state.failed {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 45%, var(--card-border));
 }
 
 .message.own-message .message-time {
@@ -390,6 +425,12 @@
   margin-top: 0.45rem;
   font-size: 12px;
   color: var(--danger);
+}
+
+.socket-warning {
+  margin-top: 0.4rem;
+  font-size: 12px;
+  color: var(--text-muted);
 }
 
 .message-input.ng-touched.ng-invalid {

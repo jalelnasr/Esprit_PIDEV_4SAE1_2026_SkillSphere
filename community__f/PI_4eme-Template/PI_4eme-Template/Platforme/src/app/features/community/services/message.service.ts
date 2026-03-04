@@ -5,12 +5,18 @@ import { CommunityBaseService } from './community-base.service';
 import { Conversation, Message } from '../models/message.model';
 
 interface BackendMessage {
-  messageId: number;
-  content: string;
+  messageId?: number;
+  message_id?: number;
+  id?: number;
+  content?: string;
   createdAt?: string;
+  created_at?: string;
   isRead?: boolean;
-  senderId: number;
-  receiverId: number;
+  is_read?: boolean;
+  senderId?: number;
+  sender_id?: number;
+  receiverId?: number;
+  receiver_id?: number;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -72,9 +78,15 @@ export class MessageService extends CommunityBaseService {
     const grouped = new Map<number, Message[]>();
 
     for (const message of messages) {
-      const otherUserId = message.senderId === currentUserId ? message.receiverId : message.senderId;
+      const mapped = this.mapMessage(message);
+      const otherUserId = mapped.sender_id === currentUserId ? mapped.receiver_id : mapped.sender_id;
+
+      if (!Number.isFinite(otherUserId) || otherUserId <= 0 || otherUserId === currentUserId) {
+        continue;
+      }
+
       const conversationMessages = grouped.get(otherUserId) ?? [];
-      conversationMessages.push(this.mapMessage(message));
+      conversationMessages.push(mapped);
       grouped.set(otherUserId, conversationMessages);
     }
 
@@ -105,13 +117,69 @@ export class MessageService extends CommunityBaseService {
   }
 
   private mapMessage(message: BackendMessage): Message {
+    const id =
+      this.tryParseNumber(message.messageId) ??
+      this.tryParseNumber(message.message_id) ??
+      this.tryParseNumber(message.id) ??
+      -Math.floor(Date.now() + Math.random() * 1000);
+
+    const senderId = this.tryParseNumber(message.senderId) ?? this.tryParseNumber(message.sender_id) ?? 0;
+    const receiverId = this.tryParseNumber(message.receiverId) ?? this.tryParseNumber(message.receiver_id) ?? 0;
+    const createdAt =
+      this.tryParseString(message.createdAt) ??
+      this.tryParseString(message.created_at) ??
+      new Date().toISOString();
+
     return {
-      id: message.messageId,
-      content: message.content,
-      created_at: message.createdAt ?? '',
-      is_read: message.isRead ?? false,
-      sender_id: message.senderId,
-      receiver_id: message.receiverId
+      id,
+      content: this.tryParseString(message.content) ?? '',
+      created_at: createdAt,
+      is_read: this.tryParseBoolean(message.isRead) ?? this.tryParseBoolean(message.is_read) ?? false,
+      sender_id: senderId,
+      receiver_id: receiverId
     };
+  }
+
+  private tryParseNumber(value: unknown): number | null {
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return value;
+    }
+
+    if (typeof value === 'string' && value.trim().length > 0) {
+      const parsed = Number(value);
+      if (Number.isFinite(parsed)) {
+        return parsed;
+      }
+    }
+
+    return null;
+  }
+
+  private tryParseString(value: unknown): string | null {
+    if (typeof value !== 'string') {
+      return null;
+    }
+
+    const normalized = value.trim();
+    return normalized.length > 0 ? normalized : null;
+  }
+
+  private tryParseBoolean(value: unknown): boolean | null {
+    if (typeof value === 'boolean') {
+      return value;
+    }
+
+    if (typeof value === 'string') {
+      const normalized = value.trim().toLowerCase();
+      if (normalized === 'true') {
+        return true;
+      }
+
+      if (normalized === 'false') {
+        return false;
+      }
+    }
+
+    return null;
   }
 }

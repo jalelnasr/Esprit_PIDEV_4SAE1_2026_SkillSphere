@@ -5,6 +5,8 @@ export interface Message {
   content: string;
   created_at: string;
   is_read?: boolean;
+  client_id?: string;
+  delivery_status?: 'sending' | 'sent' | 'failed';
   sender_name?: string;
   sender_avatar?: string;
   receiver_name?: string;

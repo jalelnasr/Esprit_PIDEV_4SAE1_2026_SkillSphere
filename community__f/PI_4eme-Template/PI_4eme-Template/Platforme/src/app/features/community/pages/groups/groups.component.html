@@ -225,6 +225,7 @@
             </div>
 
             <div class="field-error" *ngIf="groupMediaError(group.id)">{{ groupMediaError(group.id) }}</div>
+            <div class="group-media-loading" *ngIf="isProcessingGroupMedia(group.id)">Preparing media preview...</div>
 
             <div class="group-media-preview-grid" *ngIf="groupHasSelectedMedia(group.id)">
               <div class="group-media-preview" *ngIf="groupImagePreview(group.id)">
@@ -242,8 +243,8 @@
           </div>
 
           <div class="post-actions">
-            <button class="submit-btn" (click)="submitGroupPost(group)" [disabled]="getGroupPostControl(group.id).invalid">
-              Post
+            <button class="submit-btn" (click)="submitGroupPost(group)" [disabled]="getGroupPostControl(group.id).invalid || isProcessingGroupMedia(group.id)">
+              {{ isProcessingGroupMedia(group.id) ? 'Preparing...' : 'Post' }}
             </button>
           </div>
         </div>

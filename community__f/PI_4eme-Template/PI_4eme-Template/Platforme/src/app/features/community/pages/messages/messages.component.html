@@ -58,7 +58,9 @@
           <div class="chat-avatar">{{ selectedConversation.other_user.avatar }}</div>
           <div class="chat-user-details">
             <span class="chat-user-name">{{ selectedConversation.other_user.name }}</span>
-            <span class="chat-status">Active now</span>
+            <span class="chat-status" [class.offline]="!isSocketConnected">
+              {{ isSocketConnected ? 'Live chat connected' : (isSocketConnecting ? 'Connecting live chat...' : 'Live chat offline') }}
+            </span>
           </div>
         </div>
         <button class="back-to-list-btn" (click)="backToAllMessages()" *ngIf="isViewingSpecificUser">
@@ -69,13 +71,24 @@
 
       <div class="messages-container" #messagesContainer>
         <div class="loading-state" *ngIf="isLoadingConversation">Loading conversation...</div>
+        <div class="typing-indicator" *ngIf="isSelectedUserTyping">{{ selectedConversation.other_user.name }} is typing...</div>
         <div class="message" *ngFor="let message of selectedConversation.messages" [class.own-message]="isOwnMessage(message)">
           <div class="message-avatar" *ngIf="!isOwnMessage(message)">
             {{ messageAvatar(message) }}
           </div>
           <div class="message-content">
             <div class="message-bubble">{{ message.content }}</div>
-            <div class="message-time">{{ message.created_at }}</div>
+            <div class="message-time">
+              <span>{{ message.created_at }}</span>
+              <span
+                class="delivery-state"
+                [class.sending]="message.delivery_status === 'sending'"
+                [class.failed]="message.delivery_status === 'failed'"
+                *ngIf="isOwnMessage(message)"
+              >
+                {{ message.delivery_status === 'failed' ? 'Failed' : (message.delivery_status === 'sending' ? 'Sending...' : 'Sent') }}
+              </span>
+            </div>
           </div>
           <div class="message-avatar" *ngIf="isOwnMessage(message)">
             {{ messageAvatar(message) }}
@@ -90,11 +103,15 @@
             placeholder="Type a message..."
             rows="1"
             [formControl]="messageForm.controls.content"
+            (input)="onMessageInput()"
             (keydown.enter)="sendMessage($event)"
           ></textarea>
           <button class="send-btn" (click)="sendMessage()" [disabled]="messageForm.invalid">
             <span class="icon">→</span>
           </button>
+        </div>
+        <div class="socket-warning" *ngIf="!isSocketConnected">
+          Live updates reconnecting. Messages may send with fallback mode.
         </div>
         <div class="field-error" *ngIf="messageForm.controls.content.touched && messageForm.controls.content.invalid">
           Message content is required.
