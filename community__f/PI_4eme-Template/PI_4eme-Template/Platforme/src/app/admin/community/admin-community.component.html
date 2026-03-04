@@ -1,0 +1,220 @@
+<div class="community-container">
+  <div class="page-header">
+    <div>
+      <h1>Community Backoffice</h1>
+      <p>Live analytics and read-only moderation overview.</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn-primary ghost" type="button" (click)="exportActivitiesExcel()">Export Excel</button>
+    </div>
+  </div>
+
+  <div class="loading" *ngIf="isLoading">Loading community analytics...</div>
+  <div class="error" *ngIf="!isLoading && errorMessage">
+    <span>{{ errorMessage }}</span>
+    <button type="button" (click)="loadData()">Retry</button>
+  </div>
+
+  <ng-container *ngIf="!isLoading && !errorMessage">
+    <section class="section">
+      <div class="section-heading">
+        <h2>Community Overview (Last 30 Days)</h2>
+      </div>
+
+      <div class="stats-grid">
+        <article *ngFor="let card of kpiCards" [ngClass]="'stat-card ' + card.tone">
+          <div class="stat-title">{{ card.title }}</div>
+          <div class="stat-value">{{ card.value | number }}</div>
+          <div class="stat-change" [class.negative]="card.change < 0" *ngIf="card.change !== null">
+            {{ card.change >= 0 ? '+' : '' }}{{ card.change | number : '1.0-1' }}%
+          </div>
+          <div class="stat-caption">{{ card.caption }}</div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-heading">
+        <h2>Analytics Graphs</h2>
+      </div>
+
+      <div class="charts-grid">
+        <article class="card chart-card">
+          <div class="card-header">
+            <h3>Community Activity Over Time</h3>
+            <span>Last 30 days</span>
+          </div>
+
+          <div class="chart-body" *ngIf="activityChartVm as chart; else emptyChart">
+            <svg class="chart-svg" [attr.viewBox]="'0 0 ' + chart.width + ' ' + chart.height">
+              <g class="chart-grid">
+                <line
+                  *ngFor="let tick of chart.yTicks"
+                  [attr.x1]="chart.left"
+                  [attr.x2]="chart.width - chart.right"
+                  [attr.y1]="tick.y"
+                  [attr.y2]="tick.y"
+                ></line>
+                <text *ngFor="let tick of chart.yTicks" [attr.x]="chart.left - 8" [attr.y]="tick.y + 4" text-anchor="end">
+                  {{ tick.value }}
+                </text>
+              </g>
+
+              <g class="chart-series" *ngFor="let series of chart.series">
+                <path [attr.d]="series.path" [attr.stroke]="series.color"></path>
+              </g>
+
+              <g class="chart-x-axis">
+                <text
+                  *ngFor="let marker of chart.xMarkers"
+                  [attr.x]="marker.x"
+                  [attr.y]="chart.height - 8"
+                  text-anchor="middle"
+                >
+                  {{ marker.label }}
+                </text>
+              </g>
+            </svg>
+
+            <div class="chart-legend">
+              <span *ngFor="let series of chart.series">
+                <i [style.background]="series.color"></i>{{ series.label }}
+              </span>
+            </div>
+          </div>
+        </article>
+
+        <article class="card chart-card">
+          <div class="card-header">
+            <h3>Active Users Trend</h3>
+            <span>Weekly view</span>
+          </div>
+
+          <div class="chart-body" *ngIf="activeUsersChartVm as chart; else emptyChart">
+            <svg class="chart-svg" [attr.viewBox]="'0 0 ' + chart.width + ' ' + chart.height">
+              <g class="chart-grid">
+                <line
+                  *ngFor="let tick of chart.yTicks"
+                  [attr.x1]="chart.left"
+                  [attr.x2]="chart.width - chart.right"
+                  [attr.y1]="tick.y"
+                  [attr.y2]="tick.y"
+                ></line>
+                <text *ngFor="let tick of chart.yTicks" [attr.x]="chart.left - 8" [attr.y]="tick.y + 4" text-anchor="end">
+                  {{ tick.value }}
+                </text>
+              </g>
+
+              <g class="chart-series" *ngFor="let series of chart.series">
+                <path [attr.d]="series.path" [attr.stroke]="series.color"></path>
+              </g>
+
+              <g class="chart-x-axis">
+                <text
+                  *ngFor="let marker of chart.xMarkers"
+                  [attr.x]="marker.x"
+                  [attr.y]="chart.height - 8"
+                  text-anchor="middle"
+                >
+                  {{ marker.label }}
+                </text>
+              </g>
+            </svg>
+
+            <div class="chart-legend">
+              <span *ngFor="let series of chart.series">
+                <i [style.background]="series.color"></i>{{ series.label }}
+              </span>
+            </div>
+          </div>
+        </article>
+
+        <article class="card chart-card">
+          <div class="card-header">
+            <h3>Questions vs Answers Ratio</h3>
+            <span>By week</span>
+          </div>
+
+          <div class="bar-chart" *ngIf="weeklyQuestionAnswerBars.length > 0; else emptyChart">
+            <div class="bar-column" *ngFor="let week of weeklyQuestionAnswerBars">
+              <div class="bar-stack">
+                <div class="bar questions" [style.height.%]="week.questionsHeight" [title]="'Questions: ' + week.questions"></div>
+                <div class="bar answers" [style.height.%]="week.answersHeight" [title]="'Answers: ' + week.answers"></div>
+              </div>
+              <div class="bar-label">{{ week.label }}</div>
+            </div>
+          </div>
+
+          <div class="chart-legend">
+            <span><i class="questions"></i>Questions</span>
+            <span><i class="answers"></i>Answers</span>
+          </div>
+        </article>
+
+        <article class="card chart-card">
+          <div class="card-header">
+            <h3>Top 5 Most Active Groups</h3>
+            <span>By post volume</span>
+          </div>
+
+          <div class="group-bars" *ngIf="topGroupBars.length > 0; else emptyChart">
+            <div class="group-row" *ngFor="let group of topGroupBars">
+              <div class="group-name">{{ group.name }}</div>
+              <div class="group-track">
+                <div class="group-fill" [style.width.%]="group.width"></div>
+              </div>
+              <div class="group-value">{{ group.count }}</div>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="card insights-card">
+        <div class="card-header">
+          <h3>Insights</h3>
+        </div>
+        <ul class="insight-list">
+          <li *ngFor="let insight of insights">{{ insight }}</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="section lower-grid">
+      <div class="card">
+        <div class="card-header">
+          <h3>Recent Activities</h3>
+        </div>
+        <div class="activity-list">
+          <div *ngFor="let activity of recentActivities" class="activity-item">
+            <div class="activity-type">{{ activity.type }}</div>
+            <div class="activity-content">
+              <div class="activity-title">{{ activity.titleText }}</div>
+              <div class="activity-description">{{ activity.descriptionText }}</div>
+              <div class="activity-user">{{ activity.userName }}</div>
+            </div>
+            <div class="activity-time">{{ activity.createdAt | date : 'short' }}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3>Community Management</h3>
+        </div>
+        <div class="management-grid">
+          <a *ngFor="let card of managementCards" [routerLink]="card.route" class="management-card">
+            <div class="management-icon">{{ card.icon }}</div>
+            <div class="management-title">{{ card.title }}</div>
+            <div class="management-desc">{{ card.description }}</div>
+          </a>
+        </div>
+      </div>
+    </section>
+  </ng-container>
+</div>
+
+<ng-template #emptyChart>
+  <div class="chart-empty">No enough data yet for this chart.</div>
+</ng-template>

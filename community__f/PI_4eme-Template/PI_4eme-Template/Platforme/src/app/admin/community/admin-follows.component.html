@@ -1,0 +1,145 @@
+<div class="follows-container">
+  <div class="page-header">
+    <div>
+      <h1>Follows Management</h1>
+      <p>Read-only overview of follow relationships.</p>
+    </div>
+    <div class="header-actions">
+      <a class="btn-secondary" routerLink="/admin/community">← Back</a>
+    </div>
+  </div>
+
+  <div class="status-banner" *ngIf="isLoading">Loading follow relationships...</div>
+  <div class="status-banner error" *ngIf="!isLoading && errorMessage">
+    <span>{{ errorMessage }}</span>
+    <button class="btn-primary" type="button" (click)="loadFollows()">Retry</button>
+  </div>
+
+  <div class="stats-grid" *ngIf="!isLoading && !errorMessage">
+    <div class="stat-card">
+      <div class="stat-icon">🔗</div>
+      <div class="stat-content">
+        <div class="stat-title">Total Follows</div>
+        <div class="stat-value">{{ getFollowStats().totalFollows }}</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">👥</div>
+      <div class="stat-content">
+        <div class="stat-title">Unique Followers</div>
+        <div class="stat-value">{{ getFollowStats().uniqueFollowers }}</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">🎯</div>
+      <div class="stat-content">
+        <div class="stat-title">Unique Following</div>
+        <div class="stat-value">{{ getFollowStats().uniqueFollowing }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="follows-grid" *ngIf="!isLoading && !errorMessage">
+    <div class="follows-list">
+      <div class="list-header">
+        <h3>All Follow Relationships ({{ follows.length }})</h3>
+      </div>
+      
+      <div class="follows-list-content">
+        <div *ngFor="let follow of follows" 
+             class="follow-item" 
+             [class.active]="selectedFollow?.followId === follow.followId"
+             (click)="selectFollow(follow)">
+          
+          <div class="follow-relationship">
+            <div class="follow-user">
+              <span class="user-avatar">{{ follow.followerInitials }}</span>
+              <div class="user-info">
+                <div class="user-name">{{ follow.followerName }}</div>
+                <div class="user-role">Follower</div>
+              </div>
+            </div>
+            
+            <div class="follow-arrow">→</div>
+            
+            <div class="follow-user">
+              <span class="user-avatar">{{ follow.followingInitials }}</span>
+              <div class="user-info">
+                <div class="user-name">{{ follow.followingName }}</div>
+                <div class="user-role">Following</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="follow-meta">
+            <span class="follow-date">📅 {{ follow.createdAt ? (follow.createdAt | date : 'medium') : '—' }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="follow-details" *ngIf="selectedFollow">
+      <div class="details-header">
+        <h3>Follow Relationship Details</h3>
+        <button class="close-btn" type="button" (click)="closeDetail()">✕</button>
+      </div>
+
+      <div class="details-content">
+        <div class="detail-section">
+          <h4>Relationship Information</h4>
+          <div class="relationship-info">
+            <div class="relationship-users">
+              <div class="user-card">
+                <span class="user-avatar large">{{ selectedFollow.followerInitials }}</span>
+                <div>
+                  <div class="user-name">Follower</div>
+                  <div class="user-full-name">{{ selectedFollow.followerName }}</div>
+                  <div class="user-id">User ID: {{ selectedFollow.followerId }}</div>
+                </div>
+              </div>
+              
+              <div class="relationship-arrow">Follows</div>
+              
+              <div class="user-card">
+                <span class="user-avatar large">{{ selectedFollow.followingInitials }}</span>
+                <div>
+                  <div class="user-name">Following</div>
+                  <div class="user-full-name">{{ selectedFollow.followingName }}</div>
+                  <div class="user-id">User ID: {{ selectedFollow.followingId }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="detail-section">
+          <h4>Follow Information</h4>
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="info-label">Follow ID:</span>
+              <span class="info-value">{{ selectedFollow.followId }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Follow Date:</span>
+              <span class="info-value">{{ selectedFollow.createdAt ? (selectedFollow.createdAt | date : 'medium') : '—' }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Follower ID:</span>
+              <span class="info-value">{{ selectedFollow.followerId }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Following ID:</span>
+              <span class="info-value">{{ selectedFollow.followingId }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="empty-state" *ngIf="!selectedFollow">
+      <div class="empty-icon">🔗</div>
+      <h3>Select a Follow Relationship</h3>
+      <p>Choose a follow relationship from the list to view its details</p>
+    </div>
+  </div>
+</div>

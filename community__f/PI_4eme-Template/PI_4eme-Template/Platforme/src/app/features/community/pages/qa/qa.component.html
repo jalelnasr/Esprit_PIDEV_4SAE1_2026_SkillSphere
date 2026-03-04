@@ -1,0 +1,205 @@
+<div class="container">
+  <div class="qa-header">
+    <h1>Q&A Forum 🤔</h1>
+    <button class="ask-btn" (click)="openAskForm()">
+      <span class="icon">❓</span>
+      <span>Ask Question</span>
+    </button>
+  </div>
+
+  <div class="qa-toolbar">
+    <input
+      class="search-input"
+      type="text"
+      list="qa-search-suggestions"
+      [value]="searchTerm"
+      (input)="updateSearch($any($event.target).value)"
+      placeholder="Search questions..."
+    >
+
+    <datalist id="qa-search-suggestions">
+      <option *ngFor="let suggestion of searchSuggestions" [value]="suggestion"></option>
+    </datalist>
+
+    <select class="sort-select" [value]="sortOrder" (change)="updateSort($any($event.target).value)">
+      <option value="DESC">Newest first</option>
+      <option value="ASC">Oldest first</option>
+    </select>
+
+    <label class="toolbar-filter">
+      <span>Popularity</span>
+      <select class="filter-select" [value]="popularityFilter" (change)="updatePopularityFilter($any($event.target).value)">
+        <option value="latest">Latest</option>
+        <option value="most-answered">Most answered</option>
+      </select>
+    </label>
+
+    <button class="clear-filters-btn toolbar-reset" (click)="clearAdvancedFilters()" [disabled]="popularityFilter === 'latest'">
+      Reset filters
+    </button>
+
+    <button class="mode-btn" (click)="toggleInfiniteScroll()">
+      {{ useInfiniteScroll ? 'Switch to pages' : 'Infinite scroll' }}
+    </button>
+  </div>
+
+  <div class="pagination-hint">
+    <span>Page {{ currentPage }} / {{ totalPages }} - {{ totalItems }} questions</span>
+    <span *ngIf="isLoadingPage">Loading...</span>
+  </div>
+
+  <p class="api-error" *ngIf="errorMessage">{{ errorMessage }}</p>
+
+  <div class="ask-form-overlay" *ngIf="showAskForm" (click)="cancelQuestion()">
+    <form class="ask-form" [formGroup]="questionForm" (ngSubmit)="submitQuestion()" (click)="$event.stopPropagation()">
+      <div class="form-header">
+        <h2>Ask a Question</h2>
+        <button type="button" class="close-btn" (click)="cancelQuestion()">✕</button>
+      </div>
+
+      <div class="form-content">
+        <div class="question-author">
+          <div class="author-avatar">YU</div>
+          <div class="author-info">
+            <span class="author-name">You</span>
+            <span class="question-audience">🌐 Public</span>
+          </div>
+        </div>
+
+        <input
+          type="text"
+          class="question-title-input"
+          placeholder="What's your question?"
+          formControlName="title"
+        >
+        <div class="field-error" *ngIf="questionForm.controls.title.touched && questionForm.controls.title.invalid">
+          <span *ngIf="questionForm.controls.title.errors?.['required']">Title is required.</span>
+          <span *ngIf="questionForm.controls.title.errors?.['minlength']">Minimum 5 characters.</span>
+        </div>
+
+        <textarea
+          class="question-content-input"
+          placeholder="Provide more details about your question..."
+          formControlName="description"
+          rows="6"
+        ></textarea>
+        <div class="field-error" *ngIf="questionForm.controls.description.touched && questionForm.controls.description.invalid">
+          <span *ngIf="questionForm.controls.description.errors?.['required']">Description is required.</span>
+          <span *ngIf="questionForm.controls.description.errors?.['minlength']">Minimum 10 characters.</span>
+        </div>
+      </div>
+
+      <div class="form-footer">
+        <button type="button" class="cancel-btn" (click)="cancelQuestion()">Cancel</button>
+        <button type="submit" class="submit-btn" [disabled]="questionForm.invalid || creatingQuestion">
+          {{ creatingQuestion ? 'Posting...' : 'Post Question' }}
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <div class="questions-list">
+    <div class="question-card" *ngFor="let question of questions">
+      <div class="question-header">
+        <div class="question-info">
+          <div class="question-avatar">{{ initials(question.author_name, question.user_id) }}</div>
+          <div class="question-details">
+            <span class="question-author">{{ questionAuthorName(question) }}</span>
+            <span class="question-time">{{ question.created_at }}</span>
+          </div>
+        </div>
+        <button class="profile-btn" (click)="viewProfile(question.user_id)">
+          <span class="icon">👤</span>
+          <span>See Profile</span>
+        </button>
+      </div>
+
+      <div class="question-content">
+        <h3 class="question-title">{{ question.title }}</h3>
+        <p class="question-description">{{ question.description }}</p>
+      </div>
+
+      <div class="question-stats">
+        <span class="answers-count">{{ question.answers_count ?? question.answers.length }} answers</span>
+      </div>
+
+      <div class="question-actions">
+        <button class="action-btn" (click)="toggleAnswers(question)">
+          <span class="icon">{{ question.showAnswers ? '🔽' : '🔼' }}</span>
+          <span>{{ question.showAnswers ? 'Hide' : 'Show' }} Answers</span>
+        </button>
+      </div>
+
+      <div class="answers-section" *ngIf="question.showAnswers">
+        <div class="answers-loading" *ngIf="isLoadingAnswers(question.id)">Loading answers...</div>
+
+        <div class="answer-input">
+          <div class="answer-avatar">YU</div>
+          <div class="answer-input-wrapper">
+            <textarea
+              class="answer-field"
+              placeholder="Write your answer..."
+              rows="3"
+              [formControl]="getAnswerControl(question.id)"
+            ></textarea>
+            <button class="answer-submit" (click)="submitAnswer(question)" [disabled]="getAnswerControl(question.id).invalid">
+              Post Answer
+            </button>
+          </div>
+        </div>
+
+        <div class="field-error answer-error" *ngIf="getAnswerControl(question.id).touched && getAnswerControl(question.id).invalid">
+          <span *ngIf="getAnswerControl(question.id).errors?.['required']">Answer content is required.</span>
+          <span *ngIf="getAnswerControl(question.id).errors?.['minlength']">Answer must be at least 5 characters.</span>
+        </div>
+
+        <div class="answers-list" *ngIf="question.answers.length > 0">
+          <div class="answer" *ngFor="let answer of question.answers">
+            <div class="answer-header">
+              <div class="answer-avatar">{{ initials(answer.author_name, answer.user_id) }}</div>
+              <div class="answer-info">
+                <span class="answer-author">{{ answerAuthorName(answer) }}</span>
+                <span class="answer-time">{{ answer.created_at }}</span>
+              </div>
+            </div>
+
+            <div class="answer-content">
+              <p>{{ answer.content }}</p>
+            </div>
+
+            <div class="answer-votes">
+              <button class="vote-btn upvote" [class.voted]="currentVote(answer) === 'UP'" [disabled]="isVoting(answer.id)" (click)="voteAnswer(answer, 'UP')">
+                <span class="icon">👍</span>
+              </button>
+              <span class="vote-count">{{ answer.voteCount }}</span>
+              <button class="vote-btn downvote" [class.voted]="currentVote(answer) === 'DOWN'" [disabled]="isVoting(answer.id)" (click)="voteAnswer(answer, 'DOWN')">
+                <span class="icon">👎</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="no-answers" *ngIf="question.answers.length === 0">
+          <div class="no-answers-icon">💬</div>
+          <h4>No answers yet</h4>
+          <p>Be the first to answer this question!</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="infinite-footer" *ngIf="useInfiniteScroll">
+    <button class="load-more-btn" *ngIf="canLoadMore()" (click)="loadMore()">Load more</button>
+    <span class="loading-more" *ngIf="isLoadingMore">Loading more questions...</span>
+  </div>
+
+  <div class="pagination" *ngIf="!useInfiniteScroll && totalPages > 1">
+    <button class="pager-btn" (click)="goToFirstPage()" [disabled]="currentPage === 1">First</button>
+    <button class="pager-btn" (click)="goToPreviousPage()" [disabled]="currentPage === 1">Previous</button>
+    <button class="pager-btn" *ngFor="let page of pageNumbers" [class.active]="page === currentPage" (click)="goToPage(page)">
+      {{ page }}
+    </button>
+    <button class="pager-btn" (click)="goToNextPage()" [disabled]="currentPage >= totalPages">Next</button>
+    <button class="pager-btn" (click)="goToLastPage()" [disabled]="currentPage >= totalPages">Last</button>
+  </div>
+</div>

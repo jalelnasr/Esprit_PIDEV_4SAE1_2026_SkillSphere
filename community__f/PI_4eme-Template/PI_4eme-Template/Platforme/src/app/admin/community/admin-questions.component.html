@@ -1,0 +1,139 @@
+<div class="questions-container">
+  <div class="page-header">
+    <div>
+      <h1>Questions</h1>
+      <p>Read-only moderation view for community questions.</p>
+    </div>
+    <div class="header-actions">
+      <a class="btn-secondary" routerLink="/admin/community">← Back</a>
+      <select [(ngModel)]="filterStatus" class="filter-select">
+        <option value="all">All Questions</option>
+        <option value="open">Open</option>
+        <option value="closed">Closed</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="status-banner" *ngIf="isLoading">Loading questions...</div>
+  <div class="status-banner error" *ngIf="!isLoading && errorMessage">
+    <span>{{ errorMessage }}</span>
+    <button class="btn-primary" type="button" (click)="loadQuestions()">Retry</button>
+  </div>
+
+  <div class="questions-grid" *ngIf="!isLoading && !errorMessage">
+    <div class="questions-list">
+      <div class="list-header">
+        <h3>All Questions ({{ getFilteredQuestions().length }})</h3>
+      </div>
+
+      <div class="questions-list-content">
+        <div
+          *ngFor="let question of getFilteredQuestions()"
+          class="question-item"
+          [class.active]="selectedQuestion?.questionId === question.questionId"
+          (click)="selectQuestion(question)"
+        >
+          <div class="question-header">
+            <div class="question-author">
+              <div class="author-avatar">{{ question.authorInitials }}</div>
+              <div>
+                <div class="author-name">{{ question.authorName }}</div>
+                <div class="question-time">
+                  {{ question.createdAt ? (question.createdAt | date : 'short') : '—' }}
+                </div>
+              </div>
+            </div>
+            <div class="question-status" [class]="question.status">{{ question.status }}</div>
+          </div>
+
+          <div class="question-content">
+            <h4 class="question-title">{{ question.title }}</h4>
+            <p class="question-description">{{ question.description }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="question-details" *ngIf="selectedQuestion; else emptyState">
+      <div class="details-header">
+        <h3>Question Details</h3>
+        <button class="close-btn" type="button" (click)="closeDetail()">✕</button>
+      </div>
+
+      <div class="details-content">
+        <div class="detail-section">
+          <h4>Question Information</h4>
+          <div class="question-info">
+            <h5>{{ selectedQuestion.title }}</h5>
+            <p class="question-description">{{ selectedQuestion.description }}</p>
+
+            <div class="question-meta">
+              <div class="author-info">
+                <div class="author-avatar large">{{ selectedQuestion.authorInitials }}</div>
+                <div>
+                  <div class="author-name">{{ selectedQuestion.authorName }}</div>
+                  <div class="author-id">User ID: {{ selectedQuestion.userId }}</div>
+                </div>
+              </div>
+              <div class="question-stats-detail">
+                <div class="stat-item">
+                  <span class="stat-label">Status:</span>
+                  <span class="stat-value">{{ selectedQuestion.status }}</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label">Created:</span>
+                  <span class="stat-value">
+                    {{ selectedQuestion.createdAt ? (selectedQuestion.createdAt | date : 'medium') : '—' }}
+                  </span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label">Question ID:</span>
+                  <span class="stat-value">{{ selectedQuestion.questionId }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="detail-section">
+          <h4>Answers ({{ questionAnswers.length }})</h4>
+
+          <div class="status-banner" *ngIf="isLoadingAnswers">Loading answers...</div>
+          <div class="status-banner error" *ngIf="!isLoadingAnswers && answersErrorMessage">
+            {{ answersErrorMessage }}
+          </div>
+
+          <div class="answers-list" *ngIf="!isLoadingAnswers && !answersErrorMessage && questionAnswers.length > 0">
+            <div class="answer-item" *ngFor="let answer of questionAnswers">
+              <div class="answer-header">
+                <div class="answer-author">
+                  <div class="author-avatar">{{ answer.authorInitials }}</div>
+                  <div>
+                    <div class="author-name">{{ answer.authorName }}</div>
+                    <div class="answer-time">{{ answer.created_at ? (answer.created_at | date : 'short') : '—' }}</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="answer-content">
+                <p>{{ answer.content }}</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="status-banner" *ngIf="!isLoadingAnswers && !answersErrorMessage && questionAnswers.length === 0">
+            No answers for this question yet.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <ng-template #emptyState>
+      <div class="empty-state">
+        <div class="empty-icon">❓</div>
+        <h3>Select a Question</h3>
+        <p>Choose a question from the list to view its details</p>
+      </div>
+    </ng-template>
+  </div>
+</div>

@@ -1,0 +1,107 @@
+<div class="container">
+  <p class="profile-error" *ngIf="profileErrorMessage">{{ profileErrorMessage }}</p>
+  <p class="profile-loading" *ngIf="loadingProfile">Loading profile...</p>
+
+  <ng-container *ngIf="user as profile">
+    <div class="profile-header">
+      <button class="back-btn" (click)="goBack()">
+        <span class="icon">←</span>
+        <span>Back</span>
+      </button>
+      
+      <div class="profile-info">
+        <div class="profile-avatar">{{ profile.avatar }}</div>
+        <div class="profile-details">
+          <h2 class="profile-name">{{ profile.name }}</h2>
+          <p class="profile-bio">{{ profile.bio }}</p>
+          
+          <div class="profile-stats">
+            <div class="stat-item">
+              <span class="stat-number">{{ profile.posts_count }}</span>
+              <span class="stat-label">Posts</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-number">{{ profile.followers_count }}</span>
+              <span class="stat-label">Followers</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-number">{{ profile.following_count }}</span>
+              <span class="stat-label">Following</span>
+            </div>
+          </div>
+          
+          <button
+            class="follow-btn"
+            [class.following]="profile.isFollowing"
+            [disabled]="isFollowingInFlight"
+            (click)="toggleFollow()"
+            *ngIf="currentUserId !== profile.id"
+          >
+            <span class="icon">{{ isFollowingInFlight ? '⏳' : (profile.isFollowing ? '−' : '+') }}</span>
+            <span>{{ profile.isFollowing ? 'Unfollow' : 'Follow' }}</span>
+          </button>
+
+          <p class="follow-error" *ngIf="followErrorMessage">{{ followErrorMessage }}</p>
+           
+          <button class="message-btn" 
+                  (click)="sendMessage()"
+                  *ngIf="currentUserId !== profile.id">
+            <span class="icon">💬</span>
+            <span>Message</span>
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <div class="profile-content">
+      <div class="posts-section">
+        <h3 class="section-title">Posts</h3>
+        
+        <div class="posts-list" *ngIf="profile.posts.length > 0; else noPosts">
+          <div class="post-item" *ngFor="let post of profile.posts">
+          <div class="post-content">
+            <p>{{ post.content }}</p>
+            <div class="post-media" *ngIf="post.image_url || post.video_url">
+              <img *ngIf="post.image_url" [src]="post.image_url" alt="Post image" class="post-image">
+              <video *ngIf="post.video_url" [src]="post.video_url" controls class="post-video"></video>
+            </div>
+          </div>
+          
+          <div class="post-meta">
+            <span class="post-time">{{ post.created_at }}</span>
+          </div>
+          
+           <div class="post-stats">
+             <span class="likes">{{ post.likesCount }} likes</span>
+             <span class="comments">{{ post.commentsCount }} comments</span>
+           </div>
+           
+           <div class="post-actions">
+             <button class="post-action-btn like-btn" [class.liked]="post.likedByCurrentUser" (click)="togglePostLike(post)">
+               <span>{{ post.likedByCurrentUser ? '❤️' : '🤍' }}</span>
+               <span>Like</span>
+             </button>
+            <button class="post-action-btn comment-btn">
+              <span>💬</span>
+              <span>Comment</span>
+            </button>
+          </div>
+        </div>
+      </div>
+      
+        <ng-template #noPosts>
+          <div class="no-posts">
+            <div class="no-posts-icon">📝</div>
+            <h4>No posts yet</h4>
+            <p>This user hasn't posted anything yet.</p>
+          </div>
+        </ng-template>
+      </div>
+    </div>
+  </ng-container>
+
+  <div class="profile-empty" *ngIf="!loadingProfile && !profileErrorMessage && !user">
+    <h4>User not found</h4>
+    <p>Try opening a different profile from the feed or Q&A page.</p>
+  </div>
+</div>

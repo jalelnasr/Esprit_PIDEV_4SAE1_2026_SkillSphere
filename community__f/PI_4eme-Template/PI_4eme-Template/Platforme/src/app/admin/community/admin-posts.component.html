@@ -1,0 +1,160 @@
+<div class="posts-container">
+  <div class="page-header">
+    <div>
+      <h1>Posts Management</h1>
+      <p>Read-only moderation view for community posts.</p>
+    </div>
+    <div class="header-actions">
+      <a class="btn-secondary" routerLink="/admin/community">← Back</a>
+      <input [(ngModel)]="searchTerm" class="search-input" placeholder="Search by content/user/post ID" />
+    </div>
+  </div>
+
+  <div class="loading" *ngIf="isLoading">Loading posts...</div>
+  <div class="error" *ngIf="!isLoading && errorMessage">
+    <span>{{ errorMessage }}</span>
+    <button type="button" (click)="loadPosts()">Retry</button>
+  </div>
+
+  <div class="posts-grid">
+    <div class="posts-list">
+      <div class="list-header">
+        <h3>Posts ({{ visiblePosts.length }} / {{ total }})</h3>
+        <div class="pagination-controls">
+          <button type="button" (click)="previousPage()" [disabled]="page === 0">Previous</button>
+          <span>Page {{ page + 1 }}</span>
+          <button type="button" (click)="nextPage()" [disabled]="(page + 1) * size >= total">Next</button>
+        </div>
+      </div>
+
+      <div class="posts-list-content">
+        <div *ngFor="let post of visiblePosts"
+             class="post-item"
+             [class.active]="selectedPostDetail?.post?.postId === post.postId"
+             (click)="selectPost(post)">
+
+          <div class="post-header">
+            <div class="post-author">
+              <div class="author-avatar">{{ post.authorInitials }}</div>
+              <div>
+                <div class="author-name">{{ post.authorName }}</div>
+                <div class="post-time">{{ post.createdAt | date : 'short' }}</div>
+              </div>
+            </div>
+            <div class="post-status">Post #{{ post.postId }}</div>
+          </div>
+
+          <div class="post-content">
+            <p>{{ post.content }}</p>
+            <div *ngIf="post.imageUrl" class="post-image">
+              <img [src]="post.imageUrl" alt="Post image">
+            </div>
+            <div *ngIf="post.videoUrl" class="post-video">
+              <div class="video-placeholder">🎥 Video attached</div>
+            </div>
+          </div>
+
+          <div class="post-stats">
+            <span class="stat">❤️ {{ post.likesCount }}</span>
+            <span class="stat">💬 {{ post.commentsCount }}</span>
+            <span class="stat" *ngIf="post.groupId">👥 {{ post.groupName }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="post-details" *ngIf="selectedPostDetail">
+      <div class="details-header">
+        <h3>Post Details (Read Only)</h3>
+        <button class="close-btn" type="button" (click)="closeDetail()">✕</button>
+      </div>
+
+      <div class="details-content">
+        <div class="loading" *ngIf="isLoadingDetail">Loading details...</div>
+        <div class="error" *ngIf="detailErrorMessage">{{ detailErrorMessage }}</div>
+
+        <div class="detail-section">
+          <h4>Author Information</h4>
+          <div class="author-info">
+            <div class="author-avatar large">{{ selectedPostDetail.post.authorInitials }}</div>
+            <div>
+              <div class="author-name">{{ selectedPostDetail.post.authorName }}</div>
+              <div class="author-id">Post ID: {{ selectedPostDetail.post.postId }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="detail-section">
+          <h4>Content</h4>
+          <p class="post-text">{{ selectedPostDetail.post.content }}</p>
+          <div *ngIf="selectedPostDetail.post.imageUrl" class="post-image">
+            <img [src]="selectedPostDetail.post.imageUrl" alt="Post image">
+          </div>
+          <div *ngIf="selectedPostDetail.post.videoUrl" class="post-video">
+            <div class="video-placeholder">🎥 Video: {{ selectedPostDetail.post.videoUrl }}</div>
+          </div>
+        </div>
+
+        <div class="detail-section">
+          <h4>Likes ({{ selectedPostLikes.length }})</h4>
+          <div class="likes-list">
+            <div *ngFor="let like of selectedPostLikes" class="like-item">
+              <div class="like-user">
+                <span class="user-avatar">{{ like.userInitials }}</span>
+                <span class="user-name">{{ like.userName }}</span>
+              </div>
+              <span class="like-time">{{ like.createdAt | date : 'short' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="detail-section">
+          <h4>Comments ({{ selectedPostComments.length }})</h4>
+          <div class="comments-list">
+            <div *ngFor="let comment of selectedPostComments" class="comment-item">
+              <div class="comment-header">
+                <div class="comment-user">
+                  <span class="user-avatar">{{ comment.userInitials }}</span>
+                  <div>
+                    <div class="user-name">{{ comment.userName }}</div>
+                    <div class="comment-time">{{ comment.createdAt | date : 'short' }}</div>
+                  </div>
+                </div>
+                <div class="comment-likes">
+                  <span class="like-count">❤️ {{ comment.likesCount }}</span>
+                </div>
+              </div>
+              <div class="comment-content">
+                <p>{{ comment.content }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="detail-section">
+          <h4>Post Information</h4>
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="info-label">Post ID:</span>
+              <span class="info-value">{{ selectedPostDetail.post.postId }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Created:</span>
+              <span class="info-value">{{ selectedPostDetail.post.createdAt | date : 'medium' }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Group:</span>
+              <span class="info-value">{{ selectedPostDetail.post.groupName ?? 'No group' }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="empty-state" *ngIf="!selectedPostDetail">
+      <div class="empty-icon">📝</div>
+      <h3>Select a Post</h3>
+      <p>Choose a post from the list to view its details</p>
+    </div>
+  </div>
+</div>

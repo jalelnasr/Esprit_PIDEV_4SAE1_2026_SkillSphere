@@ -1,0 +1,312 @@
+<div class="container">
+  <div class="groups-header">
+    <h1>Groups 👥</h1>
+    <button class="create-post-btn" (click)="openCreateGroupModal()">
+      <span class="icon">➕</span>
+      <span>Create Group</span>
+    </button>
+  </div>
+
+  <div class="groups-toolbar">
+    <input
+      class="search-input"
+      type="text"
+      list="groups-search-suggestions"
+      [value]="searchTerm"
+      (input)="updateSearch($any($event.target).value)"
+      placeholder="Search groups..."
+    >
+
+    <datalist id="groups-search-suggestions">
+      <option *ngFor="let suggestion of searchSuggestions" [value]="suggestion"></option>
+    </datalist>
+
+    <select class="sort-select" [value]="sortOrder" (change)="updateSort($any($event.target).value)">
+      <option value="DESC">Newest first</option>
+      <option value="ASC">Oldest first</option>
+    </select>
+
+    <label class="toolbar-filter">
+      <span>Groups</span>
+      <select class="filter-select" [value]="groupFilter" (change)="updateGroupFilter($any($event.target).value)">
+        <option value="all">All groups</option>
+        <option value="joined">Joined groups</option>
+        <option value="not-joined">Not joined</option>
+      </select>
+    </label>
+
+    <label class="toolbar-filter">
+      <span>Popularity</span>
+      <select class="filter-select" [value]="popularityFilter" (change)="updatePopularityFilter($any($event.target).value)">
+        <option value="latest">Latest</option>
+        <option value="most-members">Most members</option>
+      </select>
+    </label>
+
+    <button
+      class="clear-filters-btn toolbar-reset"
+      (click)="clearAdvancedFilters()"
+      [disabled]="groupFilter === 'all' && popularityFilter === 'latest'"
+    >
+      Reset filters
+    </button>
+
+    <button class="mode-btn" (click)="toggleInfiniteScroll()">
+      {{ useInfiniteScroll ? 'Switch to pages' : 'Infinite scroll' }}
+    </button>
+  </div>
+
+  <div class="pagination-hint">
+    <span>Page {{ currentPage }} / {{ totalPages }} - {{ totalItems }} groups</span>
+    <span *ngIf="isLoadingPage">Loading...</span>
+  </div>
+
+  <p class="api-error" *ngIf="errorMessage">{{ errorMessage }}</p>
+
+  <div class="modal-overlay" *ngIf="showCreateGroup" (click)="closeCreateGroupModal()">
+    <form
+      class="create-group-modal"
+      [formGroup]="createGroupForm"
+      (ngSubmit)="createGroup()"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="modal-header">
+        <h2>Create Group</h2>
+        <button type="button" class="close-btn" (click)="closeCreateGroupModal()">✕</button>
+      </div>
+
+      <div class="modal-content">
+        <label class="field-label" for="group-name">Group Name</label>
+        <input id="group-name" type="text" class="group-input" formControlName="name" placeholder="Angular Developers" />
+        <div class="field-error" *ngIf="createGroupForm.controls.name.touched && createGroupForm.controls.name.invalid">
+          Name is required.
+        </div>
+
+        <label class="field-label" for="group-description">Description</label>
+        <textarea
+          id="group-description"
+          class="group-textarea"
+          formControlName="description"
+          placeholder="Describe your community..."
+          rows="4"
+        ></textarea>
+        <div class="field-error" *ngIf="createGroupForm.controls.description.touched && createGroupForm.controls.description.invalid">
+          <span *ngIf="createGroupForm.controls.description.errors?.['required']">Description is required.</span>
+          <span *ngIf="createGroupForm.controls.description.errors?.['minlength']">Minimum 10 characters.</span>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="cancel-btn" (click)="closeCreateGroupModal()">Cancel</button>
+        <button type="submit" class="submit-btn" [disabled]="createGroupForm.invalid || creatingGroup">
+          {{ creatingGroup ? 'Creating...' : 'Create Group' }}
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <div class="groups-list">
+      <div class="group-card" *ngFor="let group of groups">
+        <div class="group-header">
+          <div class="group-info">
+            <div class="group-avatar">{{ group.name.charAt(0) }}</div>
+            <div class="group-details">
+              <h3 class="group-name">{{ group.name }}</h3>
+              <p class="group-description">{{ group.description }}</p>
+              <span class="group-meta">
+                Created {{ group.created_at }} • {{ groupMembersCount(group) }} members
+              </span>
+            </div>
+          </div>
+          <div class="membership-actions">
+            <ng-container *ngIf="isGroupMember(group); else joinGroupButton">
+              <div class="membership-pill" [class.admin]="isGroupAdmin(group)">
+                <span class="icon">{{ isJoiningGroup(group.id) ? '⏳' : '✓' }}</span>
+                <span>Joined ({{ membershipRoleLabel(group) }})</span>
+              </div>
+
+              <button
+                class="leave-btn"
+                type="button"
+                [disabled]="isLeavingGroup(group.id) || isJoiningGroup(group.id)"
+                (click)="leaveGroup(group)"
+              >
+                <span class="icon">{{ isLeavingGroup(group.id) ? '⏳' : '⎋' }}</span>
+                <span>{{ isLeavingGroup(group.id) ? 'Leaving...' : 'Disjoin' }}</span>
+              </button>
+            </ng-container>
+
+            <ng-template #joinGroupButton>
+              <button
+                class="join-btn"
+                type="button"
+                [disabled]="isJoiningGroup(group.id) || isLeavingGroup(group.id)"
+                (click)="joinGroup(group)"
+              >
+                <span class="icon">{{ (isJoiningGroup(group.id) || isLeavingGroup(group.id)) ? '⏳' : '+' }}</span>
+                <span>{{ isJoiningGroup(group.id) ? 'Joining...' : (isLeavingGroup(group.id) ? 'Leaving...' : 'Join') }}</span>
+              </button>
+            </ng-template>
+          </div>
+        </div>
+
+      <div class="group-actions">
+        <button class="action-btn" [disabled]="!isGroupMember(group)" (click)="togglePosts(group)">
+          <span class="icon">📝</span>
+          <span>{{ isGroupMember(group) ? (isPostsOpen(group.id) ? 'Hide Posts' : 'View Posts') : 'Join to View Posts' }}</span>
+        </button>
+      </div>
+
+      <div class="posts-section" *ngIf="isPostsOpen(group.id)">
+        <div class="posts-header">
+          <h4>Group Posts</h4>
+          <span class="group-meta" *ngIf="isLoadingGroupPosts(group.id)">Loading posts...</span>
+        </div>
+
+        <div class="create-post-form" *ngIf="isGroupMember(group)">
+          <div class="post-author">
+            <div class="author-avatar">YU</div>
+            <div class="author-info">
+              <span class="author-name">You</span>
+              <span class="post-audience">👥 Group: {{ group.name }}</span>
+            </div>
+          </div>
+
+          <textarea
+            class="post-content-input"
+            placeholder="Write a post for this group..."
+            rows="3"
+            [formControl]="getGroupPostControl(group.id)"
+          ></textarea>
+
+          <div class="field-error" *ngIf="getGroupPostControl(group.id).touched && getGroupPostControl(group.id).invalid">
+            <span *ngIf="getGroupPostControl(group.id).errors?.['required']">Content is required.</span>
+            <span *ngIf="getGroupPostControl(group.id).errors?.['minlength']">Minimum 3 characters.</span>
+            <span *ngIf="getGroupPostControl(group.id).errors?.['maxlength']">Maximum 1000 characters.</span>
+          </div>
+
+          <div class="group-media-section">
+            <input
+              #groupImageInput
+              type="file"
+              class="hidden-file-input"
+              accept=".jpg,.jpeg,.png,image/jpeg,image/png"
+              (change)="onGroupImageSelected(group.id, $event)"
+            >
+
+            <input
+              #groupVideoInput
+              type="file"
+              class="hidden-file-input"
+              accept=".mp4,.mov,video/mp4,video/quicktime"
+              (change)="onGroupVideoSelected(group.id, $event)"
+            >
+
+            <div class="group-media-buttons">
+              <button type="button" class="action-btn" (click)="groupImageInput.click()">
+                <span class="icon">📷</span>
+                <span>Add Image</span>
+              </button>
+
+              <button type="button" class="action-btn" (click)="groupVideoInput.click()">
+                <span class="icon">🎥</span>
+                <span>Add Video</span>
+              </button>
+
+              <button type="button" class="action-btn" *ngIf="groupHasSelectedMedia(group.id)" (click)="clearGroupMedia(group.id)">
+                <span class="icon">🧹</span>
+                <span>Clear Media</span>
+              </button>
+            </div>
+
+            <div class="group-media-hint">
+              <span>Images: JPG, JPEG, PNG (max 5 MB)</span>
+              <span>Videos: MP4, MOV (max 50 MB)</span>
+            </div>
+
+            <div class="field-error" *ngIf="groupMediaError(group.id)">{{ groupMediaError(group.id) }}</div>
+
+            <div class="group-media-preview-grid" *ngIf="groupHasSelectedMedia(group.id)">
+              <div class="group-media-preview" *ngIf="groupImagePreview(group.id)">
+                <img [src]="groupImagePreview(group.id)!" alt="Image preview" class="post-image" />
+                <button type="button" class="remove-media" (click)="removeGroupImage(group.id)" aria-label="Remove selected image">✕</button>
+                <div class="preview-label">{{ groupSelectedImageName(group.id) || 'Selected image' }}</div>
+              </div>
+
+              <div class="group-media-preview" *ngIf="groupVideoPreview(group.id)">
+                <video [src]="groupVideoPreview(group.id)!" controls class="post-video"></video>
+                <button type="button" class="remove-media" (click)="removeGroupVideo(group.id)" aria-label="Remove selected video">✕</button>
+                <div class="preview-label">{{ groupSelectedVideoName(group.id) || 'Selected video' }}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="post-actions">
+            <button class="submit-btn" (click)="submitGroupPost(group)" [disabled]="getGroupPostControl(group.id).invalid">
+              Post
+            </button>
+          </div>
+        </div>
+
+        <div class="group-posts" *ngIf="group.posts.length > 0">
+          <div class="group-post" *ngFor="let post of group.posts">
+            <div class="post-header">
+              <div class="post-author-info">
+                <div class="post-avatar">{{ initials(post.author_name, post.user_id) }}</div>
+                <div class="post-author-details">
+                  <span class="post-author">{{ postAuthorName(post) }}</span>
+                  <span class="post-time">{{ post.created_at }}</span>
+                </div>
+              </div>
+              <button class="profile-btn" (click)="viewProfile(post.user_id)">
+                <span class="icon">👤</span>
+                <span>Profile</span>
+              </button>
+            </div>
+
+            <div class="post-content">
+              <p>{{ post.content }}</p>
+              <div class="post-media" *ngIf="post.image_url || post.video_url">
+                <img *ngIf="post.image_url" [src]="post.image_url" alt="Post image" class="post-image" />
+                <video *ngIf="post.video_url" [src]="post.video_url" controls class="post-video"></video>
+              </div>
+            </div>
+
+            <div class="post-stats">
+              <span class="likes">{{ getPostLikes(post) }} likes</span>
+            </div>
+
+            <div class="post-actions">
+              <button class="post-action-btn like-btn" [class.liked]="isPostLiked(post)" (click)="togglePostLike(post)">
+                <span>{{ isPostLiked(post) ? '❤️' : '🤍' }}</span>
+                <span>Like</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="no-posts" *ngIf="group.posts.length === 0 && !isLoadingGroupPosts(group.id)">
+          <div class="no-posts-icon">📝</div>
+          <h4>No posts yet</h4>
+          <p *ngIf="isGroupMember(group)">Be the first to post in this group.</p>
+          <p *ngIf="!isGroupMember(group)">Join this group to start posting.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="infinite-footer" *ngIf="useInfiniteScroll">
+    <button class="load-more-btn" *ngIf="canLoadMore()" (click)="loadMore()">Load more</button>
+    <span class="loading-more" *ngIf="isLoadingMore">Loading more groups...</span>
+  </div>
+
+  <div class="pagination" *ngIf="!useInfiniteScroll && totalPages > 1">
+    <button class="pager-btn" (click)="goToFirstPage()" [disabled]="currentPage === 1">First</button>
+    <button class="pager-btn" (click)="goToPreviousPage()" [disabled]="currentPage === 1">Previous</button>
+    <button class="pager-btn" *ngFor="let page of pageNumbers" [class.active]="page === currentPage" (click)="goToPage(page)">
+      {{ page }}
+    </button>
+    <button class="pager-btn" (click)="goToNextPage()" [disabled]="currentPage >= totalPages">Next</button>
+    <button class="pager-btn" (click)="goToLastPage()" [disabled]="currentPage >= totalPages">Last</button>
+  </div>
+</div>

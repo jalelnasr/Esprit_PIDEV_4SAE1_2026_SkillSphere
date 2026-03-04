@@ -1,0 +1,297 @@
+<div class="container">
+  <div class="feed-header">
+    <h1>Community Feed 👥</h1>
+    <button class="create-post-btn" (click)="showCreatePost = true">
+      <span class="icon">✏️</span>
+      <span>Create Post</span>
+    </button>
+  </div>
+
+  <div class="feed-toolbar">
+    <input
+      class="search-input"
+      type="text"
+      list="feed-search-suggestions"
+      [value]="searchTerm"
+      (input)="updateSearch($any($event.target).value)"
+      placeholder="Search posts..."
+    >
+
+    <datalist id="feed-search-suggestions">
+      <option *ngFor="let suggestion of searchSuggestions" [value]="suggestion"></option>
+    </datalist>
+
+    <select class="sort-select" [value]="sortOrder" (change)="updateSort($any($event.target).value)">
+      <option value="DESC">Newest first</option>
+      <option value="ASC">Oldest first</option>
+    </select>
+
+    <label class="toolbar-filter">
+      <span>Popularity</span>
+      <select class="filter-select" [value]="popularityFilter" (change)="updatePopularityFilter($any($event.target).value)">
+        <option value="latest">Latest</option>
+        <option value="most-liked">Most liked</option>
+        <option value="most-commented">Most commented</option>
+      </select>
+    </label>
+
+    <button class="clear-filters-btn toolbar-reset" (click)="clearAdvancedFilters()" [disabled]="popularityFilter === 'latest'">
+      Reset filters
+    </button>
+
+    <button class="mode-btn" (click)="toggleInfiniteScroll()">
+      {{ useInfiniteScroll ? 'Switch to pages' : 'Infinite scroll' }}
+    </button>
+  </div>
+
+  <section class="trending-panel">
+    <div class="trending-header">
+      <h3>Trending Today</h3>
+      <div class="trending-window-actions">
+        <button class="window-btn" [class.active]="trendingWindow === '24h'" (click)="changeTrendingWindow('24h')">24h</button>
+        <button class="window-btn" [class.active]="trendingWindow === '7d'" (click)="changeTrendingWindow('7d')">7d</button>
+      </div>
+    </div>
+
+    <div class="trending-list" *ngIf="trendingTopics.length > 0; else noTrendingTopics">
+      <button class="trending-tag" *ngFor="let topic of trendingTopics" (click)="searchByHashtag(topic.tag)">
+        <span>{{ topic.tag }}</span>
+        <span class="tag-count">{{ topic.mentions }}</span>
+      </button>
+    </div>
+
+    <ng-template #noTrendingTopics>
+      <p class="trending-empty">{{ isLoadingTrending ? 'Loading trending topics...' : 'No trending hashtags yet.' }}</p>
+    </ng-template>
+  </section>
+
+  <div class="pagination-hint">
+    <span>Page {{ currentPage }} / {{ totalPages }} - {{ totalItems }} posts</span>
+    <span *ngIf="isLoadingPage">Loading...</span>
+  </div>
+
+  <p class="api-error" *ngIf="errorMessage">{{ errorMessage }}</p>
+  
+  <!-- Create Post Modal -->
+  <div class="modal-overlay" *ngIf="showCreatePost" (click)="closeCreatePost()">
+    <form
+      class="create-post-modal"
+      [formGroup]="createPostForm"
+      (ngSubmit)="createPost()"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="modal-header">
+        <h2>Create Post</h2>
+        <button type="button" class="close-btn" (click)="closeCreatePost()">✕</button>
+      </div>
+      
+      <div class="modal-content">
+        <div class="post-author">
+          <div class="author-avatar">YU</div>
+          <div class="author-info">
+            <span class="author-name">You</span>
+            <span class="post-audience">🌐 Public</span>
+          </div>
+        </div>
+        
+        <textarea 
+          class="post-content-input" 
+          placeholder="What's on your mind?"
+          formControlName="content"
+          rows="4"
+        ></textarea>
+
+        <div class="field-error" *ngIf="createPostForm.controls.content.touched && createPostForm.controls.content.invalid">
+          <span *ngIf="createPostForm.controls.content.errors?.['required']">Content is required.</span>
+          <span *ngIf="createPostForm.controls.content.errors?.['minlength']">Minimum 3 characters.</span>
+          <span *ngIf="createPostForm.controls.content.errors?.['maxlength']">Maximum 1000 characters.</span>
+        </div>
+        
+        <div class="media-section">
+          <input
+            #imageInput
+            type="file"
+            class="hidden-file-input"
+            accept=".jpg,.jpeg,.png,image/jpeg,image/png"
+            (change)="onImageSelected($event)"
+          >
+
+          <input
+            #videoInput
+            type="file"
+            class="hidden-file-input"
+            accept=".mp4,.mov,video/mp4,video/quicktime"
+            (change)="onVideoSelected($event)"
+          >
+
+          <div class="media-buttons">
+            <button type="button" class="media-btn" (click)="imageInput.click()">
+              <span class="icon">📷</span>
+              <span>Add Image</span>
+            </button>
+            <button type="button" class="media-btn" (click)="videoInput.click()">
+              <span class="icon">🎥</span>
+              <span>Add Video</span>
+            </button>
+
+            <button type="button" class="media-btn" *ngIf="hasSelectedMedia" (click)="removeMedia()">
+              <span class="icon">🧹</span>
+              <span>Clear Media</span>
+            </button>
+          </div>
+
+          <div class="media-hint">
+            <span>Images: JPG, JPEG, PNG (max 5 MB)</span>
+            <span>Videos: MP4, MOV (max 50 MB)</span>
+          </div>
+
+          <div class="field-error" *ngIf="mediaErrorMessage">{{ mediaErrorMessage }}</div>
+
+          <div class="media-loading" *ngIf="isProcessingMedia">Preparing media preview...</div>
+          
+          <div class="media-preview-grid" *ngIf="hasSelectedMedia">
+            <div class="media-preview" *ngIf="createPostForm.controls.image_url.value">
+              <img
+                [src]="imagePreviewUrl || createPostForm.controls.image_url.value"
+                alt="Image preview"
+                class="preview-image"
+              >
+              <button type="button" class="remove-media" (click)="removeImage()" aria-label="Remove selected image">✕</button>
+              <div class="preview-label">{{ selectedImageName || 'Selected image' }}</div>
+            </div>
+
+            <div class="media-preview" *ngIf="createPostForm.controls.video_url.value">
+              <video
+                [src]="videoPreviewUrl || createPostForm.controls.video_url.value"
+                controls
+                class="preview-video"
+              ></video>
+              <button type="button" class="remove-media" (click)="removeVideo()" aria-label="Remove selected video">✕</button>
+              <div class="preview-label">{{ selectedVideoName || 'Selected video' }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="modal-footer">
+        <button type="button" class="cancel-btn" (click)="closeCreatePost()">Cancel</button>
+        <button type="submit" class="post-btn" [disabled]="createPostForm.invalid || submittingPost || isProcessingMedia">
+          {{ submittingPost ? 'Posting...' : (isProcessingMedia ? 'Preparing...' : 'Post') }}
+        </button>
+      </div>
+    </form>
+  </div>
+  
+  <div class="posts">
+    <div class="post" *ngFor="let post of posts">
+      <div class="post-header">
+        <div class="author-info">
+          <div class="avatar">{{ initials(post.author_name, post.user_id) }}</div>
+          <div class="author-details">
+            <span class="author">{{ postAuthorName(post) }}</span>
+            <span class="time">{{ post.created_at }}</span>
+          </div>
+        </div>
+        <button class="profile-btn" (click)="viewProfile(post.user_id)">
+          <span class="icon">👤</span>
+          <span>See Profile</span>
+        </button>
+      </div>
+      
+      <div class="post-content">
+        <p>{{ post.content }}</p>
+        <div class="post-hashtags" *ngIf="hashtagsForPost(post).length > 0">
+          <button class="hashtag-btn" *ngFor="let tag of hashtagsForPost(post)" (click)="searchByHashtag(tag)">
+            {{ tag }}
+          </button>
+        </div>
+        <div class="post-media" *ngIf="post.image_url || post.video_url">
+          <img *ngIf="post.image_url" [src]="post.image_url" alt="Post image" class="post-image">
+          <video *ngIf="post.video_url" [src]="post.video_url" controls class="post-video"></video>
+        </div>
+      </div>
+      
+      <div class="post-stats">
+        <span class="likes">{{ post.likesCount }} likes</span>
+        <span class="comments">{{ post.commentsCount }} comments</span>
+      </div>
+      
+      <div class="post-actions">
+        <button class="post-action-btn like-btn" [class.liked]="post.likedByCurrentUser" (click)="toggleLike(post)">
+          <span>{{ post.likedByCurrentUser ? '❤️' : '🤍' }}</span>
+          <span>Like</span>
+        </button>
+        <button class="post-action-btn comment-btn" (click)="toggleComments(post.id)">
+          <span>💬</span>
+          <span>Comment</span>
+        </button>
+      </div>
+      
+      <div class="comments-section" *ngIf="isCommentsOpen(post.id)">
+        <div class="comment-input">
+          <div class="comment-avatar">YU</div>
+          <div class="comment-input-wrapper">
+            <input 
+              type="text" 
+              class="comment-field" 
+              placeholder="Write a comment..."
+              [formControl]="getCommentControl(post.id)"
+              (keyup.enter)="addComment(post)"
+            >
+            <button class="comment-submit" (click)="addComment(post)" [disabled]="getCommentControl(post.id).invalid">
+              Post
+            </button>
+          </div>
+        </div>
+
+        <div class="field-error compact" *ngIf="getCommentControl(post.id).touched && getCommentControl(post.id).invalid">
+          <span *ngIf="getCommentControl(post.id).errors?.['required']">Comment content is required.</span>
+          <span *ngIf="getCommentControl(post.id).errors?.['minlength']">Comment must be at least 2 characters.</span>
+        </div>
+
+        <div class="comment-loading" *ngIf="isLoadingComments(post.id)">Loading comments...</div>
+        
+        <div class="comments-list" *ngIf="post.comments.length > 0">
+          <div class="comment" *ngFor="let comment of post.comments">
+            <div class="comment-avatar">{{ initials(comment.author_name, comment.user_id) }}</div>
+            <div class="comment-content">
+              <div class="comment-header">
+                <span class="comment-author">{{ commentAuthorName(comment) }}</span>
+                <span class="comment-time">{{ comment.created_at }}</span>
+              </div>
+              <p class="comment-text">{{ comment.content }}</p>
+              <div class="comment-actions">
+                <button class="comment-like-btn" [class.liked]="comment.likedByCurrentUser" (click)="toggleCommentLike(comment)">
+                  <span>{{ comment.likedByCurrentUser ? '❤️' : '🤍' }}</span>
+                  <span>{{ comment.likesCount }}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="infinite-footer" *ngIf="useInfiniteScroll">
+    <button class="load-more-btn" *ngIf="canLoadMore()" (click)="loadMore()">Load more</button>
+    <span class="loading-more" *ngIf="isLoadingMore">Loading more posts...</span>
+  </div>
+
+  <div class="pagination" *ngIf="!useInfiniteScroll && totalPages > 1">
+    <button class="pager-btn" (click)="goToFirstPage()" [disabled]="currentPage === 1">First</button>
+    <button class="pager-btn" (click)="goToPreviousPage()" [disabled]="currentPage === 1">Previous</button>
+
+    <button
+      class="pager-btn"
+      *ngFor="let page of pageNumbers"
+      [class.active]="page === currentPage"
+      (click)="goToPage(page)"
+    >
+      {{ page }}
+    </button>
+
+    <button class="pager-btn" (click)="goToNextPage()" [disabled]="currentPage >= totalPages">Next</button>
+    <button class="pager-btn" (click)="goToLastPage()" [disabled]="currentPage >= totalPages">Last</button>
+  </div>
+</div>

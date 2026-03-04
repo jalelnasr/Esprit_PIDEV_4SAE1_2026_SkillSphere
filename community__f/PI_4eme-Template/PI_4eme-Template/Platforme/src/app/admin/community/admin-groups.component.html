@@ -1,0 +1,87 @@
+<div class="groups-container">
+  <div class="page-header">
+    <div>
+      <h1>Groups Management</h1>
+      <p>Read-only overview of community groups.</p>
+    </div>
+    <div class="header-actions">
+      <a class="btn-secondary" routerLink="/admin/community">← Back</a>
+    </div>
+  </div>
+
+  <div class="status-banner" *ngIf="isLoading">Loading groups...</div>
+  <div class="status-banner error" *ngIf="!isLoading && errorMessage">
+    <span>{{ errorMessage }}</span>
+    <button class="btn-primary" type="button" (click)="loadGroups()">Retry</button>
+  </div>
+
+  <div class="groups-grid" *ngIf="!isLoading && !errorMessage">
+    <div class="groups-list">
+      <div class="list-header">
+        <h3>All Groups ({{ getFilteredGroups().length }})</h3>
+      </div>
+      
+      <div class="groups-list-content">
+        <div
+          *ngFor="let group of getFilteredGroups()"
+          class="group-item"
+          [class.active]="selectedGroup?.groupId === group.groupId"
+          (click)="selectGroup(group)"
+        >
+           
+          <div class="group-header">
+            <div class="group-info">
+              <h4 class="group-name">{{ group.name }}</h4>
+              <p class="group-description">{{ group.description }}</p>
+            </div>
+          </div>
+
+          <div class="group-meta">
+            <div class="group-author">
+              <span class="author-avatar">{{ group.creatorInitials }}</span>
+              <span class="author-name">{{ group.creatorName }}</span>
+            </div>
+            <div class="group-stats">
+              <span class="stat">👥 {{ group.membersCount }} members</span>
+              <span class="stat">📅 {{ group.createdAt ? (group.createdAt | date : 'shortDate') : '—' }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="group-details" *ngIf="selectedGroup">
+      <div class="details-header">
+        <h3>Group Details</h3>
+        <button class="close-btn" type="button" (click)="closeDetail()">✕</button>
+      </div>
+
+      <div class="details-content">
+        <div class="detail-section">
+          <h4>Group Information</h4>
+          <div class="group-info">
+            <h5>{{ selectedGroup.name }}</h5>
+            <p class="group-description">{{ selectedGroup.description }}</p>
+
+            <div class="group-meta">
+              <div class="group-author">
+                <span class="author-avatar">{{ selectedGroup.creatorInitials }}</span>
+                <span class="author-name">{{ selectedGroup.creatorName }}</span>
+              </div>
+              <div class="group-stats">
+                <span class="stat">👥 {{ selectedGroup.membersCount }} members</span>
+                <span class="stat">📅 {{ selectedGroup.createdAt ? (selectedGroup.createdAt | date : 'medium') : '—' }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="empty-state" *ngIf="!selectedGroup">
+      <div class="empty-icon">👥</div>
+      <h3>Select a Group</h3>
+      <p>Choose a group from the list to view its details</p>
+    </div>
+  </div>
+</div>
