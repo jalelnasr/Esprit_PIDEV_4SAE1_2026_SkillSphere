@@ -1,0 +1,167 @@
+<div class="container-fluid p-4">
+  <div class="row mb-4">
+    <div class="col-md-8">
+      <h2 class="mb-0">
+        <i class="fas fa-calendar-alt me-2"></i>Calendrier des Entretiens
+      </h2>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-lg-8">
+      <div class="card">
+        <div class="card-header bg-primary text-white">
+          <div class="d-flex justify-content-between align-items-center">
+            <button class="btn btn-sm btn-light" (click)="previousMonth()">
+              <i class="fas fa-chevron-left"></i>
+            </button>
+            <h5 class="mb-0">{{ monthName }}</h5>
+            <button class="btn btn-sm btn-light" (click)="nextMonth()">
+              <i class="fas fa-chevron-right"></i>
+            </button>
+          </div>
+        </div>
+        <div class="card-body p-0">
+          <div class="calendar">
+            <!-- Jours de la semaine -->
+            <div class="calendar-header">
+              <div class="calendar-day-header" *ngFor="let day of weekDays">
+                {{ day }}
+              </div>
+            </div>
+
+            <!-- Jours du mois -->
+            <div class="calendar-body">
+              <div
+                class="calendar-day"
+                *ngFor="let day of daysInMonth"
+                [class.other-month]="!day"
+                [class.today]="isToday(day)"
+              >
+                <div class="day-number" *ngIf="day">{{ day }}</div>
+
+                <!-- Entretiens du jour -->
+                <div class="interviews-container" *ngIf="day">
+                  <div
+                    class="interview-badge"
+                    *ngFor="let interview of getInterviewsForDay(day)"
+                    [ngClass]="'badge-' + getStatusColor(interview.status)"
+                    (click)="selectInterview(interview)"
+                    title="{{ formatTime(interview.interviewDateTime) }}"
+                  >
+                    <small>{{ formatTime(interview.interviewDateTime) }}</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Détails de l'entretien sélectionné -->
+    <div class="col-lg-4">
+      <div class="card" *ngIf="showDetails && selectedInterview">
+        <div class="card-header bg-info text-white">
+          <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Détails de l'entretien</h5>
+            <button class="btn btn-sm btn-light" (click)="closeDetails()">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="mb-3">
+            <label class="form-label text-muted">ID Entretien</label>
+            <p class="mb-0">
+              <strong>#{{ selectedInterview.id }}</strong>
+            </p>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label text-muted">Candidat</label>
+            <p class="mb-0">
+              <span class="badge bg-info">ID: {{ selectedInterview.candidateId }}</span>
+            </p>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label text-muted">Recruteur</label>
+            <p class="mb-0">
+              <span class="badge bg-secondary">ID: {{ selectedInterview.recruiterId }}</span>
+            </p>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label text-muted">Offre d'emploi</label>
+            <p class="mb-0">
+              <span class="badge bg-warning text-dark">ID: {{ selectedInterview.jobOfferId }}</span>
+            </p>
+          </div>
+
+          <hr />
+
+          <div class="mb-3">
+            <label class="form-label text-muted">Date & Heure</label>
+            <p class="mb-0">
+              <i class="fas fa-clock me-2"></i>
+              {{ formatDateTime(selectedInterview.interviewDateTime) }}
+            </p>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label text-muted">Lieu</label>
+            <p class="mb-0">
+              <i class="fas fa-map-marker-alt me-2"></i>
+              {{ selectedInterview.location }}
+            </p>
+          </div>
+
+          <div class="mb-3" *ngIf="selectedInterview.meetingLink">
+            <label class="form-label text-muted">Lien de réunion</label>
+            <p class="mb-0">
+              <a [href]="selectedInterview.meetingLink" target="_blank" class="text-decoration-none">
+                <i class="fas fa-link me-2"></i>Ouvrir le lien
+              </a>
+            </p>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label text-muted">Statut</label>
+            <p class="mb-0">
+              <span [ngClass]="'badge badge-' + getStatusColor(selectedInterview.status)">
+                {{ selectedInterview.status }}
+              </span>
+            </p>
+          </div>
+
+          <div class="mb-3" *ngIf="selectedInterview.notes">
+            <label class="form-label text-muted">Notes</label>
+            <p class="mb-0">
+              <small>{{ selectedInterview.notes }}</small>
+            </p>
+          </div>
+
+          <hr />
+
+          <div class="d-grid gap-2">
+            <button class="btn btn-primary btn-sm">
+              <i class="fas fa-edit me-2"></i>Modifier
+            </button>
+            <button class="btn btn-danger btn-sm">
+              <i class="fas fa-trash me-2"></i>Supprimer
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Aucun entretien sélectionné -->
+      <div class="card" *ngIf="!showDetails">
+        <div class="card-body text-center text-muted py-5">
+          <i class="fas fa-calendar-check fa-3x mb-3 d-block opacity-50"></i>
+          <p>Sélectionnez un entretien pour voir les détails</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

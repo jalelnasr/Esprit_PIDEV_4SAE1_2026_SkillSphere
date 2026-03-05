@@ -1,0 +1,158 @@
+{
+  "info": {
+    "name": "B2B Module - Email Notification API",
+    "description": "Postman collection for testing email notification endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Send Notification - ACCEPTED with Message",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"candidateEmail\": \"john.doe@example.com\",\n  \"candidateName\": \"John Doe\",\n  \"jobTitle\": \"Data Analyst\",\n  \"companyName\": \"TechCorp Inc.\",\n  \"status\": \"ACCEPTED\",\n  \"message\": \"Congratulations! We are excited to have you join our data science team. Your onboarding will begin next week.\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/b2b/applications/notify",
+          "host": ["{{base_url}}"],
+          "path": ["api", "b2b", "applications", "notify"]
+        }
+      }
+    },
+    {
+      "name": "2. Send Notification - REJECTED with Message",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"candidateEmail\": \"jane.smith@example.com\",\n  \"candidateName\": \"Jane Smith\",\n  \"jobTitle\": \"Backend Developer\",\n  \"companyName\": \"StartupX Solutions\",\n  \"status\": \"REJECTED\",\n  \"message\": \"Your profile is excellent. We encourage you to apply for our Frontend Developer position which better matches your React expertise.\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/b2b/applications/notify",
+          "host": ["{{base_url}}"],
+          "path": ["api", "b2b", "applications", "notify"]
+        }
+      }
+    },
+    {
+      "name": "3. Send Notification - ACCEPTED without Message",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"candidateEmail\": \"bob.wilson@example.com\",\n  \"candidateName\": \"Bob Wilson\",\n  \"jobTitle\": \"DevOps Engineer\",\n  \"companyName\": \"CloudPro Systems\",\n  \"status\": \"ACCEPTED\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/b2b/applications/notify",
+          "host": ["{{base_url}}"],
+          "path": ["api", "b2b", "applications", "notify"]
+        }
+      }
+    },
+    {
+      "name": "4. Update Status & Send Email - Application ID 1 (ACCEPTED)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"candidateEmail\": \"alice.johnson@example.com\",\n  \"candidateName\": \"Alice Johnson\",\n  \"jobTitle\": \"Product Manager\",\n  \"companyName\": \"InnovateTech Ltd\",\n  \"status\": \"ACCEPTED\",\n  \"message\": \"We look forward to collaborating with you. Please prepare for your first strategy meeting scheduled for March 5th.\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/b2b/applications/1/status-notify?status=ACCEPTED",
+          "host": ["{{base_url}}"],
+          "path": ["api", "b2b", "applications", "1", "status-notify"],
+          "query": [
+            {
+              "key": "status",
+              "value": "ACCEPTED"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "5. Update Status & Send Email - Application ID 2 (REJECTED)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"candidateEmail\": \"charlie.brown@example.com\",\n  \"candidateName\": \"Charlie Brown\",\n  \"jobTitle\": \"QA Engineer\",\n  \"companyName\": \"TestFirst Solutions\",\n  \"status\": \"REJECTED\",\n  \"message\": \"We appreciate your interest. Your testing skills are impressive and we'd like to keep your profile for future roles.\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/b2b/applications/2/status-notify?status=REJECTED",
+          "host": ["{{base_url}}"],
+          "path": ["api", "b2b", "applications", "2", "status-notify"],
+          "query": [
+            {
+              "key": "status",
+              "value": "REJECTED"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "6. Get Application (for context)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/b2b/applications/1",
+          "host": ["{{base_url}}"],
+          "path": ["api", "b2b", "applications", "1"]
+        }
+      }
+    },
+    {
+      "name": "7. List All Applications",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/b2b/applications",
+          "host": ["{{base_url}}"],
+          "path": ["api", "b2b", "applications"]
+        }
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8083",
+      "type": "string"
+    }
+  ]
+}
+
