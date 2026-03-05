@@ -1,0 +1,69 @@
+<div class="pricing-container">
+  <div class="pricing-header">
+    <h1>Choisissez votre abonnement</h1>
+    <p>Accédez à des milliers de cours et développez vos compétences</p>
+  </div>
+
+  <div class="loading" *ngIf="loading">
+    <div class="spinner"></div>
+    <p>Chargement des plans...</p>
+  </div>
+
+  <div class="plans-grid" *ngIf="!loading">
+    <div 
+      *ngFor="let plan of plans" 
+      class="plan-card"
+      [class.recommended]="isRecommended(plan)">
+      
+      <div class="plan-badge" *ngIf="isRecommended(plan)">
+        ⭐ Recommandé
+      </div>
+
+      <div class="plan-header">
+        <h2>{{ plan.name }}</h2>
+        <div class="plan-price">
+          <span class="amount">{{ plan.priceMonthly }}</span>
+          <span class="currency">{{ plan.currency }}</span>
+          <span class="period">/mois</span>
+        </div>
+        <p class="plan-limit">{{ getLimitText(plan.monthlyEnrollmentLimit) }} inscriptions</p>
+      </div>
+
+      <div class="plan-features">
+        <div class="feature" *ngFor="let feature of getFeatures(plan)">
+          <span class="check-icon">✓</span>
+          <span>{{ feature }}</span>
+        </div>
+      </div>
+
+      <button 
+        class="btn-select"
+        [class.btn-primary]="isRecommended(plan)"
+        (click)="selectPlan(plan.slug)">
+        Choisir {{ plan.name }}
+      </button>
+    </div>
+  </div>
+
+  <div class="faq-section">
+    <h2>Questions fréquentes</h2>
+    <div class="faq-grid">
+      <div class="faq-item">
+        <h3>💳 Comment effectuer le paiement ?</h3>
+        <p>Après avoir choisi votre plan, vous recevrez les instructions de paiement par virement bancaire. Votre abonnement sera activé après confirmation par l'administrateur.</p>
+      </div>
+      <div class="faq-item">
+        <h3>🔄 Puis-je changer de plan ?</h3>
+        <p>Oui, vous pouvez mettre à niveau votre plan à tout moment. Contactez le support pour plus d'informations.</p>
+      </div>
+      <div class="faq-item">
+        <h3>❌ Comment annuler mon abonnement ?</h3>
+        <p>Vous pouvez annuler votre abonnement depuis votre espace personnel. Vous conserverez l'accès jusqu'à la fin de la période payée.</p>
+      </div>
+      <div class="faq-item">
+        <h3>📞 Besoin d'aide ?</h3>
+        <p>Contactez-nous au 26512108 ou par email à support&#64;skillsphere.tn</p>
+      </div>
+    </div>
+  </div>
+</div>

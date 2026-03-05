@@ -1,0 +1,234 @@
+<div class="instructor-sessions">
+  <div class="header">
+    <div class="header-left">
+      <h1>📅 Mes Sessions</h1>
+      <p>Gérez vos sessions de formation</p>
+    </div>
+    <button class="btn-create" (click)="createSession()">
+      <i class="fas fa-plus"></i>
+      Créer une Session
+    </button>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters">
+    <div class="filter-group">
+      <label>Statut:</label>
+      <select [(ngModel)]="selectedStatus" (change)="onStatusChange()">
+        <option *ngFor="let status of statuses" [value]="status">
+          {{ status === 'All' ? 'Tous' : getStatusLabel(status) }}
+        </option>
+      </select>
+    </div>
+
+    <div class="filter-group search">
+      <input 
+        type="text" 
+        [(ngModel)]="searchQuery" 
+        (input)="onSearch()"
+        placeholder="Rechercher par formation ou lieu..."
+      />
+      <i class="fas fa-search"></i>
+    </div>
+  </div>
+
+  <div class="loading" *ngIf="loading">
+    <i class="fas fa-spinner fa-spin"></i>
+    <p>Chargement des sessions...</p>
+  </div>
+
+  <!-- Sessions List -->
+  <div class="sessions-list" *ngIf="!loading && filteredSessions.length > 0">
+    <div class="session-card" *ngFor="let session of filteredSessions">
+      <div class="session-header">
+        <h3>{{ session.courseTitle }}</h3>
+        <span class="status-badge" [ngClass]="getStatusBadgeClass(session.status)">
+          {{ getStatusLabel(session.status) }}
+        </span>
+      </div>
+
+      <div class="session-details">
+        <div class="detail-item">
+          <i class="fas fa-calendar"></i>
+          <span>{{ formatDate(session.startAt) }}</span>
+        </div>
+        <div class="detail-item" *ngIf="session.location">
+          <i class="fas fa-map-marker-alt"></i>
+          <span>{{ session.location }}</span>
+        </div>
+        <div class="detail-item">
+          <i class="fas fa-users"></i>
+          <span>{{ session.enrolledCount }} / {{ session.capacity }} inscrits</span>
+        </div>
+      </div>
+
+      <!-- Capacity Bar -->
+      <div class="capacity-bar">
+        <div 
+          class="capacity-fill" 
+          [style.width.%]="getCapacityPercentage(session)"
+          [ngClass]="{
+            'capacity-low': getCapacityPercentage(session) < 50,
+            'capacity-medium': getCapacityPercentage(session) >= 50 && getCapacityPercentage(session) < 80,
+            'capacity-high': getCapacityPercentage(session) >= 80
+          }"
+        ></div>
+      </div>
+
+      <div class="session-actions">
+        <button 
+          class="btn-action btn-status"
+          [ngClass]="{
+            'btn-open': session.status === SessionStatus.PLANNED || session.status === SessionStatus.CLOSED,
+            'btn-close': session.status === SessionStatus.OPEN
+          }"
+          (click)="toggleSessionStatus(session)"
+          [disabled]="session.status === SessionStatus.CANCELED"
+        >
+          <i class="fas" [ngClass]="{
+            'fa-lock-open': session.status === SessionStatus.PLANNED || session.status === SessionStatus.CLOSED,
+            'fa-lock': session.status === SessionStatus.OPEN
+          }"></i>
+          {{ session.status === SessionStatus.OPEN ? 'Fermer' : 'Ouvrir' }}
+        </button>
+        <button class="btn-action" (click)="viewParticipants(session)">
+          <i class="fas fa-users"></i>
+          Participants
+        </button>
+        <button class="btn-action" (click)="editSession(session)">
+          <i class="fas fa-edit"></i>
+          Modifier
+        </button>
+        <button class="btn-action btn-danger" (click)="deleteSession(session)">
+          <i class="fas fa-trash"></i>
+          Supprimer
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Empty State -->
+  <div class="empty-state" *ngIf="!loading && filteredSessions.length === 0 && sessions.length === 0">
+    <i class="fas fa-calendar-alt"></i>
+    <h2>Aucune session planifiée</h2>
+    <p>Créez votre première session pour commencer à enseigner</p>
+    <button class="btn-primary" (click)="createSession()">
+      Créer ma première session
+    </button>
+  </div>
+
+  <!-- No Results -->
+  <div class="empty-state" *ngIf="!loading && filteredSessions.length === 0 && sessions.length > 0">
+    <i class="fas fa-search"></i>
+    <h2>Aucun résultat</h2>
+    <p>Aucune session ne correspond à vos critères de recherche</p>
+  </div>
+</div>
+
+<!-- Modal de création/édition -->
+<div class="modal-overlay" *ngIf="showModal" (click)="closeModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>{{ isEditMode ? 'Modifier la Session' : 'Créer une Session' }}</h2>
+      <button class="close-btn" (click)="closeModal()">&times;</button>
+    </div>
+
+    <form [formGroup]="sessionForm" (ngSubmit)="saveSession()">
+      <div class="form-group">
+        <label>Formation *</label>
+        <select formControlName="courseId" class="form-control" [disabled]="isEditMode">
+          <option value="">Sélectionnez une formation</option>
+          <option *ngFor="let formation of formations" [value]="formation.id">
+            {{ formation.title }}
+          </option>
+        </select>
+        <span class="error" *ngIf="sessionForm.get('courseId')?.invalid && sessionForm.get('courseId')?.touched">
+          {{ getFieldError('courseId') }}
+        </span>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Date et heure de début *</label>
+          <input 
+            type="datetime-local" 
+            formControlName="startAt" 
+            class="form-control"
+            [min]="minDateTime"
+          />
+          <span class="error" *ngIf="sessionForm.get('startAt')?.invalid && sessionForm.get('startAt')?.touched">
+            {{ getFieldError('startAt') }}
+          </span>
+        </div>
+
+        <div class="form-group">
+          <label>Date et heure de fin *</label>
+          <input 
+            type="datetime-local" 
+            formControlName="endAt" 
+            class="form-control"
+            [min]="minDateTime"
+          />
+          <span class="error" *ngIf="sessionForm.get('endAt')?.invalid && sessionForm.get('endAt')?.touched">
+            {{ getFieldError('endAt') }}
+          </span>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Fuseau horaire *</label>
+          <select formControlName="timezone" class="form-control">
+            <option value="Africa/Casablanca">Africa/Casablanca (GMT+1)</option>
+            <option value="Europe/Paris">Europe/Paris (GMT+1)</option>
+            <option value="America/New_York">America/New_York (GMT-5)</option>
+            <option value="Asia/Dubai">Asia/Dubai (GMT+4)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Capacité *</label>
+          <input 
+            type="number" 
+            formControlName="capacity" 
+            class="form-control"
+            min="1"
+            max="1000"
+          />
+          <span class="error" *ngIf="sessionForm.get('capacity')?.invalid && sessionForm.get('capacity')?.touched">
+            {{ getFieldError('capacity') }}
+          </span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Lieu (optionnel)</label>
+        <input 
+          type="text" 
+          formControlName="location" 
+          class="form-control"
+          placeholder="Salle A - Campus Rabat ou https://zoom.us/..."
+        />
+        <small>Adresse physique ou lien de visioconférence</small>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" (click)="closeModal()">
+          Annuler
+        </button>
+        <button type="submit" class="btn-primary" [disabled]="sessionForm.invalid">
+          {{ isEditMode ? 'Modifier la Session' : 'Créer la Session' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Confirm Dialog -->
+<app-confirm-dialog
+  *ngIf="showConfirmDialog"
+  [title]="confirmDialogTitle"
+  [message]="confirmDialogMessage"
+  (confirmed)="onConfirmDelete()"
+  (cancelled)="onCancelDelete()"
+></app-confirm-dialog>
