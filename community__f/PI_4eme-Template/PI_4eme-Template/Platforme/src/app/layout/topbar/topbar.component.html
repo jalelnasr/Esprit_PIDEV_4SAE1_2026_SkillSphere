@@ -33,23 +33,39 @@
             <span class="notification-count">{{ unreadCount }} new</span>
           </div>
 
+          <div class="notification-subheader">
+            <span class="stream-status" [class.connected]="streamState === 'connected'">
+              {{ streamStatusLabel() }}
+            </span>
+            <button class="mark-all-btn" type="button" (click)="markAllAsRead(); $event.stopPropagation()" [disabled]="unreadCount === 0">
+              Mark all read
+            </button>
+          </div>
+
           <div class="notification-list">
             <div
               *ngFor="let notif of notifications"
               class="notification-item"
               [class.unread]="!notif.read"
-              (click)="markAsRead(notif.id)"
+              (click)="openNotification(notif)"
             >
               <div class="notification-dot" *ngIf="!notif.read"></div>
               <div class="notification-content">
-                <p>{{ notif.message }}</p>
-                <span class="notification-time">{{ notif.time }}</span>
+                <p>
+                  <span class="notification-icon">{{ notificationIcon(notif) }}</span>
+                  <span>{{ notif.text }}</span>
+                </p>
+                <span class="notification-time">{{ notificationTime(notif) }}</span>
               </div>
+            </div>
+
+            <div class="notification-empty" *ngIf="notifications.length === 0">
+              No notifications yet.
             </div>
           </div>
 
-          <div class="dropdown-footer">
-            <a href="#" class="view-all">View All Notifications</a>
+          <div class="dropdown-footer" *ngIf="notifications.length > 0">
+            <a routerLink="/community/feed" class="view-all" (click)="showNotifications = false">Go to community</a>
           </div>
         </div>
       </div>

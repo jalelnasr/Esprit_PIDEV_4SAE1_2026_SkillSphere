@@ -1,0 +1,428 @@
+{
+  "info": {
+    "_postman_id": "2b8f4d1b-c8b4-4dea-a693-7ab2a3d4cb29",
+    "name": "Community Notifications SSE (Local)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1) Login User A",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{userAEmail}}\",\n  \"password\": \"{{userAPassword}}\"\n}"
+        },
+        "url": {
+          "raw": "{{gatewayBase}}/api/auth/login",
+          "host": [
+            "{{gatewayBase}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "login"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Login A returns 200', function () { pm.response.to.have.status(200); });",
+              "var json = pm.response.json();",
+              "pm.environment.set('tokenA', json.token);",
+              "pm.environment.set('userAId', json.idUser);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "2) Login User B",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{userBEmail}}\",\n  \"password\": \"{{userBPassword}}\"\n}"
+        },
+        "url": {
+          "raw": "{{gatewayBase}}/api/auth/login",
+          "host": [
+            "{{gatewayBase}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "login"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Login B returns 200', function () { pm.response.to.have.status(200); });",
+              "var json = pm.response.json();",
+              "pm.environment.set('tokenB', json.token);",
+              "pm.environment.set('userBId', json.idUser);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "3) CORS preflight via gateway (/api/community/posts)",
+      "request": {
+        "method": "OPTIONS",
+        "header": [
+          {
+            "key": "Origin",
+            "value": "http://localhost:4200"
+          },
+          {
+            "key": "Access-Control-Request-Method",
+            "value": "GET"
+          },
+          {
+            "key": "Access-Control-Request-Headers",
+            "value": "authorization,content-type"
+          }
+        ],
+        "url": {
+          "raw": "{{gatewayBase}}/api/community/posts",
+          "host": [
+            "{{gatewayBase}}"
+          ],
+          "path": [
+            "api",
+            "community",
+            "posts"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Gateway preflight returns 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Has Access-Control-Allow-Origin', function () {",
+              "  pm.expect(pm.response.headers.get('Access-Control-Allow-Origin')).to.exist;",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "4) CORS preflight direct community service (/api/posts)",
+      "request": {
+        "method": "OPTIONS",
+        "header": [
+          {
+            "key": "Origin",
+            "value": "http://localhost:4200"
+          },
+          {
+            "key": "Access-Control-Request-Method",
+            "value": "GET"
+          },
+          {
+            "key": "Access-Control-Request-Headers",
+            "value": "authorization,content-type"
+          }
+        ],
+        "url": {
+          "raw": "{{communityBase}}/api/posts",
+          "host": [
+            "{{communityBase}}"
+          ],
+          "path": [
+            "api",
+            "posts"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Direct preflight returns 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Has Access-Control-Allow-Origin', function () {",
+              "  pm.expect(pm.response.headers.get('Access-Control-Allow-Origin')).to.exist;",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "5) Get posts through gateway",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{gatewayBase}}/api/community/posts?page=1&size=20",
+          "host": [
+            "{{gatewayBase}}"
+          ],
+          "path": [
+            "api",
+            "community",
+            "posts"
+          ],
+          "query": [
+            {
+              "key": "page",
+              "value": "1"
+            },
+            {
+              "key": "size",
+              "value": "20"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Posts endpoint returns 200', function () { pm.response.to.have.status(200); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "6) Open SSE stream (User A)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "text/event-stream"
+          }
+        ],
+        "url": {
+          "raw": "{{gatewayBase}}/api/community/notifications/stream?token={{tokenA}}",
+          "host": [
+            "{{gatewayBase}}"
+          ],
+          "path": [
+            "api",
+            "community",
+            "notifications",
+            "stream"
+          ],
+          "query": [
+            {
+              "key": "token",
+              "value": "{{tokenA}}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "7) Trigger test notification (User A)",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{tokenA}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "url": {
+          "raw": "{{gatewayBase}}/api/community/notifications/test",
+          "host": [
+            "{{gatewayBase}}"
+          ],
+          "path": [
+            "api",
+            "community",
+            "notifications",
+            "test"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Test notification trigger returns 200', function () { pm.response.to.have.status(200); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "8) Like User A post as User B",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{tokenB}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "url": {
+          "raw": "{{gatewayBase}}/api/community/post-likes/{{postIdOwnedByUserA}}",
+          "host": [
+            "{{gatewayBase}}"
+          ],
+          "path": [
+            "api",
+            "community",
+            "post-likes",
+            "{{postIdOwnedByUserA}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "9) Follow User A as User B",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{tokenB}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "url": {
+          "raw": "{{gatewayBase}}/api/community/users/{{userAId}}/follow",
+          "host": [
+            "{{gatewayBase}}"
+          ],
+          "path": [
+            "api",
+            "community",
+            "users",
+            "{{userAId}}",
+            "follow"
+          ]
+        }
+      }
+    },
+    {
+      "name": "10) Send message to User A as User B",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{tokenB}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"content\": \"Hello from Postman\"\n}"
+        },
+        "url": {
+          "raw": "{{gatewayBase}}/api/community/messages/{{userAId}}",
+          "host": [
+            "{{gatewayBase}}"
+          ],
+          "path": [
+            "api",
+            "community",
+            "messages",
+            "{{userAId}}"
+          ]
+        }
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "gatewayBase",
+      "value": "http://localhost:8081"
+    },
+    {
+      "key": "communityBase",
+      "value": "http://localhost:8082"
+    },
+    {
+      "key": "userAEmail",
+      "value": "usera@example.com"
+    },
+    {
+      "key": "userAPassword",
+      "value": "change_me"
+    },
+    {
+      "key": "userBEmail",
+      "value": "userb@example.com"
+    },
+    {
+      "key": "userBPassword",
+      "value": "change_me"
+    },
+    {
+      "key": "tokenA",
+      "value": ""
+    },
+    {
+      "key": "tokenB",
+      "value": ""
+    },
+    {
+      "key": "userAId",
+      "value": ""
+    },
+    {
+      "key": "userBId",
+      "value": ""
+    },
+    {
+      "key": "postIdOwnedByUserA",
+      "value": "1"
+    }
+  ]
+}

@@ -35,4 +35,8 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
         @Param("startDate") LocalDateTime startDate,
         @Param("endDate") LocalDateTime endDate
     );
+
+    List<Message> findByReceiverIdAndCreatedAtAfterOrderByCreatedAtDesc(Long receiverId, LocalDateTime createdAt, Pageable pageable);
+
+    List<Message> findByReceiverIdOrderByCreatedAtDesc(Long receiverId, Pageable pageable);
 }

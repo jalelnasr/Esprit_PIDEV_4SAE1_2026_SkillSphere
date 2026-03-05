@@ -7,3 +7,4 @@ export * from './message.service';
 export * from './follow.service';
 export * from './community-user-directory.service';
 export * from './community-profile-user.service';
+export * from './notification-stream.service';

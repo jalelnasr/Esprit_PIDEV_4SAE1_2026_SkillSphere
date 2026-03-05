@@ -11,8 +11,11 @@ public interface UserFeignClient {
     @GetMapping("/api/users/me")
     UserResponse getMe(@RequestHeader("Authorization") String authorizationHeader);
 
+    @GetMapping("/api/users/{id}")
+    UserResponse getUserById(@RequestHeader("Authorization") String authorizationHeader, @PathVariable("id") Long id);
+
     @GetMapping("/api/users/admin/{id}")
-    UserResponse getUserById(@PathVariable("id") Long id);
+    UserResponse getUserByIdAdmin(@PathVariable("id") Long id);
 
     // DTO class to match user microservice response
     class UserResponse {

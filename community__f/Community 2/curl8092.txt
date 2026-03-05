@@ -1,0 +1,17 @@
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100  2515    0  2515    0     0  10265      0 --:--:-- --:--:-- --:--:-- 10307HTTP/1.1 200 
+Vary: Origin
+Vary: Access-Control-Request-Method
+Vary: Access-Control-Request-Headers
+X-Content-Type-Options: nosniff
+X-XSS-Protection: 0
+Cache-Control: no-cache, no-store, max-age=0, must-revalidate
+Pragma: no-cache
+Expires: 0
+X-Frame-Options: DENY
+Content-Type: application/json
+Transfer-Encoding: chunked
+Date: Wed, 04 Mar 2026 22:48:50 GMT
+
+[{"postId":1,"content":"hfhfhfhfhfhfhfhff","imageUrl":null,"videoUrl":null,"createdAt":"2026-03-03T01:20:23","userId":2,"groupId":null},{"postId":2,"content":"hi grp dev","imageUrl":null,"videoUrl":null,"createdAt":"2026-03-03T03:14:15","userId":2,"groupId":3},{"postId":3,"content":"hi i am sarra","imageUrl":null,"videoUrl":null,"createdAt":"2026-03-04T00:03:53","userId":2,"groupId":null},{"postId":4,"content":"sarrrrrra2","imageUrl":null,"videoUrl":null,"createdAt":"2026-03-04T01:09:40","userId":3,"groupId":null},{"postId":5,"content":"good","imageUrl":null,"videoUrl":null,"createdAt":"2026-03-04T02:18:09","userId":3,"groupId":3},{"postId":6,"content":"hi ther","imageUrl":null,"videoUrl":null,"createdAt":"2026-03-04T14:34:52","userId":3,"groupId":null},{"postId":7,"content":"goooood","imageUrl":"https://picsum.photos/seed/newpost/600/400.jpg","videoUrl":null,"createdAt":"2026-03-04T14:46:22","userId":3,"groupId":null},{"postId":8,"content":"ppppppppppppppp","imageUrl":null,"videoUrl":"https://www.w3schools.com/html/mov_bbb.mp4","createdAt":"2026-03-04T14:48:13","userId":3,"groupId":null},{"postId":9,"content":"hiiiii  img","imageUrl":"blob:http://localhost:4200/2ef7b2ce-fd4b-4ae1-a896-83aaa4595272","videoUrl":null,"createdAt":"2026-03-04T15:06:32","userId":3,"groupId":null},{"postId":10,"content":"hiiiiiii vid","imageUrl":null,"videoUrl":"blob:http://localhost:4200/deda3b22-79f9-46ff-b26f-8468bbfc58c8","createdAt":"2026-03-04T15:06:49","userId":3,"groupId":null},{"postId":11,"content":"viiiiid","imageUrl":null,"videoUrl":null,"createdAt":"2026-03-04T16:07:07","userId":3,"groupId":null},{"postId":12,"content":"hiii","imageUrl":null,"videoUrl":null,"createdAt":"2026-03-04T16:08:14","userId":3,"groupId":8},{"postId":13,"content":"tessst img","imageUrl":null,"videoUrl":null,"createdAt":"2026-03-04T16:23:33","userId":3,"groupId":null},{"postId":14,"content":"test viiiiiiiiid","imageUrl":null,"videoUrl":null,"createdAt":"2026-03-04T16:23:55","userId":3,"groupId":null},{"postId":15,"content":"test viiiiiidee","imageUrl":null,"videoUrl":null,"createdAt":"2026-03-04T16:24:32","userId":3,"groupId":8},{"postId":16,"content":"tessst imgggggggggg","imageUrl":null,"videoUrl":null,"createdAt":"2026-03-04T16:24:47","userId":3,"groupId":8},{"postId":17,"content":"lkflqjdf","imageUrl":null,"videoUrl":null,"createdAt":"2026-03-04T17:21:50","userId":4,"groupId":null},{"postId":18,"content":"gofff","imageUrl":null,"videoUrl":null,"createdAt":"2026-03-04T17:31:54","userId":4,"groupId":null}]

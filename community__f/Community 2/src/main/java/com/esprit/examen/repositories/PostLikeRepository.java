@@ -24,4 +24,17 @@ public interface PostLikeRepository extends JpaRepository<PostLike, Long> {
         @Param("startDate") LocalDateTime startDate,
         @Param("endDate") LocalDateTime endDate
     );
+
+    @Query("select pl from PostLike pl join pl.post p where p.userId = :postOwnerId and pl.userId <> :postOwnerId and pl.createdAt > :since order by pl.createdAt desc")
+    List<PostLike> findReceivedLikesSince(
+        @Param("postOwnerId") Long postOwnerId,
+        @Param("since") LocalDateTime since,
+        Pageable pageable
+    );
+
+    @Query("select pl from PostLike pl join pl.post p where p.userId = :postOwnerId and pl.userId <> :postOwnerId order by pl.createdAt desc")
+    List<PostLike> findRecentReceivedLikes(
+        @Param("postOwnerId") Long postOwnerId,
+        Pageable pageable
+    );
 }

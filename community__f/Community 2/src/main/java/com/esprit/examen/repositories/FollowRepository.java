@@ -30,4 +30,8 @@ public interface FollowRepository extends JpaRepository<Follow, Long> {
         @Param("startDate") LocalDateTime startDate,
         @Param("endDate") LocalDateTime endDate
     );
+
+    List<Follow> findByFollowingIdAndCreatedAtAfterOrderByCreatedAtDesc(Long followingId, LocalDateTime createdAt, Pageable pageable);
+
+    List<Follow> findByFollowingIdOrderByCreatedAtDesc(Long followingId, Pageable pageable);
 }

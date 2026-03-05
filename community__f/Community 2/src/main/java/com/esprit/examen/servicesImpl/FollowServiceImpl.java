@@ -1,6 +1,8 @@
 package com.esprit.examen.servicesImpl;
 
+import com.esprit.examen.dto.NotificationEventDTO;
 import com.esprit.examen.entities.Follow;
+import com.esprit.examen.services.NotificationSseService;
 import com.esprit.examen.services.UserService;
 import com.esprit.examen.repositories.FollowRepository;
 import com.esprit.examen.services.FollowService;
@@ -21,6 +23,9 @@ public class FollowServiceImpl implements FollowService {
     @Resource
     private UserService userService;
 
+    @Resource
+    private NotificationSseService notificationSseService;
+
     @Override
     public Follow followUser(Long followerId, Long followingId) {
         if (followerId.equals(followingId)) {
@@ -40,7 +45,22 @@ public class FollowServiceImpl implements FollowService {
         follow.setFollowingId(followingId);
         follow.setCreatedAt(LocalDateTime.now());
         // Don't set followId - let database auto-generate it
-        return followRepository.save(follow);
+        Follow saved = followRepository.save(follow);
+
+        String actorName = userService.getDisplayName(followerId);
+        notificationSseService.sendToUser(
+                followingId,
+                new NotificationEventDTO(
+                        "follow",
+                        actorName + " started following you",
+                        followerId,
+                        null,
+                        null,
+                        LocalDateTime.now().toString()
+                )
+        );
+
+        return saved;
     }
 
     @Override

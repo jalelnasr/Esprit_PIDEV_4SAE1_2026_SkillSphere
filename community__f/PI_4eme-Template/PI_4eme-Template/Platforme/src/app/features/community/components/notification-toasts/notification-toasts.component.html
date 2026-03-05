@@ -1,0 +1,17 @@
+<div class="notification-toast-stack" *ngIf="toastNotifications$ | async as toasts">
+  <article class="notification-toast" *ngFor="let notification of toasts; trackBy: trackById">
+    <button class="toast-main" type="button" (click)="open(notification)">
+      <span class="toast-icon">{{ icon(notification.type) }}</span>
+      <span class="toast-text">{{ notification.text }}</span>
+    </button>
+
+    <button
+      class="toast-close"
+      type="button"
+      (click)="dismiss(notification.id)"
+      aria-label="Dismiss notification"
+    >
+      ✕
+    </button>
+  </article>
+</div>

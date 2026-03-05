@@ -1,9 +1,11 @@
 package com.esprit.examen.servicesImpl;
 
+import com.esprit.examen.dto.NotificationEventDTO;
 import com.esprit.examen.entities.Message;
-import com.esprit.examen.services.UserService;
 import com.esprit.examen.repositories.MessageRepository;
 import com.esprit.examen.services.MessageService;
+import com.esprit.examen.services.NotificationSseService;
+import com.esprit.examen.services.UserService;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 
@@ -19,6 +21,9 @@ public class MessageServiceImpl implements MessageService {
     @Resource
     private UserService userService;
 
+    @Resource
+    private NotificationSseService notificationSseService;
+
     @Override
     public Message sendMessage(Message message, Long currentUserId, Long receiverId) {
         if (!userService.userExists(currentUserId)) {
@@ -32,7 +37,24 @@ public class MessageServiceImpl implements MessageService {
         message.setCreatedAt(LocalDateTime.now());
         message.setIsRead(false);
         // Don't set messageId - let database auto-generate it
-        return messageRepository.save(message);
+        Message saved = messageRepository.save(message);
+
+        if (!currentUserId.equals(receiverId)) {
+            String actorName = userService.getDisplayName(currentUserId);
+            notificationSseService.sendToUser(
+                    receiverId,
+                    new NotificationEventDTO(
+                            "message",
+                            actorName + " sent you a message",
+                            currentUserId,
+                            null,
+                            saved.getMessageId(),
+                            LocalDateTime.now().toString()
+                    )
+            );
+        }
+
+        return saved;
     }
 
     @Override
