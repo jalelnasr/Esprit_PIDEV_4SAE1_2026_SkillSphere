@@ -1,0 +1,31 @@
+<div class="course-card">
+  <div class="card-image" [style.backgroundImage]="'url(' + course.thumbnail + ')'">
+    <span class="card-level">{{ course.level }}</span>
+    <button class="card-favorite" [class.active]="isFavorite" (click)="toggleFavorite()">♡</button>
+  </div>
+
+  <div class="card-content">
+    <span class="card-category">{{ course.category }}</span>
+    <h3 class="card-title">{{ course.title }}</h3>
+    
+    <div class="card-instructor">
+      <span class="instructor-avatar">{{ course.instructorName.charAt(0) }}</span>
+      <span class="instructor-name">{{ course.instructorName }}</span>
+    </div>
+
+    <div class="card-rating">
+      <span class="rating-stars">★ {{ course.rating }}</span>
+      <span class="rating-count">({{ course.reviewCount }})</span>
+    </div>
+
+    <div class="card-stats">
+      <span class="stat">👥 {{ course.enrolledCount }} enrolled</span>
+      <span class="stat">⏱️ {{ course.duration }}h</span>
+    </div>
+
+    <div class="card-footer">
+      <span class="card-price">${{ course.price }}</span>
+      <button class="card-btn" (click)="onEnroll()">Enroll Now</button>
+    </div>
+  </div>
+</div>

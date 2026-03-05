@@ -1,0 +1,43 @@
+@import '../../pages/login/login.component.css';
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.form-row .form-group {
+  width: 100%;
+}
+
+.password-hint {
+  display: block;
+  font-size: 11px;
+  color: #999;
+  margin-top: 0.25rem;
+}
+
+.checkbox a {
+  color: #0891b2;
+  text-decoration: none;
+}
+
+.checkbox a:hover {
+  text-decoration: underline;
+}
+
+/* ✅ HARD KILL any leftover "role" UI from imported template CSS */
+.role-selector,
+.role-btn,
+.role-icon,
+.role-text,
+.role-selection,
+.roles,
+.role-options {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  width: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}

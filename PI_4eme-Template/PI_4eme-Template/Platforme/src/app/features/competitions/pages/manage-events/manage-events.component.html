@@ -1,0 +1,61 @@
+<div class="container py-3">
+  <h2>Manage Events (Mes événements)</h2>
+
+  <div *ngIf="loading" class="alert alert-info">Chargement...</div>
+  <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
+
+  <div *ngIf="!loading && mine.length === 0" class="alert alert-warning">
+    Aucun événement trouvé (créé par vous).
+  </div>
+
+  <div *ngIf="mine.length > 0" class="table-responsive">
+    <table class="table table-dark table-striped align-middle">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Titre</th>
+          <th>Type</th>
+          <th>Participation</th>
+          <th>Dates</th>
+          <th>Status</th>
+          <th style="width: 260px;">Actions</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <tr *ngFor="let c of mine">
+          <td>{{ c.competitionId }}</td>
+
+          <td>
+            <input class="form-control form-control-sm" [(ngModel)]="c.title" />
+            <textarea class="form-control form-control-sm mt-1" rows="2" [(ngModel)]="c.description"></textarea>
+          </td>
+
+          <td>{{ c.type }}</td>
+          <td>{{ c.participationType }}</td>
+
+          <td>
+            <div>Début: {{ c.startDate | date:'dd/MM/yyyy HH:mm' }}</div>
+            <div>Fin: {{ c.endDate | date:'dd/MM/yyyy HH:mm' }}</div>
+          </td>
+
+          <td>
+            <select class="form-select form-select-sm" [(ngModel)]="c.status"
+                    (change)="updateStatus(c, c.status)">
+              <option value="OPEN">OPEN</option>
+              <option value="CLOSED">CLOSED</option>
+              <option value="IN_PROGRESS">IN_PROGRESS</option>
+              <option value="COMPLETED">COMPLETED</option>
+              <option value="CANCELLED">CANCELLED</option>
+            </select>
+          </td>
+
+          <td>
+            <button class="btn btn-sm btn-success me-2" (click)="saveEdit(c)">💾 Enregistrer</button>
+            <button class="btn btn-sm btn-danger" (click)="delete(c)">🗑 Supprimer</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
