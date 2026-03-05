@@ -1,0 +1,71 @@
+<div class="admin-container">
+  <!-- Top Navigation Bar -->
+  <nav class="admin-navbar">
+    <div class="navbar-left">
+      <button class="sidebar-toggle" (click)="toggleSidebar()">
+        <span>☰</span>
+      </button>
+      <div class="navbar-logo">
+        <span class="logo-icon">⚡</span>
+        <span class="logo-text">SkillSphere Admin</span>
+      </div>
+    </div>
+
+    <div class="navbar-right">
+      <button
+        class="theme-toggle-btn"
+        (click)="toggleTheme()"
+        [title]="isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'"
+      >
+        <span class="theme-icon">{{ isDarkMode ? '☀️' : '🌙' }}</span>
+      </button>
+
+      <div class="admin-profile" *ngIf="currentUser$ | async as user">
+        <div class="profile-info">
+          <div class="profile-name">{{ user.prenom }} {{ user.nom }}</div>
+          <div class="profile-role">{{ user.role }}</div>
+        </div>
+        <div class="profile-avatar">{{ user?.prenom?.charAt(0) || '' }}</div>
+      </div>
+
+      <button class="logout-btn" (click)="logout()">Logout</button>
+    </div>
+  </nav>
+
+  <!-- Main Container -->
+  <div class="admin-main">
+    <!-- Sidebar Navigation -->
+    <aside class="admin-sidebar" [class.open]="sidebarOpen">
+      <div class="sidebar-header">
+        <h3>Menu</h3>
+        <button class="close-sidebar" (click)="toggleSidebar()">✕</button>
+      </div>
+
+      <ul class="sidebar-menu">
+        <li *ngFor="let item of menuItems">
+          <a
+            [routerLink]="item.path"
+            routerLinkActive="router-link-active"
+            [routerLinkActiveOptions]="{ exact: false }"
+            class="menu-item"
+          >
+            <span class="menu-icon">{{ item.icon }}</span>
+            <span class="menu-label">{{ item.label }}</span>
+          </a>
+        </li>
+      </ul>
+
+      <div class="sidebar-footer">
+        <div class="sidebar-info">
+          <p>© 2026 SkillSphere</p>
+          <p>Admin Dashboard v1.0</p>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Content Area -->
+    <main class="admin-content">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+</div>

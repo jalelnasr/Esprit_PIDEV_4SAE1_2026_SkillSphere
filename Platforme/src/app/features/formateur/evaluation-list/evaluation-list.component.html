@@ -1,0 +1,23 @@
+<div class="page">
+  <div class="header">
+    <h1>My Evaluations</h1>
+    <a class="btn" routerLink="/formateur/evaluations/create">+ New Evaluation</a>
+  </div>
+
+  <div class="grid">
+    <div class="card" *ngFor="let e of evaluations">
+      <div class="top">
+        <h3>{{ e.title }}</h3>
+        <div class="status-badge">
+          Status: <span>{{ e.status }}</span>
+        </div>
+      </div>
+
+      <p class="desc">{{ e.description }}</p>
+
+      <div class="actions">
+        <a class="btn-secondary" [routerLink]="['/formateur/evaluations', e.id, 'manage']">Manage</a>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,210 @@
+/* ============================================================================
+   HERO TOP SECTION
+   ============================================================================ */
+
+.evaluation-hero {
+  position: relative;
+  padding: 180px 2rem 120px;
+  text-align: center;
+  overflow: hidden;
+}
+
+.evaluation-hero-content h1 {
+  font-size: 3.5rem;
+  font-weight: 900;
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+}
+
+.evaluation-hero-content p {
+  font-size: 1.2rem;
+  color: var(--text-secondary);
+}
+
+/* Status Badge */
+.status-badge {
+  margin-top: 2rem;
+  display: inline-block;
+  padding: 0.8rem 1.8rem;
+  border-radius: 50px;
+  background: rgba(8, 145, 178, 0.1);
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--primary);
+  border: 1px solid rgba(8, 145, 178, 0.3);
+}
+
+.status-badge span {
+  font-weight: 900;
+}
+
+
+/* ============================================================================
+   FORM SECTION
+   ============================================================================ */
+
+.evaluation-section {
+  max-width: 1100px;
+  margin: -80px auto 100px;
+  padding: 0 2rem;
+}
+
+.evaluation-card {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-color);
+  border-radius: 25px;
+  padding: 4rem;
+  box-shadow: 0 30px 80px rgba(8, 145, 178, 0.15);
+  transition: all 0.3s ease;
+}
+
+:root.dark-mode .evaluation-card {
+  background: rgba(45, 45, 68, 0.7);
+}
+
+.evaluation-card:hover {
+  box-shadow: 0 40px 100px rgba(8, 145, 178, 0.25);
+}
+
+
+/* ============================================================================
+   FORM ELEMENTS
+   ============================================================================ */
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 2.5rem;
+}
+
+.form-group label {
+  font-weight: 800;
+  margin-bottom: 1rem;
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+
+.form-group input,
+.form-group textarea {
+  padding: 1.2rem;
+  border-radius: 14px;
+  border: 2px solid transparent;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.05);
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  border: 2px solid var(--primary);
+  box-shadow: 0 0 0 5px rgba(8, 145, 178, 0.15);
+  outline: none;
+}
+
+
+/* ============================================================================
+   BUTTONS
+   ============================================================================ */
+
+.row-buttons {
+  display: flex;
+  gap: 1.5rem;
+  justify-content: center;
+  margin-top: 2.5rem;
+  flex-wrap: wrap;
+}
+
+.form-actions {
+  text-align: center;
+  margin-top: 3rem;
+}
+
+/* Primary Button */
+.btn-create {
+  padding: 1.2rem 3rem;
+  border-radius: 16px;
+  border: none;
+  background: linear-gradient(135deg, #0891b2, #06b6d4);
+  color: white;
+  font-weight: 900;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 15px 40px rgba(8, 145, 178, 0.4);
+}
+
+.btn-create:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 25px 60px rgba(8, 145, 178, 0.6);
+}
+
+/* Secondary Button */
+.btn-secondary {
+  padding: 1.2rem 3rem;
+  border-radius: 16px;
+  border: 2px solid var(--primary);
+  background: transparent;
+  color: var(--primary);
+  font-weight: 800;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+  background: var(--primary);
+  color: white;
+  transform: translateY(-4px);
+}
+
+
+/* ============================================================================
+   DANGER ZONE
+   ============================================================================ */
+
+.danger-zone {
+  margin-top: 3rem;
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+/* Publish Button */
+.btn-publish {
+  padding: 1.1rem 2.5rem;
+  border-radius: 14px;
+  border: none;
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: white;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 15px 40px rgba(34, 197, 94, 0.4);
+}
+
+.btn-publish:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 25px 60px rgba(34, 197, 94, 0.6);
+}
+
+/* Delete Button */
+.btn-delete {
+  padding: 1.1rem 2.5rem;
+  border-radius: 14px;
+  border: none;
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 15px 40px rgba(239, 68, 68, 0.4);
+}
+
+.btn-delete:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 25px 60px rgba(239, 68, 68, 0.6);
+}
