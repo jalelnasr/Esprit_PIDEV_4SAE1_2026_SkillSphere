@@ -1,0 +1,102 @@
+================================================================================
+                    ⚠️ ACTIONS FINALES - ERREUR 500 PERSISTANTE ⚠️
+================================================================================
+
+L'erreur 500 persiste. Voici les actions à faire DANS L'ORDRE:
+
+================================================================================
+ÉTAPE 1: EXÉCUTER LE SCRIPT SQL
+================================================================================
+
+cd Formation_service
+mysql -u root -p skillsphere < ADD_MISSING_COLUMNS.sql
+
+Entrez votre mot de passe MySQL.
+
+Vous devriez voir:
+✅ Migration terminée avec succès!
+
+================================================================================
+ÉTAPE 2: VÉRIFIER QUE LA COLONNE EXISTE
+================================================================================
+
+mysql -u root -p skillsphere
+
+Puis:
+DESCRIBE sessions;
+
+Vous DEVEZ voir la colonne "created_at" dans la liste!
+
+Si elle n'existe pas, exécutez manuellement:
+ALTER TABLE sessions ADD COLUMN created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP;
+
+Tapez: exit
+
+================================================================================
+ÉTAPE 3: ARRÊTER LE BACKEND
+================================================================================
+
+Dans le terminal où tourne le backend:
+- Appuyez sur Ctrl+C
+- Attendez que le processus s'arrête complètement
+
+================================================================================
+ÉTAPE 4: REDÉMARRER LE BACKEND
+================================================================================
+
+cd Formation_service
+mvnw.cmd spring-boot:run
+
+Attendez le message:
+"Started FormationServiceApplication in X.XXX seconds"
+
+IMPORTANT: Regardez les logs! S'il y a des erreurs, notez-les!
+
+================================================================================
+ÉTAPE 5: TESTER L'API
+================================================================================
+
+Dans un AUTRE terminal:
+curl http://localhost:8087/formation-service/api/instructors/24/sessions
+
+Résultat attendu: [] ou [{...}]
+Si erreur 500: Regardez les logs du backend!
+
+================================================================================
+ÉTAPE 6: RAFRAÎCHIR LE NAVIGATEUR
+================================================================================
+
+Ctrl+Shift+R dans votre navigateur
+
+================================================================================
+SI L'ERREUR PERSISTE:
+================================================================================
+
+1. REGARDEZ LES LOGS DU BACKEND
+   Dans le terminal où tourne le backend, cherchez l'erreur exacte.
+   Elle commence par "ERROR" et contient "Caused by:".
+
+2. COPIEZ L'ERREUR COMPLÈTE
+   Copiez tout le message d'erreur (10-20 lignes).
+
+3. L'ERREUR PEUT ÊTRE:
+   - "Unknown column 's1_0.created_at'" → Script SQL pas exécuté
+   - "NoSuchMethodError: isCompleted()" → Code pas recompilé
+   - Autre chose → Partagez l'erreur
+
+================================================================================
+VÉRIFICATION RAPIDE:
+================================================================================
+
+# La colonne existe?
+mysql -u root -p skillsphere -e "SHOW COLUMNS FROM sessions LIKE 'created_at';"
+
+# Le backend tourne?
+curl http://localhost:8087/formation-service/api/courses
+
+# Les logs du backend?
+Regardez le terminal où tourne le backend
+
+================================================================================
+                    EXÉCUTEZ CES ÉTAPES MAINTENANT
+================================================================================

@@ -11,3 +11,12 @@ target/
 # IDE
 .vscode/
 .idea/
+
+# IntelliJ
+.idea/
+
+# Maven
+target/
+
+# Backend generated/user uploads
+Formation_service/src/main/resources/static/uploads/
