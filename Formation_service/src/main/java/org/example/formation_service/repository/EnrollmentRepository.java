@@ -29,4 +29,6 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
         @Param("startDate") LocalDateTime startDate,
         @Param("excludedStatus") EnrollmentStatus excludedStatus
     );
+
+    List<Enrollment> findByCourse_IdAndStatus(Long courseId, EnrollmentStatus status);
 }
