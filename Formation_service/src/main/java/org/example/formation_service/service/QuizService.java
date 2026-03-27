@@ -10,7 +10,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.stream.Collectors;
-
 @Service
 @RequiredArgsConstructor
 public class QuizService {
@@ -215,5 +214,150 @@ public class QuizService {
         stats.put("passedCount", passed);
         stats.put("passRate", total > 0 ? Math.round((passed * 100.0) / total) : 0);
         return stats;
+    }
+
+    // ── APPRENANT: All quiz summaries across enrolled courses ─────────────────
+    public List<StudentQuizSummary> getStudentQuizSummaries(Long userId) {
+        // Get all attempts by this user
+        List<QuizAttempt> allAttempts = attemptRepository.findByUserIdOrderByAttemptedAtDesc(userId);
+
+        // Group by quizId: best score per quiz
+        Map<Long, QuizAttempt> bestAttemptByQuiz = new LinkedHashMap<>();
+        Map<Long, Long> attemptCountByQuiz = new HashMap<>();
+
+        for (QuizAttempt attempt : allAttempts) {
+            Long quizId = attempt.getQuiz().getId();
+            attemptCountByQuiz.merge(quizId, 1L, Long::sum);
+            bestAttemptByQuiz.merge(quizId, attempt,
+                (existing, newAttempt) -> existing.getScore() >= newAttempt.getScore() ? existing : newAttempt);
+        }
+
+        // Build summaries
+        List<StudentQuizSummary> summaries = new ArrayList<>();
+        for (Map.Entry<Long, QuizAttempt> entry : bestAttemptByQuiz.entrySet()) {
+            QuizAttempt best = entry.getValue();
+            Quiz quiz = best.getQuiz();
+            Lesson lesson = quiz.getLesson();
+            org.example.formation_service.domain.entity.Course course = lesson.getCourse();
+
+            String status = best.getPassed() ? "PASSED" : "FAILED";
+
+            summaries.add(StudentQuizSummary.builder()
+                .quizId(quiz.getId())
+                .quizTitle(quiz.getTitle())
+                .lessonId(lesson.getId())
+                .lessonTitle(lesson.getTitle())
+                .courseId(course.getId())
+                .courseTitle(course.getTitle())
+                .bestScore(best.getScore())
+                .totalQuestions(quiz.getQuestions().size())
+                .passThreshold(quiz.getPassThreshold())
+                .passed(best.getPassed())
+                .status(status)
+                .attemptCount(attemptCountByQuiz.getOrDefault(quiz.getId(), 0L))
+                .lastAttemptAt(best.getAttemptedAt())
+                .build());
+        }
+
+        return summaries;
+    }
+
+    // ── FORMATEUR: Full analytics for a quiz (with weakest questions) ─────────
+    public QuizAnalyticsResponse getQuizAnalytics(Long quizId) {
+        Quiz quiz = quizRepository.findById(quizId)
+            .orElseThrow(() -> new RuntimeException("Quiz not found: " + quizId));
+
+        List<QuizAttempt> attempts = attemptRepository.findByQuiz_Id(quizId);
+        int total = attempts.size();
+
+        if (total == 0) {
+            return QuizAnalyticsResponse.builder()
+                .quizId(quizId)
+                .quizTitle(quiz.getTitle())
+                .lessonTitle(quiz.getLesson().getTitle())
+                .totalAttempts(0)
+                .averageScore(0)
+                .passRate(0)
+                .passedCount(0)
+                .weakestQuestions(new ArrayList<>())
+                .build();
+        }
+
+        int totalScore = attempts.stream().mapToInt(QuizAttempt::getScore).sum();
+        long passedCount = attempts.stream().filter(QuizAttempt::getPassed).count();
+        int avgScore = totalScore / total;
+        int passRate = (int) Math.round((passedCount * 100.0) / total);
+
+        // Parse answers_json to count wrong answers per question
+        Map<Long, int[]> questionStats = new LinkedHashMap<>(); // questionId -> [wrongCount, totalAnswered]
+        for (Question q : quiz.getQuestions()) {
+            questionStats.put(q.getId(), new int[]{0, 0});
+        }
+
+        // Build correct answer map
+        Map<Long, Long> correctAnswers = new HashMap<>();
+        for (Question q : quiz.getQuestions()) {
+            q.getOptions().stream()
+                .filter(AnswerOption::getIsCorrect)
+                .findFirst()
+                .ifPresent(opt -> correctAnswers.put(q.getId(), opt.getId()));
+        }
+
+        for (QuizAttempt attempt : attempts) {
+            try {
+                List<Map<String, Object>> answers = objectMapper.readValue(
+                    attempt.getAnswersJson(),
+                    objectMapper.getTypeFactory().constructCollectionType(List.class, Map.class)
+                );
+                for (Map<String, Object> answer : answers) {
+                    Long questionId = Long.valueOf(answer.get("questionId").toString());
+                    Long chosenId = answer.get("chosenOptionId") != null
+                        ? Long.valueOf(answer.get("chosenOptionId").toString()) : null;
+
+                    if (questionStats.containsKey(questionId)) {
+                        questionStats.get(questionId)[1]++; // totalAnswered
+                        Long correct = correctAnswers.get(questionId);
+                        if (chosenId == null || !chosenId.equals(correct)) {
+                            questionStats.get(questionId)[0]++; // wrongCount
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                // skip malformed JSON
+            }
+        }
+
+        // Build weakest questions list
+        Map<Long, String> questionTexts = new HashMap<>();
+        for (Question q : quiz.getQuestions()) {
+            questionTexts.put(q.getId(), q.getText());
+        }
+
+        List<QuizAnalyticsResponse.WeakQuestion> weakQuestions = questionStats.entrySet().stream()
+            .filter(e -> e.getValue()[1] > 0)
+            .map(e -> {
+                int wrong = e.getValue()[0];
+                int answered = e.getValue()[1];
+                return QuizAnalyticsResponse.WeakQuestion.builder()
+                    .questionId(e.getKey())
+                    .questionText(questionTexts.getOrDefault(e.getKey(), ""))
+                    .wrongCount(wrong)
+                    .totalAnswered(answered)
+                    .wrongPercent(answered > 0 ? (wrong * 100 / answered) : 0)
+                    .build();
+            })
+            .sorted((a, b) -> b.getWrongPercent() - a.getWrongPercent())
+            .collect(Collectors.toList());
+
+        return QuizAnalyticsResponse.builder()
+            .quizId(quizId)
+            .quizTitle(quiz.getTitle())
+            .lessonTitle(quiz.getLesson().getTitle())
+            .totalAttempts(total)
+            .averageScore(avgScore)
+            .passRate(passRate)
+            .passedCount((int) passedCount)
+            .weakestQuestions(weakQuestions)
+            .build();
     }
 }

@@ -7,6 +7,7 @@ import org.example.formation_service.web.dto.*;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -82,5 +83,18 @@ public class QuizController {
     @GetMapping("/quizzes/{quizId}/stats")
     public ResponseEntity<Map<String, Object>> getStats(@PathVariable Long quizId) {
         return ResponseEntity.ok(quizService.getQuizStats(quizId));
+    }
+
+    // ── FORMATEUR: Full analytics with weakest questions ──────────────────────
+    @GetMapping("/quizzes/{quizId}/analytics")
+    public ResponseEntity<QuizAnalyticsResponse> getAnalytics(@PathVariable Long quizId) {
+        return ResponseEntity.ok(quizService.getQuizAnalytics(quizId));
+    }
+
+    // ── APPRENANT: All quiz summaries across enrolled courses ─────────────────
+    @GetMapping("/quizzes/my-summary")
+    public ResponseEntity<List<StudentQuizSummary>> getMyQuizSummary(
+            @RequestHeader("X-User-Id") Long userId) {
+        return ResponseEntity.ok(quizService.getStudentQuizSummaries(userId));
     }
 }
