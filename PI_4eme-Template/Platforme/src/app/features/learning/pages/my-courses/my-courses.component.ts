@@ -7,6 +7,7 @@ import { FormationService, CourseRatingStats, CourseReview, ReviewRequest } from
 import { AuthService } from '@core/services/auth.service';
 import { ToastService } from '@core/services/toast.service';
 import { Enrollment, Course } from '@shared/models/formation.model';
+import { MeetSidebarComponent } from '@shared/components/meet-sidebar/meet-sidebar.component';
 
 interface EnrolledCourse {
   enrollment: Enrollment;
@@ -18,8 +19,11 @@ interface EnrolledCourse {
 @Component({
   selector: 'app-my-courses',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule],
+  imports: [CommonModule, RouterLink, FormsModule, MeetSidebarComponent],
   template: `
+    <div class="my-courses-page-layout">
+      <!-- LEFT: existing content (unchanged) -->
+      <div class="my-courses-main">
     <div class="my-courses-container">
       <!-- Back Button -->
       <button class="back-btn" (click)="goBack()" title="Retour">
@@ -119,7 +123,12 @@ interface EnrolledCourse {
         </button>
       </div>
     </div>
-    
+    </div>
+
+    <!-- RIGHT: Meet Sidebar -->
+    <app-meet-sidebar [isFormateur]="false"></app-meet-sidebar>
+    </div>
+
     <!-- Review Modal -->
     <div class="modal-overlay" *ngIf="showReviewModal" (click)="closeReviewModal()">
       <div class="modal-content" (click)="$event.stopPropagation()">
@@ -627,6 +636,19 @@ interface EnrolledCourse {
       .courses-grid {
         grid-template-columns: 1fr;
       }
+    }
+
+    /* Two-column layout */
+    .my-courses-page-layout {
+      display: flex;
+      gap: 1.5rem;
+      align-items: flex-start;
+      padding: 1rem;
+    }
+    .my-courses-main { flex: 1; min-width: 0; }
+
+    @media (max-width: 1024px) {
+      .my-courses-page-layout { flex-direction: column; }
     }
   `]
 })

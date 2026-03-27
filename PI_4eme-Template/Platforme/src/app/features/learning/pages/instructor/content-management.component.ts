@@ -4,12 +4,14 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { ContentManagementService, LessonResponse, LessonResourceResponse } from '@core/services/content-management.service';
 import { FormationService } from '@core/services/formation.service';
+import { QuizService, QuizData } from '@core/services/quiz.service';
 import { Course } from '@shared/models';
+import { QuizBuilderComponent } from '@shared/components/quiz-builder/quiz-builder.component';
 
 @Component({
   selector: 'app-content-management',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, QuizBuilderComponent],
   template: `
     <div class="content-management">
       <div class="header">
@@ -51,6 +53,10 @@ import { Course } from '@shared/models';
                   </button>
                   <button class="btn-small" (click)="showAddPdfModal(lesson)">
                     <i class="fas fa-file-pdf"></i> Add PDF
+                  </button>
+                  <button class="btn-small btn-quiz" (click)="openQuizBuilder(lesson); $event.stopPropagation()">
+                    <i class="fas fa-question-circle"></i>
+                    {{ lessonQuizzes[lesson.id] ? 'Edit Quiz' : 'Add Quiz' }}
                   </button>
                 </div>
               </div>
@@ -125,8 +131,7 @@ import { Course } from '@shared/models';
 
     <!-- Add/Edit Resource Modal -->
     <div class="modal" *ngIf="showResourceModal" (click)="closeResourceModal()">
-      <div class="modal-content" (click)="$event.stopPropagation()">
-        <h2>{{ editingResource ? 'Edit Resource' : 'Add ' + resourceType }}</h2>
+      <div class="modal-content" (click)="$event.stopPropagation()">        <h2>{{ editingResource ? 'Edit Resource' : 'Add ' + resourceType }}</h2>
         <form (ngSubmit)="saveResource()">
           <div class="form-group">
             <label>Title *</label>
@@ -171,6 +176,17 @@ import { Course } from '@shared/models';
         </form>
       </div>
     </div>
+    <!-- Quiz Builder Modal -->
+    <div class="modal" *ngIf="showQuizModal" (click)="closeQuizModal()">
+      <div class="modal-content modal-wide" (click)="$event.stopPropagation()">
+        <app-quiz-builder
+          [lessonId]="quizLessonId!"
+          [existingQuiz]="currentLessonQuiz"
+          (saved)="onQuizSaved()"
+          (cancel)="closeQuizModal()">
+        </app-quiz-builder>
+      </div>
+    </div>
   `,
   styleUrls: ['./content-management.component.css']
 })
@@ -208,8 +224,50 @@ export class ContentManagementComponent implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private contentService: ContentManagementService,
-    private formationService: FormationService
+    private formationService: FormationService,
+    private quizService: QuizService
   ) {}
+
+  // ── Quiz builder state ─────────────────────────────────────────────────────
+  showQuizModal = false;
+  quizLessonId?: number;
+  currentLessonQuiz: QuizData | null = null;
+  lessonQuizzes: { [lessonId: number]: QuizData } = {};
+
+  openQuizBuilder(lesson: LessonResponse): void {
+    this.quizLessonId = lesson.id;
+    this.currentLessonQuiz = this.lessonQuizzes[lesson.id] ?? null;
+    this.showQuizModal = true;
+  }
+
+  closeQuizModal(): void {
+    this.showQuizModal = false;
+    this.quizLessonId = undefined;
+    this.currentLessonQuiz = null;
+  }
+
+  onQuizSaved(): void {
+    this.closeQuizModal();
+    this.loadQuizStatus();
+  }
+
+  loadQuizStatus(): void {
+    this.lessons.forEach(lesson => {
+      this.quizService.hasQuiz(lesson.id).subscribe({
+        next: ({ hasQuiz }) => {
+          if (hasQuiz) {
+            this.quizService.getQuiz(lesson.id).subscribe({
+              next: quiz => this.lessonQuizzes[lesson.id] = quiz,
+              error: () => {}
+            });
+          } else {
+            delete this.lessonQuizzes[lesson.id];
+          }
+        },
+        error: () => {}
+      });
+    });
+  }
 
   ngOnInit(): void {
     this.route.params.subscribe(params => {
@@ -234,6 +292,7 @@ export class ContentManagementComponent implements OnInit {
       next: (lessons) => {
         this.lessons = lessons.sort((a, b) => a.orderIndex - b.orderIndex);
         this.loading = false;
+        this.loadQuizStatus();
       },
       error: (error) => {
         console.error('Error loading lessons:', error);

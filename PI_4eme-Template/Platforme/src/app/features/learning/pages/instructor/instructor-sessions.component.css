@@ -507,3 +507,41 @@
     width: 100%;
   }
 }
+
+/* Two-column layout with sidebar */
+.sessions-page-layout {
+  display: flex;
+  gap: 1.5rem;
+  align-items: flex-start;
+  padding: 1rem;
+}
+
+.sessions-page-layout .instructor-sessions {
+  flex: 1;
+  min-width: 0;
+  padding: 1rem;
+  margin: 0;
+}
+
+@media (max-width: 1024px) {
+  .sessions-page-layout { flex-direction: column; }
+}
+
+/* Schedule Meet button */
+.btn-meet {
+  background: #0F9B8E !important;
+  color: white !important;
+  border-color: #0F9B8E !important;
+}
+.btn-meet:hover { background: #0d8a7e !important; }
+
+/* Meet modal info box */
+.meet-info-box {
+  background: #e8f8f7;
+  border: 1px solid #0F9B8E;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin: 1rem 0;
+  font-size: 0.9rem;
+  color: #0F9B8E;
+}

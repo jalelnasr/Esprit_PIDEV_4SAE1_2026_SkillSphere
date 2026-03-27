@@ -384,3 +384,13 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+.btn-quiz {
+  background: #7c3aed !important;
+  color: white !important;
+  border-color: #7c3aed !important;
+}
+.btn-quiz:hover { background: #6d28d9 !important; }
+
+.modal-wide .modal-content,
+.modal-wide { max-width: 700px !important; width: 95vw; }

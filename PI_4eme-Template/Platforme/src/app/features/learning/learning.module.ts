@@ -62,6 +62,10 @@ const routes: Routes = [
         canActivate: [FormateurGuard]
       },
       {
+        path: 'calendar',
+        loadComponent: () => import('./pages/calendar/calendar.component').then(m => m.CalendarComponent)
+      },
+      {
         path: '',
         redirectTo: 'browse',
         pathMatch: 'full'

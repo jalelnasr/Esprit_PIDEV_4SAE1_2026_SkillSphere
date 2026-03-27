@@ -7,6 +7,8 @@ import { AuthService } from '../../../../core/services/auth.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import { Course, Session, SessionRequest, SessionStatus } from '../../../../shared/models/formation.model';
 import { ConfirmDialogComponent } from '../../../../shared/components/confirm-dialog/confirm-dialog.component';
+import { MeetSidebarComponent } from '../../../../shared/components/meet-sidebar/meet-sidebar.component';
+import { MeetService, MeetRequest } from '../../../../core/services/meet.service';
 
 interface SessionDisplay extends Session {
   courseTitle: string;
@@ -16,7 +18,7 @@ interface SessionDisplay extends Session {
 @Component({
   selector: 'app-instructor-sessions',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, ConfirmDialogComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, ConfirmDialogComponent, MeetSidebarComponent],
   templateUrl: './instructor-sessions.component.html',
   styleUrls: ['./instructor-sessions.component.css']
 })
@@ -49,8 +51,48 @@ export class InstructorSessionsComponent implements OnInit {
     private fb: FormBuilder,
     private formationService: FormationService,
     private authService: AuthService,
-    private toastService: ToastService
+    private toastService: ToastService,
+    private meetService: MeetService
   ) {}
+
+  // ── Meet scheduling ────────────────────────────────────────────────────────
+  showMeetModal = false;
+  meetSessionId?: number;
+  meetTitle = '';
+  meetDescription = '';
+  meetScheduledAt = '';
+  meetDuration = 60;
+
+  openScheduleMeet(session: SessionDisplay): void {
+    this.meetSessionId = session.id;
+    this.meetTitle = `${session.courseTitle} — Meet`;
+    this.meetDescription = '';
+    this.meetScheduledAt = new Date(session.startAt).toISOString().slice(0, 16);
+    this.meetDuration = 60;
+    this.showMeetModal = true;
+  }
+
+  saveMeet(): void {
+    if (!this.meetSessionId || !this.meetTitle || !this.meetScheduledAt) {
+      this.toastService.error('Veuillez remplir tous les champs');
+      return;
+    }
+    const req: MeetRequest = {
+      title: this.meetTitle,
+      description: this.meetDescription,
+      scheduledAt: new Date(this.meetScheduledAt).toISOString().slice(0, 19),
+      durationMinutes: this.meetDuration
+    };
+    this.meetService.createMeet(this.meetSessionId, req).subscribe({
+      next: (meet) => {
+        this.toastService.success('Meet planifié! Lien: ' + meet.meetLink);
+        this.showMeetModal = false;
+      },
+      error: () => this.toastService.error('Erreur lors de la création du meet')
+    });
+  }
+
+  closeMeetModal(): void { this.showMeetModal = false; }
 
   ngOnInit(): void {
     this.initForm();

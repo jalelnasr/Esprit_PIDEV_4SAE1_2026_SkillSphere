@@ -157,14 +157,16 @@ export class SidebarComponent implements OnInit {
         { label: 'Dashboard', route: '/learning/instructor/dashboard' },
         { label: 'My Formations', route: '/learning/instructor/formations' },
         { label: 'My Sessions', route: '/learning/instructor/sessions' },
-        { label: 'My Students', route: '/learning/instructor/students' }
+        { label: 'My Students', route: '/learning/instructor/students' },
+        { label: '📅 My Calendar', route: '/learning/calendar' }
       ];
     } else {
       return [
         { label: 'Browse Courses', route: '/learning/browse' },
         { label: 'My Courses', route: '/learning/my-courses' },
         { label: 'My Progress', route: '/learning/progress' },
-        { label: 'Wishlist', route: '/learning/wishlist' }
+        { label: 'Wishlist', route: '/learning/wishlist' },
+        { label: '📅 My Calendar', route: '/learning/calendar' }
       ];
     }
   }

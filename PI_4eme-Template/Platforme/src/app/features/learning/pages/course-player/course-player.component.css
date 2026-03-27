@@ -364,3 +364,26 @@
     max-height: 300px;
   }
 }
+
+/* Quiz section */
+.quiz-section { margin-top: 2rem; }
+
+.quiz-divider {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.quiz-divider::before,
+.quiz-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #e9ecef;
+}
+.quiz-divider span {
+  font-weight: 600;
+  color: #555;
+  font-size: 0.95rem;
+  white-space: nowrap;
+}
