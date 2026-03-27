@@ -55,6 +55,41 @@ export interface QuizStats {
   passRate: number;
 }
 
+export interface WeakQuestion {
+  questionId: number;
+  questionText: string;
+  wrongCount: number;
+  totalAnswered: number;
+  wrongPercent: number;
+}
+
+export interface QuizAnalyticsResponse {
+  quizId: number;
+  quizTitle: string;
+  lessonTitle: string;
+  totalAttempts: number;
+  averageScore: number;
+  passRate: number;
+  passedCount: number;
+  weakestQuestions: WeakQuestion[];
+}
+
+export interface StudentQuizSummary {
+  quizId: number;
+  quizTitle: string;
+  lessonId: number;
+  lessonTitle: string;
+  courseId: number;
+  courseTitle: string;
+  bestScore: number | null;
+  totalQuestions: number;
+  passThreshold: number;
+  passed: boolean | null;
+  status: 'PASSED' | 'FAILED' | 'NOT_TAKEN';
+  attemptCount: number;
+  lastAttemptAt: string | null;
+}
+
 export interface QuizRequest {
   title: string;
   passThreshold: number;
@@ -137,6 +172,20 @@ export class QuizService {
   getStats(quizId: number): Observable<QuizStats> {
     return this.http.get<QuizStats>(
       `${this.BASE}/quizzes/${quizId}/stats`,
+      { headers: this.headers() }
+    );
+  }
+
+  getAnalytics(quizId: number): Observable<QuizAnalyticsResponse> {
+    return this.http.get<QuizAnalyticsResponse>(
+      `${this.BASE}/quizzes/${quizId}/analytics`,
+      { headers: this.headers() }
+    );
+  }
+
+  getMyQuizSummary(): Observable<StudentQuizSummary[]> {
+    return this.http.get<StudentQuizSummary[]>(
+      `${this.BASE}/quizzes/my-summary`,
       { headers: this.headers() }
     );
   }

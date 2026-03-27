@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router, RouterLink, NavigationEnd } from '@angular/router';
 import { FormationService } from '@core/services/formation.service';
 import { AuthService } from '@core/services/auth.service';
+import { QuizService, StudentQuizSummary } from '@core/services/quiz.service';
 import { Subscription, filter } from 'rxjs';
 
 interface CourseProgress {
@@ -122,6 +123,71 @@ interface CourseProgress {
           <i class="fas fa-search"></i>
           Parcourir les formations
         </button>
+      </div>
+
+      <!-- Quiz Results Section -->
+      <div class="quiz-section" *ngIf="!loading">
+        <div class="section-header">
+          <h2>📝 Mes Quiz</h2>
+          <p>Résultats de tous vos quiz</p>
+        </div>
+
+        <div class="quiz-loading" *ngIf="quizLoading">
+          <i class="fas fa-spinner fa-spin"></i> Chargement des quiz...
+        </div>
+
+        <div class="quiz-grid" *ngIf="!quizLoading && quizSummaries.length > 0">
+          <div class="quiz-card" *ngFor="let q of quizSummaries"
+               [class.passed]="q.status === 'PASSED'"
+               [class.failed]="q.status === 'FAILED'"
+               [class.not-taken]="q.status === 'NOT_TAKEN'">
+
+            <div class="quiz-card-header">
+              <div class="quiz-status-icon">
+                {{ q.status === 'PASSED' ? '✅' : q.status === 'FAILED' ? '❌' : '⏳' }}
+              </div>
+              <div class="quiz-titles">
+                <span class="quiz-name">{{ q.quizTitle }}</span>
+                <span class="quiz-course">{{ q.courseTitle }} · {{ q.lessonTitle }}</span>
+              </div>
+            </div>
+
+            <div class="quiz-card-body">
+              <div class="quiz-score" *ngIf="q.bestScore !== null">
+                <span class="score-value">{{ q.bestScore }}%</span>
+                <span class="score-label">Best score</span>
+              </div>
+              <div class="quiz-score" *ngIf="q.bestScore === null">
+                <span class="score-value">—</span>
+                <span class="score-label">Not taken</span>
+              </div>
+
+              <div class="quiz-meta">
+                <span class="meta-item">
+                  <i class="fas fa-check"></i> Pass: {{ q.passThreshold }}%
+                </span>
+                <span class="meta-item">
+                  <i class="fas fa-redo"></i> {{ q.attemptCount }} attempt{{ q.attemptCount !== 1 ? 's' : '' }}
+                </span>
+                <span class="meta-item" *ngIf="q.lastAttemptAt">
+                  <i class="fas fa-calendar"></i> {{ formatDate(q.lastAttemptAt) }}
+                </span>
+              </div>
+
+              <div class="quiz-status-badge" [ngClass]="'badge-' + q.status.toLowerCase()">
+                {{ q.status === 'PASSED' ? 'Passed' : q.status === 'FAILED' ? 'Failed' : 'Not taken' }}
+              </div>
+            </div>
+
+            <button class="btn-retake" [routerLink]="['/learning/courses', q.courseId]">
+              {{ q.status === 'NOT_TAKEN' ? 'Take Quiz' : 'Retake' }}
+            </button>
+          </div>
+        </div>
+
+        <div class="quiz-empty" *ngIf="!quizLoading && quizSummaries.length === 0">
+          <p>No quizzes taken yet. Start a course to find quizzes at the end of each chapter.</p>
+        </div>
       </div>
     </div>
   `,
@@ -387,17 +453,86 @@ interface CourseProgress {
     .btn-browse:hover {
       background: #0e7490;
     }
+
+    /* Quiz Section */
+    .quiz-section { margin-top: 2.5rem; }
+
+    .section-header { margin-bottom: 1.5rem; }
+    .section-header h2 { font-size: 1.5rem; color: #333; margin: 0 0 0.25rem; }
+    .section-header p { color: #666; margin: 0; font-size: 0.9rem; }
+
+    .quiz-loading { color: #888; padding: 1rem; font-size: 0.9rem; }
+
+    .quiz-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 1rem;
+    }
+
+    .quiz-card {
+      background: white;
+      border-radius: 10px;
+      padding: 1.25rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      border-left: 4px solid #e9ecef;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .quiz-card:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
+    .quiz-card.passed { border-left-color: #10b981; }
+    .quiz-card.failed { border-left-color: #ef4444; }
+    .quiz-card.not-taken { border-left-color: #f59e0b; }
+
+    .quiz-card-header {
+      display: flex; align-items: flex-start; gap: 0.75rem; margin-bottom: 1rem;
+    }
+    .quiz-status-icon { font-size: 1.5rem; flex-shrink: 0; }
+    .quiz-titles { flex: 1; min-width: 0; }
+    .quiz-name { display: block; font-weight: 600; color: #333; font-size: 0.95rem; }
+    .quiz-course { display: block; font-size: 0.8rem; color: #888; margin-top: 2px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .quiz-card-body { margin-bottom: 1rem; }
+
+    .quiz-score { display: flex; align-items: baseline; gap: 0.4rem; margin-bottom: 0.75rem; }
+    .score-value { font-size: 1.75rem; font-weight: 700; color: #333; }
+    .score-label { font-size: 0.8rem; color: #888; }
+
+    .quiz-meta { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem; }
+    .meta-item { font-size: 0.78rem; color: #666; display: flex; align-items: center; gap: 0.3rem; }
+    .meta-item i { color: #0891b2; }
+
+    .quiz-status-badge {
+      display: inline-block; padding: 0.2rem 0.6rem;
+      border-radius: 12px; font-size: 0.75rem; font-weight: 600;
+    }
+    .badge-passed { background: #d1fae5; color: #065f46; }
+    .badge-failed { background: #fee2e2; color: #991b1b; }
+    .badge-not_taken { background: #fef3c7; color: #92400e; }
+
+    .btn-retake {
+      width: 100%; padding: 0.5rem;
+      background: #f8f9fa; border: 1px solid #dee2e6;
+      border-radius: 6px; color: #555; font-size: 0.85rem;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .btn-retake:hover { background: #0891b2; color: white; border-color: #0891b2; }
+
+    .quiz-empty { color: #888; font-size: 0.9rem; padding: 1.5rem;
+      background: white; border-radius: 10px; text-align: center; }
   `]
 })
 export class StudentProgressComponent implements OnInit, OnDestroy {
   courses: CourseProgress[] = [];
   loading = true;
+  quizSummaries: StudentQuizSummary[] = [];
+  quizLoading = false;
   private routerSubscription?: Subscription;
 
   constructor(
     private formationService: FormationService,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private quizService: QuizService
   ) {}
 
   ngOnInit() {
@@ -444,6 +579,7 @@ export class StudentProgressComponent implements OnInit, OnDestroy {
           
           // Optionally fetch course details for thumbnails
           this.fetchCourseThumbnails();
+          this.loadQuizSummaries();
           
           this.loading = false;
         });
@@ -452,6 +588,17 @@ export class StudentProgressComponent implements OnInit, OnDestroy {
         console.error('Error loading progress:', error);
         this.loading = false;
       }
+    });
+  }
+
+  loadQuizSummaries(): void {
+    this.quizLoading = true;
+    this.quizService.getMyQuizSummary().subscribe({
+      next: summaries => {
+        this.quizSummaries = summaries;
+        this.quizLoading = false;
+      },
+      error: () => this.quizLoading = false
     });
   }
 

@@ -58,6 +58,11 @@ import { QuizBuilderComponent } from '@shared/components/quiz-builder/quiz-build
                     <i class="fas fa-question-circle"></i>
                     {{ lessonQuizzes[lesson.id] ? 'Edit Quiz' : 'Add Quiz' }}
                   </button>
+                  <button class="btn-small btn-analytics"
+                          *ngIf="lessonQuizzes[lesson.id]"
+                          (click)="toggleQuizAnalytics(lesson.id); $event.stopPropagation()">
+                    <i class="fas fa-chart-bar"></i> Analytics
+                  </button>
                 </div>
               </div>
 
@@ -88,6 +93,46 @@ import { QuizBuilderComponent } from '@shared/components/quiz-builder/quiz-build
               <div class="empty-resources" *ngIf="!lesson.resources || lesson.resources.length === 0">
                 <p>No resources yet. Add videos or PDFs to this chapter.</p>
               </div>
+            </div>
+
+            <!-- Quiz Analytics Panel (on-demand) -->
+            <div class="analytics-panel" *ngIf="expandedAnalytics[lesson.id] && lessonAnalytics[lesson.id]">
+              <div class="analytics-header">
+                <span>📊 Quiz Analytics — {{ lessonQuizzes[lesson.id]?.title }}</span>
+              </div>
+              <div class="analytics-stats">
+                <div class="a-stat">
+                  <span class="a-val">{{ lessonAnalytics[lesson.id].totalAttempts }}</span>
+                  <span class="a-lbl">Attempts</span>
+                </div>
+                <div class="a-stat">
+                  <span class="a-val">{{ lessonAnalytics[lesson.id].averageScore }}%</span>
+                  <span class="a-lbl">Avg Score</span>
+                </div>
+                <div class="a-stat">
+                  <span class="a-val">{{ lessonAnalytics[lesson.id].passRate }}%</span>
+                  <span class="a-lbl">Pass Rate</span>
+                </div>
+                <div class="a-stat">
+                  <span class="a-val">{{ lessonAnalytics[lesson.id].passedCount }}</span>
+                  <span class="a-lbl">Passed</span>
+                </div>
+              </div>
+              <div class="weak-questions" *ngIf="lessonAnalytics[lesson.id].weakestQuestions.length > 0">
+                <p class="weak-title">⚠️ Weakest Questions</p>
+                <div class="weak-item" *ngFor="let wq of lessonAnalytics[lesson.id].weakestQuestions">
+                  <div class="weak-bar-wrap">
+                    <span class="weak-text">{{ wq.questionText | slice:0:60 }}{{ wq.questionText.length > 60 ? '...' : '' }}</span>
+                    <span class="weak-pct">{{ wq.wrongPercent }}% wrong</span>
+                  </div>
+                  <div class="weak-bar">
+                    <div class="weak-fill" [style.width.%]="wq.wrongPercent"></div>
+                  </div>
+                </div>
+              </div>
+              <p class="no-attempts" *ngIf="lessonAnalytics[lesson.id].totalAttempts === 0">
+                No attempts yet.
+              </p>
             </div>
           </div>
         </div>
@@ -233,6 +278,22 @@ export class ContentManagementComponent implements OnInit {
   quizLessonId?: number;
   currentLessonQuiz: QuizData | null = null;
   lessonQuizzes: { [lessonId: number]: QuizData } = {};
+  expandedAnalytics: { [lessonId: number]: boolean } = {};
+  lessonAnalytics: { [lessonId: number]: any } = {};
+
+  toggleQuizAnalytics(lessonId: number): void {
+    this.expandedAnalytics[lessonId] = !this.expandedAnalytics[lessonId];
+    // Load on first open
+    if (this.expandedAnalytics[lessonId] && !this.lessonAnalytics[lessonId]) {
+      const quiz = this.lessonQuizzes[lessonId];
+      if (quiz) {
+        this.quizService.getAnalytics(quiz.id).subscribe({
+          next: analytics => this.lessonAnalytics[lessonId] = analytics,
+          error: () => {}
+        });
+      }
+    }
+  }
 
   openQuizBuilder(lesson: LessonResponse): void {
     this.quizLessonId = lesson.id;
