@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router } from '@angular/router';
 import { MeetService, CalendarEvent } from '@core/services/meet.service';
 import { AuthService } from '@core/services/auth.service';
 
@@ -48,7 +48,7 @@ export class CalendarComponent implements OnInit {
     return this.currentDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
   }
 
-  constructor(private meetService: MeetService, private authService: AuthService) {}
+  constructor(private meetService: MeetService, private authService: AuthService, private router: Router) {}
 
   ngOnInit(): void {
     const role = this.authService.getUserRole();

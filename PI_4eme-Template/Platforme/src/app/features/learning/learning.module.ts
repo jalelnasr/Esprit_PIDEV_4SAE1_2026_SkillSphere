@@ -66,6 +66,10 @@ const routes: Routes = [
         loadComponent: () => import('./pages/calendar/calendar.component').then(m => m.CalendarComponent)
       },
       {
+        path: 'meet-room',
+        loadComponent: () => import('./pages/meet-room/meet-room.component').then(m => m.MeetRoomComponent)
+      },
+      {
         path: '',
         redirectTo: 'browse',
         pathMatch: 'full'

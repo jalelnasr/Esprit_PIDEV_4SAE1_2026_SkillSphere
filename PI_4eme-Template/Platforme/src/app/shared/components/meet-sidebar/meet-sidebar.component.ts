@@ -1,6 +1,6 @@
 import { Component, OnInit, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router } from '@angular/router';
 import { MeetService, MeetResponse, CalendarEvent } from '@core/services/meet.service';
 import { AuthService } from '@core/services/auth.service';
 
@@ -68,19 +68,24 @@ interface CalendarDay {
             </div>
             <div class="meet-actions">
               <!-- APPRENANT: Join button -->
-              <a *ngIf="!isFormateur && meet.status !== 'ENDED' && meet.status !== 'CANCELLED'"
-                 [href]="meet.meetLink" target="_blank"
+              <button *ngIf="!isFormateur && meet.status !== 'ENDED' && meet.status !== 'CANCELLED'"
                  class="btn-join"
-                 (click)="onJoin(meet.id)">
+                 (click)="onJoin(meet)">
                 {{ meet.status === 'LIVE' ? 'Join' : formatTime(meet.scheduledAt) }}
-              </a>
-              <!-- FORMATEUR: Start / Edit -->
-              <button *ngIf="isFormateur && meet.status === 'SCHEDULED'"
-                      class="btn-start"
-                      (click)="startMeet(meet)">Start</button>
-              <a *ngIf="isFormateur && meet.status === 'LIVE'"
-                 [href]="meet.meetLink" target="_blank"
-                 class="btn-join">Live</a>
+              </button>
+              <!-- FORMATEUR: Start / Live / Delete -->
+              <ng-container *ngIf="isFormateur">
+                <button *ngIf="meet.status === 'SCHEDULED'" class="btn-start" (click)="startMeet(meet)">Start</button>
+                <button *ngIf="meet.status === 'LIVE'" class="btn-join" (click)="openRoom(meet)">Live</button>
+                <button class="btn-delete-meet" (click)="deleteMeet(meet)" title="Delete meet">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+                    <path d="M10 11v6M14 11v6"></path>
+                    <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>
+                  </svg>
+                </button>
+              </ng-container>
             </div>
           </div>
         </div>
@@ -223,10 +228,11 @@ interface CalendarDay {
       margin-top: 2px;
     }
 
-    .meet-actions { flex-shrink: 0; }
+    .meet-actions { flex-shrink: 0; display: flex; align-items: center; gap: 0.35rem; }
 
     .btn-join {
-      display: inline-block;
+      display: inline-flex;
+      align-items: center;
       padding: 0.3rem 0.75rem;
       background: #0F9B8E;
       color: #fff;
@@ -237,6 +243,7 @@ interface CalendarDay {
       border: none;
       cursor: pointer;
       transition: background 0.2s;
+      white-space: nowrap;
     }
     .btn-join:hover { background: #0d8a7e; }
 
@@ -250,13 +257,30 @@ interface CalendarDay {
       font-weight: 600;
       cursor: pointer;
       transition: background 0.2s;
+      white-space: nowrap;
     }
     .btn-start:hover { background: #059669; }
 
     .no-meets { color: #666; font-size: 0.85rem; text-align: center; padding: 0.5rem 0; }
 
-    .btn-schedule-new {
-      width: 100%;
+    .btn-delete-meet {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      background: transparent;
+      border: 1px solid rgba(239,68,68,0.4);
+      border-radius: 6px;
+      color: #ef4444;
+      cursor: pointer;
+      transition: all 0.2s;
+      flex-shrink: 0;
+      padding: 0;
+    }
+    .btn-delete-meet:hover { background: rgba(239,68,68,0.15); border-color: #ef4444; }
+
+    .btn-schedule-new {      width: 100%;
       margin-top: 0.75rem;
       padding: 0.6rem;
       background: transparent;
@@ -283,7 +307,7 @@ export class MeetSidebarComponent implements OnInit {
     return this.currentDate.toLocaleString('en-US', { month: 'long', year: 'numeric' });
   }
 
-  constructor(private meetService: MeetService, private authService: AuthService) {}
+  constructor(private meetService: MeetService, private authService: AuthService, private router: Router) {}
 
   ngOnInit(): void {
     this.buildCalendar();
@@ -411,15 +435,33 @@ export class MeetSidebarComponent implements OnInit {
     return new Date(dateStr).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
   }
 
-  onJoin(meetId: number): void {
-    this.meetService.recordJoin(meetId).subscribe();
+  onJoin(meet: MeetResponse): void {
+    this.meetService.recordJoin(meet.id).subscribe();
+    this.openRoom(meet);
+  }
+
+  openRoom(meet: MeetResponse): void {
+    window.open(meet.meetLink, '_blank');
+  }
+
+  deleteMeet(meet: MeetResponse): void {
+    if (!confirm(`Delete "${meet.title}"?`)) return;
+    // Remove from UI immediately (optimistic update)
+    this.displayMeets = this.displayMeets.filter(m => m.id !== meet.id);
+    this.meetService.deleteMeet(meet.id).subscribe({
+      next: () => {},
+      error: () => {
+        // Restore on failure
+        this.loadMeets();
+      }
+    });
   }
 
   startMeet(meet: MeetResponse): void {
     this.meetService.updateMeetStatus(meet.id, 'LIVE').subscribe({
       next: () => {
         meet.status = 'LIVE';
-        window.open(meet.meetLink, '_blank');
+        this.openRoom(meet);
       }
     });
   }
