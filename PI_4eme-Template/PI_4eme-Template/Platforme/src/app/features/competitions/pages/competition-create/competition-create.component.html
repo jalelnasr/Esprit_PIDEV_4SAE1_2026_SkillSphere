@@ -70,6 +70,20 @@
       </div>
     </div>
 
+    <div class="form-section" *ngIf="competitionForm.get('type')?.value === 'PHYSICAL'">
+      <h2>📍 Localisation de l'événement</h2>
+      <p class="section-hint">Cliquez sur la carte pour sélectionner l'emplacement. L'adresse sera récupérée automatiquement.</p>
+
+      <app-location-picker
+        (locationSelected)="onLocationSelected($event)">
+      </app-location-picker>
+
+      <!-- Champs cachés pour affichage de confirmation -->
+      <div *ngIf="competitionForm.get('latitude')?.value" class="location-confirmed">
+        ✅ Localisation enregistrée: <strong>{{ competitionForm.get('locationName')?.value }}</strong>
+      </div>
+    </div>
+
     <div class="form-section">
       <h2>📅 Dates et limites</h2>
 

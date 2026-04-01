@@ -59,6 +59,29 @@
           </div>
         </section>
 
+        <!-- CARTE LOCALISATION (PHYSICAL uniquement) -->
+        <section class="info-section" *ngIf="competition.type === 'PHYSICAL' && competition.latitude && competition.longitude">
+          <h2>📍 Localisation de l'événement</h2>
+          <div class="location-info">
+            <p><strong>📍 {{ competition.locationName }}</strong></p>
+            <p *ngIf="competition.locationAddress" class="location-address">{{ competition.locationAddress }}</p>
+          </div>
+          <app-competition-map
+            [singleLocation]="{
+              competitionId: competition.competitionId,
+              title: competition.title,
+              locationName: competition.locationName || '',
+              locationAddress: competition.locationAddress || '',
+              latitude: competition.latitude,
+              longitude: competition.longitude,
+              status: competition.status,
+              type: competition.type,
+              startDate: competition.startDate
+            }"
+            mapId="competition-detail-map">
+          </app-competition-map>
+        </section>
+
         <!-- ✅ TEAMS (only non-full teams are in availableTeams) -->
         <section class="info-section" *ngIf="canParticipateAsTeam()">
           <h2>👥 Groupes disponibles (non complets) : {{ availableTeams.length }}</h2>

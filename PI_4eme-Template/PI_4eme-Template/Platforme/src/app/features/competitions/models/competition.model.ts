@@ -21,6 +21,11 @@ export interface Competition {
   createdBy?: number;
   createdAt?: string;
   updatedAt?: string;
+  // Location fields
+  locationName?: string;
+  locationAddress?: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface CreateCompetitionRequest {
@@ -36,6 +41,11 @@ export interface CreateCompetitionRequest {
   participantsPerTeam?: number;
   minTeamSize?: number;
   maxTeamSize?: number;
+  // Location fields
+  locationName?: string;
+  locationAddress?: string;
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 export interface Participant {

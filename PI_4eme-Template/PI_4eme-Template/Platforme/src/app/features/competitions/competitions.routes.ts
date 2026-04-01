@@ -7,6 +7,12 @@ export const COMPETITION_ROUTES: Routes = [
     loadComponent: () => import('./pages/competition-list/competition-list.component').then(m => m.CompetitionListComponent)
   },
   {
+    path: 'dashboard',
+    canActivate: [RoleGuard],
+    data: { roles: ['FORMATEUR'] },
+    loadComponent: () => import('./pages/formateur-dashboard/formateur-dashboard.component').then(m => m.FormateurDashboardComponent)
+  },
+  {
     path: 'my-participations',
     loadComponent: () => import('./pages/competition-list/competition-list.component').then(m => m.CompetitionListComponent)
   },

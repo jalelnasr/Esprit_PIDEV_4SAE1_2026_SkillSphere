@@ -95,6 +95,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   padding: 1.5rem;
   border-radius: 12px;
   min-width: 150px;
@@ -122,19 +123,19 @@
   box-shadow: 0 8px 16px rgba(205, 127, 50, 0.3);
 }
 
-.medal {
+.podium-item .medal {
   font-size: 3rem;
   margin-bottom: 0.5rem;
 }
 
-.rank-number {
+.podium-item .rank-number {
   font-size: 1.5rem;
   font-weight: 700;
   color: #333;
   margin-bottom: 0.5rem;
 }
 
-.participant-name {
+.podium-item .participant-name {
   font-size: 1rem;
   font-weight: 600;
   color: #333;
@@ -142,7 +143,7 @@
   margin-bottom: 0.5rem;
 }
 
-.score {
+.podium-item .score {
   font-size: 1.25rem;
   font-weight: 700;
   color: #333;

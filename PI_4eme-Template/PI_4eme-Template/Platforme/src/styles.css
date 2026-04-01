@@ -382,6 +382,34 @@ input:focus, textarea:focus, select:focus {
   background: var(--color-gray-200);
 }
 
+/* Force white text on colored buttons */
+.btn-primary,
+.btn-success,
+.btn-danger,
+.btn-info,
+.btn-warning {
+  color: white !important;
+}
+
+:root.dark-mode .btn-primary,
+:root.dark-mode .btn-success,
+:root.dark-mode .btn-danger,
+:root.dark-mode .btn-info,
+:root.dark-mode .btn-warning {
+  color: white !important;
+}
+
+/* Dark mode button secondary */
+:root.dark-mode .btn-secondary {
+  background: var(--color-gray-700);
+  color: white !important;
+  border-color: var(--color-gray-600);
+}
+
+:root.dark-mode .btn-secondary:hover:not(:disabled) {
+  background: var(--color-gray-600);
+}
+
 .btn-outline {
   background: transparent;
   color: var(--color-primary);

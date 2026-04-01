@@ -9,11 +9,12 @@ import { TeamCardsManagerComponent } from '../../components/team-cards-manager/t
 import { CompetitionChatComponent } from '../../components/competition-chat/competition-chat.component';
 import { LanguageSelectorComponent } from '../../../../shared/components/language-selector/language-selector.component';
 import { TranslateModule } from '@ngx-translate/core';
+import { CompetitionMapComponent } from '../../../../shared/components/competition-map/competition-map.component';
 
 @Component({
   selector: 'app-competition-detail',
   standalone: true,
-  imports: [CommonModule, RouterModule, ReactiveFormsModule, FormsModule, TeamCardsManagerComponent, CompetitionChatComponent, LanguageSelectorComponent, TranslateModule],
+  imports: [CommonModule, RouterModule, ReactiveFormsModule, FormsModule, TeamCardsManagerComponent, CompetitionChatComponent, LanguageSelectorComponent, TranslateModule, CompetitionMapComponent],
   templateUrl: './competition-detail.component.html',
   styleUrls: ['./competition-detail.component.css']
 })

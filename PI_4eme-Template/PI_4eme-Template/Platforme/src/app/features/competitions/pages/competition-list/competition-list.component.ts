@@ -6,11 +6,12 @@ import { CompetitionApiService } from '../../services/competition-api.service';
 import { Competition } from '../../models/competition.model';
 import { AuthService } from '../../../../core/services/auth.service';
 import { LanguageSelectorComponent } from '../../../../shared/components/language-selector/language-selector.component';
+import { CompetitionMapComponent, CompetitionLocation } from '../../../../shared/components/competition-map/competition-map.component';
 
 @Component({
   selector: 'app-competition-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, TranslateModule, LanguageSelectorComponent],
+  imports: [CommonModule, RouterModule, TranslateModule, LanguageSelectorComponent, CompetitionMapComponent],
   templateUrl: './competition-list.component.html',
   styleUrls: ['./competition-list.component.css']
 })
@@ -20,6 +21,9 @@ export class CompetitionListComponent implements OnInit {
   error: string | null = null;
   isFormateur = false;
   viewMode: 'browse' | 'my-participations' | 'manage' = 'browse';
+  showMap = false;
+  allLocations: CompetitionLocation[] = [];
+  myParticipationIds: Set<number> = new Set();
 
   constructor(
     private competitionService: CompetitionApiService,
@@ -30,8 +34,6 @@ export class CompetitionListComponent implements OnInit {
   ngOnInit() {
     this.authService.currentUser$.subscribe(user => {
       this.isFormateur = user?.role === 'FORMATEUR';
-      
-      // Déterminer le mode d'affichage selon la route
       const url = window.location.pathname;
       if (url.includes('my-participations')) {
         this.viewMode = 'my-participations';
@@ -40,9 +42,39 @@ export class CompetitionListComponent implements OnInit {
       } else {
         this.viewMode = 'browse';
       }
-      
       this.loadCompetitions();
+      this.loadLocations();
     });
+  }
+
+  loadLocations() {
+    // Charger toutes les localisations
+    this.competitionService.getCompetitionLocations().subscribe({
+      next: (locs) => {
+        // Si apprenant, charger aussi ses participations pour colorier en bleu
+        if (!this.isFormateur) {
+          this.competitionService.getMyParticipations().subscribe({
+            next: (myComps) => {
+              const myIds = new Set(myComps.map((c: any) => c.competitionId));
+              this.allLocations = locs.map((l: any) => ({
+                ...l,
+                isMyParticipation: myIds.has(l.competitionId)
+              }));
+            },
+            error: () => {
+              this.allLocations = locs;
+            }
+          });
+        } else {
+          this.allLocations = locs;
+        }
+      },
+      error: () => {}
+    });
+  }
+
+  toggleMap() {
+    this.showMap = !this.showMap;
   }
 
   checkUserRole() {
