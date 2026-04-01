@@ -26,10 +26,10 @@ interface Playlist {
       </button>
 
       <!-- Expanded panel -->
-      <div class="lofi-panel" *ngIf="isExpanded">
+      <div class="lofi-panel" [hidden]="!isExpanded">
         <div class="lofi-header">
           <span class="lofi-title">Study Music</span>
-          <button class="lofi-close" (click)="toggleExpand()">×</button>
+          <button class="lofi-close" (click)="closePlayer()">×</button>
         </div>
 
         <!-- Playlist selector -->
@@ -347,9 +347,14 @@ export class LofiPlayerComponent implements OnInit, OnDestroy {
   toggleExpand(): void {
     this.isExpanded = !this.isExpanded;
     if (this.isExpanded && !this.player) {
-      // Wait for DOM to render the div before initializing
       setTimeout(() => this.initPlayer(), 100);
     }
+  }
+
+  closePlayer(): void {
+    if (this.player) this.player.pauseVideo();
+    this.isPlaying = false;
+    this.isExpanded = false;
   }
 
   togglePlay(): void {

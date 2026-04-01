@@ -4,6 +4,7 @@ import { Location } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormationService, AuthService } from '@core/services';
 import { BackendUser } from '../../core/models/auth.model';
+import { QuoteCardComponent } from '@shared/components/quote-card/quote-card.component';
 
 interface DashboardStat {
   label: string;
@@ -15,7 +16,7 @@ interface DashboardStat {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, QuoteCardComponent],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css']
 })
