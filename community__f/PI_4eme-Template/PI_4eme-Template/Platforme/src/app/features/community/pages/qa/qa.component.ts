@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { finalize, switchMap } from 'rxjs';
-import { Answer, CreateAnswerRequest, VoteType } from '../../models/answer.model';
+import { Answer, CreateAnswerRequest, GitHubRepoPreview, VoteType } from '../../models/answer.model';
 import { CreateQuestionRequest, Question } from '../../models/question.model';
 import { QuestionService } from '../../services/question.service';
 import { AnswerService, AnswerVoteSummary } from '../../services/answer.service';
@@ -45,6 +45,10 @@ export class QaComponent implements OnInit, OnDestroy {
   popularityFilter: 'latest' | 'most-answered' = 'latest';
 
   private readonly answerControls = new Map<number, FormControl<string>>();
+  private readonly answerDraftPreview = new Map<number, GitHubRepoPreview>();
+  private readonly loadingDraftPreview = new Set<number>();
+  private readonly answerDraftPreviewError = new Map<number, string>();
+  private readonly answerPreviewDebounce = new Map<number, ReturnType<typeof setTimeout>>();
   private readonly loadingAnswers = new Set<number>();
   private readonly votingAnswers = new Set<number>();
   private readonly pageCache = new Map<number, QuestionView[]>();
@@ -53,6 +57,7 @@ export class QaComponent implements OnInit, OnDestroy {
   private readonly answerSearchIndex = new Map<number, string>();
   private readonly loadingAnswerSearchIndex = new Set<number>();
   private readonly stateStorageKey = 'community.qa.pagination.v1';
+  private readonly githubRepoUrlPattern = /https?:\/\/(?:www\.)?github\.com\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+/i;
   private searchDebounceHandle: ReturnType<typeof setTimeout> | null = null;
 
   readonly questionForm = this.fb.nonNullable.group({
@@ -76,6 +81,9 @@ export class QaComponent implements OnInit, OnDestroy {
     if (this.searchDebounceHandle) {
       clearTimeout(this.searchDebounceHandle);
     }
+
+    this.answerPreviewDebounce.forEach((handle) => clearTimeout(handle));
+    this.answerPreviewDebounce.clear();
 
     this.persistState();
   }
@@ -355,6 +363,68 @@ export class QaComponent implements OnInit, OnDestroy {
     return control;
   }
 
+  onAnswerDraftInput(questionId: number): void {
+    const control = this.getAnswerControl(questionId);
+    const draft = control.value.trim();
+
+    this.answerDraftPreviewError.delete(questionId);
+
+    const runningDebounce = this.answerPreviewDebounce.get(questionId);
+    if (runningDebounce) {
+      clearTimeout(runningDebounce);
+      this.answerPreviewDebounce.delete(questionId);
+    }
+
+    if (!this.githubRepoUrlPattern.test(draft)) {
+      this.loadingDraftPreview.delete(questionId);
+      this.answerDraftPreview.delete(questionId);
+      return;
+    }
+
+    const nextDebounce = setTimeout(() => {
+      this.loadingDraftPreview.add(questionId);
+
+      this.answerService
+        .previewGitHub(draft)
+        .pipe(finalize(() => this.loadingDraftPreview.delete(questionId)))
+        .subscribe({
+          next: (preview) => {
+            if (!preview) {
+              this.answerDraftPreview.delete(questionId);
+              return;
+            }
+
+            if (preview.status === 'OK') {
+              this.answerDraftPreview.set(questionId, preview);
+              this.answerDraftPreviewError.delete(questionId);
+              return;
+            }
+
+            this.answerDraftPreview.set(questionId, preview);
+            this.answerDraftPreviewError.set(questionId, this.previewStatusMessage(preview));
+          },
+          error: (error: Error) => {
+            this.answerDraftPreview.delete(questionId);
+            this.answerDraftPreviewError.set(questionId, error.message);
+          }
+        });
+    }, 320);
+
+    this.answerPreviewDebounce.set(questionId, nextDebounce);
+  }
+
+  isDraftPreviewLoading(questionId: number): boolean {
+    return this.loadingDraftPreview.has(questionId);
+  }
+
+  getDraftPreview(questionId: number): GitHubRepoPreview | null {
+    return this.answerDraftPreview.get(questionId) ?? null;
+  }
+
+  getDraftPreviewError(questionId: number): string {
+    return this.answerDraftPreviewError.get(questionId) ?? '';
+  }
+
   submitAnswer(question: QuestionView): void {
     const control = this.getAnswerControl(question.id);
     if (control.invalid) {
@@ -385,6 +455,16 @@ export class QaComponent implements OnInit, OnDestroy {
         if (this.popularityFilter === 'most-answered') {
           this.rebuildVisibleQuestions();
         }
+
+        const previewDebounce = this.answerPreviewDebounce.get(question.id);
+        if (previewDebounce) {
+          clearTimeout(previewDebounce);
+          this.answerPreviewDebounce.delete(question.id);
+        }
+
+        this.loadingDraftPreview.delete(question.id);
+        this.answerDraftPreview.delete(question.id);
+        this.answerDraftPreviewError.delete(question.id);
         control.reset('');
       },
       error: (error: Error) => {
@@ -420,6 +500,34 @@ export class QaComponent implements OnInit, OnDestroy {
 
   currentVote(answer: AnswerView): VoteType | null {
     return answer.user_vote ?? answer.voteType ?? null;
+  }
+
+  answerGitHubPreviews(answer: AnswerView): GitHubRepoPreview[] {
+    return Array.isArray(answer.github_previews) ? answer.github_previews : [];
+  }
+
+  isPreviewReady(preview: GitHubRepoPreview): boolean {
+    return preview.status === 'OK';
+  }
+
+  previewStatusMessage(preview: GitHubRepoPreview): string {
+    if (preview.message && preview.message.trim().length > 0) {
+      return preview.message;
+    }
+
+    if (preview.status === 'NOT_FOUND') {
+      return 'Repository not found on GitHub.';
+    }
+
+    if (preview.status === 'RATE_LIMITED') {
+      return 'GitHub API rate limit reached. Please retry later.';
+    }
+
+    if (preview.status === 'INVALID_URL') {
+      return 'Invalid GitHub repository link.';
+    }
+
+    return 'GitHub preview is currently unavailable.';
   }
 
   questionAuthorName(question: QuestionView): string {

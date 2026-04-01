@@ -8,6 +8,7 @@ import com.esprit.examen.services.AdminCommunityService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -20,6 +21,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/admin/community")
 @Tag(name = "Admin Community", description = "Admin analytics and moderation read APIs")
+@ConditionalOnProperty(name = "community.admin.enabled", havingValue = "true")
 public class AdminCommunityController {
 
     @Resource

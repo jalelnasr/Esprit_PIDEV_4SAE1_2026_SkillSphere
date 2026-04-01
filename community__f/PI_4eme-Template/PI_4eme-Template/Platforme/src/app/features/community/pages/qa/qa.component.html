@@ -141,7 +141,36 @@
               placeholder="Write your answer..."
               rows="3"
               [formControl]="getAnswerControl(question.id)"
+              (input)="onAnswerDraftInput(question.id)"
+              (paste)="onAnswerDraftInput(question.id)"
             ></textarea>
+
+            <div class="answer-preview-loading" *ngIf="isDraftPreviewLoading(question.id)">
+              <span class="preview-spinner"></span>
+              <span>Fetching GitHub preview...</span>
+            </div>
+
+            <div class="github-preview-card draft" *ngIf="getDraftPreview(question.id) as draftPreview">
+              <ng-container *ngIf="isPreviewReady(draftPreview); else draftPreviewFallback">
+                <div class="github-preview-head">
+                  <div>
+                    <strong class="github-repo-name">{{ draftPreview.repo_name }}</strong>
+                    <div class="github-owner">by {{ draftPreview.owner }}</div>
+                  </div>
+                  <span class="language-badge">{{ draftPreview.language }}</span>
+                </div>
+                <p class="github-description">{{ draftPreview.description || 'No description provided.' }}</p>
+                <div class="github-meta">
+                  <span>⭐ {{ draftPreview.stars }}</span>
+                  <span>🍴 {{ draftPreview.forks }}</span>
+                  <a class="github-link-btn" [href]="draftPreview.url" target="_blank" rel="noopener noreferrer">View on GitHub</a>
+                </div>
+              </ng-container>
+              <ng-template #draftPreviewFallback>
+                <p class="github-preview-fallback">{{ getDraftPreviewError(question.id) || previewStatusMessage(draftPreview) }}</p>
+              </ng-template>
+            </div>
+
             <button class="answer-submit" (click)="submitAnswer(question)" [disabled]="getAnswerControl(question.id).invalid">
               Post Answer
             </button>
@@ -165,6 +194,29 @@
 
             <div class="answer-content">
               <p>{{ answer.content }}</p>
+
+              <div class="github-preview-list" *ngIf="answerGitHubPreviews(answer).length > 0">
+                <div class="github-preview-card" *ngFor="let preview of answerGitHubPreviews(answer)">
+                  <ng-container *ngIf="isPreviewReady(preview); else answerPreviewFallback">
+                    <div class="github-preview-head">
+                      <div>
+                        <strong class="github-repo-name">{{ preview.repo_name }}</strong>
+                        <div class="github-owner">by {{ preview.owner }}</div>
+                      </div>
+                      <span class="language-badge">{{ preview.language }}</span>
+                    </div>
+                    <p class="github-description">{{ preview.description || 'No description provided.' }}</p>
+                    <div class="github-meta">
+                      <span>⭐ {{ preview.stars }}</span>
+                      <span>🍴 {{ preview.forks }}</span>
+                      <a class="github-link-btn" [href]="preview.url" target="_blank" rel="noopener noreferrer">View on GitHub</a>
+                    </div>
+                  </ng-container>
+                  <ng-template #answerPreviewFallback>
+                    <p class="github-preview-fallback">{{ previewStatusMessage(preview) }}</p>
+                  </ng-template>
+                </div>
+              </div>
             </div>
 
             <div class="answer-votes">

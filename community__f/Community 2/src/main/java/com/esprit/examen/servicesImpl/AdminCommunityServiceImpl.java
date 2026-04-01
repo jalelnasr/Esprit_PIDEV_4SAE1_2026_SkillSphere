@@ -32,6 +32,7 @@ import com.esprit.examen.repositories.PostRepository;
 import com.esprit.examen.repositories.QuestionRepository;
 import com.esprit.examen.services.AdminCommunityService;
 import jakarta.annotation.Resource;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -48,6 +49,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
+@ConditionalOnProperty(name = "community.admin.enabled", havingValue = "true")
 public class AdminCommunityServiceImpl implements AdminCommunityService {
 
     private static final int WINDOW_DAYS = 30;

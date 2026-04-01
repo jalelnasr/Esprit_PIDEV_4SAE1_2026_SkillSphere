@@ -1,5 +1,7 @@
 package com.esprit.examen.controllers;
 
+import com.esprit.examen.dto.AnswerResponseDTO;
+import com.esprit.examen.dto.GitHubRepoPreviewDTO;
 import com.esprit.examen.entities.Answer;
 import com.esprit.examen.services.AnswerService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -20,32 +22,39 @@ public class AnswerController {
 
     @PostMapping("/{userId}/{questionId}")
     @Operation(summary = "Create a new answer")
-    public ResponseEntity<Answer> createAnswer(@RequestBody Answer answer, @PathVariable Long userId, @PathVariable Long questionId) {
-        return ResponseEntity.ok(answerService.createAnswer(answer, userId, questionId));
+    public ResponseEntity<AnswerResponseDTO> createAnswer(@RequestBody Answer answer, @PathVariable Long userId, @PathVariable Long questionId) {
+        Answer created = answerService.createAnswer(answer, userId, questionId);
+        return ResponseEntity.ok(answerService.toResponse(created));
+    }
+
+    @GetMapping("/github-preview")
+    @Operation(summary = "Preview GitHub repository details from answer content")
+    public ResponseEntity<GitHubRepoPreviewDTO> previewGitHub(@RequestParam String content) {
+        return ResponseEntity.ok(answerService.previewGitHub(content));
     }
 
     @GetMapping("/{id}")
     @Operation(summary = "Get answer by ID")
-    public ResponseEntity<Answer> getAnswerById(@PathVariable Long id) {
-        return ResponseEntity.ok(answerService.getAnswerById(id));
+    public ResponseEntity<AnswerResponseDTO> getAnswerById(@PathVariable Long id) {
+        return ResponseEntity.ok(answerService.toResponse(answerService.getAnswerById(id)));
     }
 
     @GetMapping("/question/{questionId}")
     @Operation(summary = "Get answers by question")
-    public ResponseEntity<List<Answer>> getAnswersByQuestion(@PathVariable Long questionId) {
-        return ResponseEntity.ok(answerService.getAnswersByQuestion(questionId));
+    public ResponseEntity<List<AnswerResponseDTO>> getAnswersByQuestion(@PathVariable Long questionId) {
+        return ResponseEntity.ok(answerService.toResponses(answerService.getAnswersByQuestion(questionId)));
     }
 
     @GetMapping("/user/{userId}")
     @Operation(summary = "Get answers by user")
-    public ResponseEntity<List<Answer>> getAnswersByUser(@PathVariable Long userId) {
-        return ResponseEntity.ok(answerService.getAnswersByUser(userId));
+    public ResponseEntity<List<AnswerResponseDTO>> getAnswersByUser(@PathVariable Long userId) {
+        return ResponseEntity.ok(answerService.toResponses(answerService.getAnswersByUser(userId)));
     }
 
     @PutMapping("/{id}")
     @Operation(summary = "Update answer by ID")
-    public ResponseEntity<Answer> updateAnswer(@PathVariable Long id, @RequestBody Answer answer) {
-        return ResponseEntity.ok(answerService.updateAnswer(id, answer));
+    public ResponseEntity<AnswerResponseDTO> updateAnswer(@PathVariable Long id, @RequestBody Answer answer) {
+        return ResponseEntity.ok(answerService.toResponse(answerService.updateAnswer(id, answer)));
     }
 
     @DeleteMapping("/{id}")

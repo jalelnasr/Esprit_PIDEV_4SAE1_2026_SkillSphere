@@ -311,6 +311,7 @@ export class FeedComponent implements OnInit, OnDestroy {
   }
 
   clearAdvancedFilters(): void {
+    this.searchTerm = '';
     this.popularityFilter = 'latest';
     this.resetAndReload();
   }

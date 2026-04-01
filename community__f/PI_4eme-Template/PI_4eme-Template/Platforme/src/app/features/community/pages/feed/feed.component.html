@@ -35,7 +35,7 @@
       </select>
     </label>
 
-    <button class="clear-filters-btn toolbar-reset" (click)="clearAdvancedFilters()" [disabled]="popularityFilter === 'latest'">
+    <button class="clear-filters-btn toolbar-reset" (click)="clearAdvancedFilters()" [disabled]="popularityFilter === 'latest' && !searchTerm.trim()">
       Reset filters
     </button>
 

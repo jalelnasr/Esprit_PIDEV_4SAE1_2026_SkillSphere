@@ -17,7 +17,8 @@ export interface FollowRelationship {
 }
 
 interface FollowStatusResponse {
-  isFollowing: boolean;
+  isFollowing?: boolean;
+  following?: boolean;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -40,7 +41,7 @@ export class FollowService extends CommunityBaseService {
 
   getFollowStatus(userId: number): Observable<boolean> {
     return this.http
-      .get<boolean | FollowStatusResponse | { data?: FollowStatusResponse }>(
+      .get<boolean | FollowStatusResponse | { data?: FollowStatusResponse; isFollowing?: boolean; following?: boolean }>(
         `${this.communityBaseUrl}/users/${userId}/follow-status`,
         this.authOptions()
       )
@@ -49,8 +50,18 @@ export class FollowService extends CommunityBaseService {
           if (typeof response === 'boolean') {
             return response;
           }
+
           const payload = this.extractEntity<FollowStatusResponse>(response, ['data']);
-          return Boolean(payload?.isFollowing);
+
+          if (typeof payload?.isFollowing === 'boolean') {
+            return payload.isFollowing;
+          }
+
+          if (typeof payload?.following === 'boolean') {
+            return payload.following;
+          }
+
+          return false;
         }),
         catchError(this.handleError('Check follow status'))
       );

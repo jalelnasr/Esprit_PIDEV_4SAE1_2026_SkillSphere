@@ -492,6 +492,107 @@
   color: var(--text-main);
 }
 
+.answer-preview-loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.preview-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid color-mix(in srgb, var(--primary) 25%, var(--border));
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: previewSpin 0.75s linear infinite;
+}
+
+.github-preview-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.github-preview-card {
+  border: 1px solid color-mix(in srgb, var(--primary) 24%, var(--border));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface) 86%, var(--primary) 14%);
+  padding: 0.72rem 0.8rem;
+}
+
+.github-preview-card.draft {
+  margin-top: 0.25rem;
+}
+
+.github-preview-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.github-repo-name {
+  color: var(--text-main);
+  font-size: 14px;
+}
+
+.github-owner {
+  margin-top: 0.1rem;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.github-description {
+  margin: 0.48rem 0 0.62rem;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-main);
+}
+
+.language-badge {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--primary-strong);
+  border: 1px solid color-mix(in srgb, var(--primary) 36%, var(--card-border));
+  border-radius: 999px;
+  padding: 0.2rem 0.5rem;
+  background: color-mix(in srgb, var(--surface) 74%, #ffffff 26%);
+  white-space: nowrap;
+}
+
+.github-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.github-link-btn {
+  margin-left: auto;
+  text-decoration: none;
+  border: 1px solid color-mix(in srgb, var(--primary) 40%, var(--border));
+  border-radius: 999px;
+  padding: 0.28rem 0.65rem;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--primary-strong);
+  background: color-mix(in srgb, var(--surface) 82%, #ffffff 18%);
+}
+
+.github-link-btn:hover {
+  background: color-mix(in srgb, var(--surface-muted) 72%, var(--primary) 28%);
+}
+
+.github-preview-fallback {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
 .vote-btn {
   width: 34px;
   height: 34px;
@@ -615,6 +716,15 @@
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes previewSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
   }
 }
 

@@ -1,16 +1,21 @@
 package com.esprit.examen.servicesImpl;
 
+import com.esprit.examen.dto.AnswerResponseDTO;
+import com.esprit.examen.dto.GitHubRepoPreviewDTO;
 import com.esprit.examen.entities.Answer;
 import com.esprit.examen.entities.Question;
 import com.esprit.examen.services.UserService;
 import com.esprit.examen.repositories.AnswerRepository;
 import com.esprit.examen.repositories.QuestionRepository;
 import com.esprit.examen.services.AnswerService;
+import com.esprit.examen.services.GitHubService;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class AnswerServiceImpl implements AnswerService {
@@ -23,6 +28,9 @@ public class AnswerServiceImpl implements AnswerService {
 
     @Resource
     private QuestionRepository questionRepository;
+
+    @Resource
+    private GitHubService gitHubService;
 
     @Override
     public Answer createAnswer(Answer answer, Long userId, Long questionId) {
@@ -65,5 +73,40 @@ public class AnswerServiceImpl implements AnswerService {
     @Override
     public void deleteAnswer(Long id) {
         answerRepository.deleteById(id);
+    }
+
+    @Override
+    public AnswerResponseDTO toResponse(Answer answer) {
+        if (answer == null) {
+            return null;
+        }
+
+        Long questionId = answer.getQuestion() != null ? answer.getQuestion().getQuestionId() : null;
+        List<GitHubRepoPreviewDTO> previews = gitHubService.resolvePreviewsFromContent(answer.getContent());
+
+        return new AnswerResponseDTO(
+                answer.getAnswerId(),
+                answer.getContent(),
+                answer.getCreatedAt(),
+                answer.getUserId(),
+                questionId,
+                previews
+        );
+    }
+
+    @Override
+    public List<AnswerResponseDTO> toResponses(List<Answer> answers) {
+        if (answers == null || answers.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        return answers.stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public GitHubRepoPreviewDTO previewGitHub(String content) {
+        return gitHubService.previewFromContent(content);
     }
 }

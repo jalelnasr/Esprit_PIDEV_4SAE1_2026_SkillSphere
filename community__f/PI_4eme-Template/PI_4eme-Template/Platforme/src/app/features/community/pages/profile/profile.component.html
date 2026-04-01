@@ -78,16 +78,16 @@
            
            <div class="post-actions">
              <button class="post-action-btn like-btn" [class.liked]="post.likedByCurrentUser" (click)="togglePostLike(post)">
-               <span>{{ post.likedByCurrentUser ? '❤️' : '🤍' }}</span>
-               <span>Like</span>
-             </button>
+                <span>{{ post.likedByCurrentUser ? '❤️' : '🤍' }}</span>
+                <span>Like</span>
+              </button>
             <button class="post-action-btn comment-btn">
-              <span>💬</span>
-              <span>Comment</span>
-            </button>
-          </div>
-        </div>
-      </div>
+               <span>💬</span>
+               <span>Comment</span>
+             </button>
+           </div>
+         </div>
+       </div>
       
         <ng-template #noPosts>
           <div class="no-posts">
