@@ -82,6 +82,21 @@
           </app-competition-map>
         </section>
 
+        <!-- LIVE STREAM - Apprenant -->
+        <section class="info-section" *ngIf="!isFormateur()">
+          <h2>🔴 Live Stream</h2>
+          <div class="access-locked" *ngIf="!hasAccess">
+            <span>🔒</span>
+            <p>Inscrivez-vous à cet événement pour accéder au live stream et au chat.</p>
+          </div>
+          <app-stream-player *ngIf="hasAccess" [competitionId]="competition.competitionId" [isParticipant]="true"></app-stream-player>
+        </section>
+
+        <!-- LIVE STREAM - Formateur (gestion) -->
+        <section class="info-section" *ngIf="isFormateur()">
+          <app-stream-manager [competitionId]="competition.competitionId"></app-stream-manager>
+        </section>
+
         <!-- ✅ TEAMS (only non-full teams are in availableTeams) -->
         <section class="info-section" *ngIf="canParticipateAsTeam()">
           <h2>👥 Groupes disponibles (non complets) : {{ availableTeams.length }}</h2>
@@ -225,9 +240,15 @@
           </button>
         </div>
 
-        <!-- 💬 CHAT EN TEMPS RÉEL -->
-        <div class="chat-section">
+        <!-- 💬 CHAT EN TEMPS RÉEL - seulement pour participants et formateur -->
+        <div class="chat-section" *ngIf="hasAccess">
           <app-competition-chat [competitionId]="competition.competitionId"></app-competition-chat>
+        </div>
+
+        <!-- Message si non participant -->
+        <div class="chat-locked" *ngIf="!hasAccess && !isFormateur()">
+          <span>💬</span>
+          <p>Inscrivez-vous pour accéder au chat de l'événement</p>
         </div>
 
         <!-- 📱 SMS TEST PANEL -->

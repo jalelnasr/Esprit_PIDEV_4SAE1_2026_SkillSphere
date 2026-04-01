@@ -7,6 +7,9 @@ import { Competition } from '../../models/competition.model';
 import { AuthService } from '../../../../core/services/auth.service';
 import { LanguageSelectorComponent } from '../../../../shared/components/language-selector/language-selector.component';
 import { CompetitionMapComponent, CompetitionLocation } from '../../../../shared/components/competition-map/competition-map.component';
+import { StreamService } from '../../../../core/services/stream.service';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 
 @Component({
   selector: 'app-competition-list',
@@ -24,10 +27,12 @@ export class CompetitionListComponent implements OnInit {
   showMap = false;
   allLocations: CompetitionLocation[] = [];
   myParticipationIds: Set<number> = new Set();
+  liveCompetitionIds: Set<number> = new Set();
 
   constructor(
     private competitionService: CompetitionApiService,
     private authService: AuthService,
+    private streamService: StreamService,
     private route: ActivatedRoute
   ) {}
 
@@ -77,6 +82,19 @@ export class CompetitionListComponent implements OnInit {
     this.showMap = !this.showMap;
   }
 
+  checkLiveStreams(competitions: Competition[]) {
+    const calls = competitions.map(c =>
+      this.streamService.getStream(c.competitionId).pipe(catchError(() => of(null)))
+    );
+    forkJoin(calls).subscribe(streams => {
+      this.liveCompetitionIds = new Set(
+        streams
+          .filter((s): s is NonNullable<typeof s> => s !== null && s.isLive)
+          .map(s => s.competitionId)
+      );
+    });
+  }
+
   checkUserRole() {
     this.authService.currentUser$.subscribe(user => {
       this.isFormateur = user?.role === 'FORMATEUR';
@@ -111,6 +129,8 @@ export class CompetitionListComponent implements OnInit {
         console.log('✅ Données reçues:', data);
         this.competitions = data;
         this.loading = false;
+        // Vérifier les streams LIVE
+        this.checkLiveStreams(data);
       },
       error: (err) => {
         console.error('❌ Erreur:', err);

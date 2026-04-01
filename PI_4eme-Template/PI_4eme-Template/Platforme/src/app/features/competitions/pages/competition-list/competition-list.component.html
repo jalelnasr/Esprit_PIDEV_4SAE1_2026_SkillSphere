@@ -51,6 +51,9 @@
           <span class="badge" [ngClass]="getTypeBadgeClass(competition.type)">
             {{ competition.type }}
           </span>
+          <span class="badge badge-live" *ngIf="liveCompetitionIds.has(competition.competitionId)">
+            🔴 LIVE
+          </span>
         </div>
       </div>
 
