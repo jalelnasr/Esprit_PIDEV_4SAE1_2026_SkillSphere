@@ -48,6 +48,15 @@ public class Competition {
     // Qui a créé (formateur)
     private Long createdBy;
 
+    // Date de création
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+    }
+
     // Draw and winner fields
     @Column(name = "draw_completed")
     private Boolean drawCompleted = false;
@@ -60,6 +69,19 @@ public class Competition {
 
     @Column(name = "winner_declared_at")
     private LocalDateTime winnerDeclaredAt;
+
+    // ========== LOCATION FIELDS ==========
+    @Column(name = "location_name")
+    private String locationName;  // Ex: "Esprit School, Tunis"
+
+    @Column(name = "location_address")
+    private String locationAddress;  // Ex: "2 Rue de l'Esprit, Ariana"
+
+    @Column(name = "latitude")
+    private Double latitude;
+
+    @Column(name = "longitude")
+    private Double longitude;
 
     // ========== ENUMS ==========
     

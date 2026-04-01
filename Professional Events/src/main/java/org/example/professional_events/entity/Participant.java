@@ -29,6 +29,17 @@ public class Participant {
 
     @Column(name = "registration_date", nullable = false)
     private LocalDateTime registrationDate;
+    
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        if (registrationDate == null) {
+            registrationDate = LocalDateTime.now();
+        }
+    }
 
     @Column(name = "status", nullable = false)
     @Enumerated(EnumType.STRING)

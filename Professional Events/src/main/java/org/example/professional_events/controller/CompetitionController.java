@@ -304,6 +304,33 @@ public class CompetitionController {
         }
     }
 
+    // ===================== LOCATIONS (MAP) =====================
+    @GetMapping("/locations")
+    public ResponseEntity<?> getAllLocations() {
+        try {
+            List<Competition> competitions = competitionService.getAllCompetitions();
+            List<Map<String, Object>> locations = competitions.stream()
+                .filter(c -> c.getLatitude() != null && c.getLongitude() != null)
+                .map(c -> {
+                    Map<String, Object> loc = new java.util.HashMap<>();
+                    loc.put("competitionId", c.getCompetitionId());
+                    loc.put("title", c.getTitle());
+                    loc.put("locationName", c.getLocationName());
+                    loc.put("locationAddress", c.getLocationAddress());
+                    loc.put("latitude", c.getLatitude());
+                    loc.put("longitude", c.getLongitude());
+                    loc.put("status", c.getStatus());
+                    loc.put("type", c.getType());
+                    loc.put("startDate", c.getStartDate());
+                    return loc;
+                })
+                .collect(java.util.stream.Collectors.toList());
+            return ResponseEntity.ok(locations);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error: " + e.getMessage());
+        }
+    }
+
 
     /**
      * Obtenir les membres de l'équipe gagnante d'une compétition
