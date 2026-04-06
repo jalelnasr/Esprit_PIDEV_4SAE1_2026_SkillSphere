@@ -41,7 +41,7 @@
               <span class="conversation-time">{{ conversation.last_message_time || '' }}</span>
             </div>
             <div class="conversation-preview">
-              <span class="last-message">{{ conversation.last_message }}</span>
+              <span class="last-message">{{ conversationPreviewLabel(conversation.last_message) }}</span>
               <span class="following-badge" *ngIf="conversation.isFollowSuggestion">Following</span>
               <span class="unread-badge" *ngIf="conversation.unread_count > 0">
                 {{ conversation.unread_count }}
@@ -72,12 +72,21 @@
       <div class="messages-container" #messagesContainer>
         <div class="loading-state" *ngIf="isLoadingConversation">Loading conversation...</div>
         <div class="typing-indicator" *ngIf="isSelectedUserTyping">{{ selectedConversation.other_user.name }} is typing...</div>
-        <div class="message" *ngFor="let message of selectedConversation.messages" [class.own-message]="isOwnMessage(message)">
+        <div
+          class="message"
+          *ngFor="let message of selectedConversation.messages; trackBy: trackByMessage"
+          [class.own-message]="isOwnMessage(message)"
+        >
           <div class="message-avatar" *ngIf="!isOwnMessage(message)">
             {{ messageAvatar(message) }}
           </div>
           <div class="message-content">
-            <div class="message-bubble">{{ message.content }}</div>
+            <div class="message-bubble">
+              <ng-container *ngIf="isVoiceMessage(message); else textMessage">
+                <audio class="voice-message-player" controls preload="auto" [src]="message.content"></audio>
+              </ng-container>
+              <ng-template #textMessage>{{ message.content }}</ng-template>
+            </div>
             <div class="message-time">
               <span>{{ message.created_at }}</span>
               <span
@@ -106,13 +115,49 @@
             (input)="onMessageInput()"
             (keydown.enter)="sendMessage($event)"
           ></textarea>
-          <button class="send-btn" (click)="sendMessage()" [disabled]="messageForm.invalid">
+
+          <div class="voice-controls">
+            <button
+              class="voice-btn"
+              type="button"
+              (click)="startRecording()"
+              [disabled]="!selectedConversation || isRecordingVoice || isUploadingVoice"
+            >
+              Start Recording
+            </button>
+
+            <button
+              class="voice-btn stop"
+              type="button"
+              (click)="stopRecording()"
+              [disabled]="!isRecordingVoice || isUploadingVoice"
+            >
+              Stop Recording
+            </button>
+          </div>
+
+          <button
+            class="send-btn"
+            (click)="sendMessage()"
+            [disabled]="messageForm.invalid || isRecordingVoice || isUploadingVoice"
+          >
             <span class="icon">→</span>
           </button>
         </div>
+
+        <div class="recording-state" *ngIf="isRecordingVoice">
+          <span class="recording-dot"></span>
+          <span>Recording voice message...</span>
+        </div>
+
+        <div class="recording-state uploading" *ngIf="isUploadingVoice">
+          Uploading voice message...
+        </div>
+
         <div class="socket-warning" *ngIf="!isSocketConnected">
           Live updates reconnecting. Messages may send with fallback mode.
         </div>
+        <div class="field-error" *ngIf="voiceErrorMessage">{{ voiceErrorMessage }}</div>
         <div class="field-error" *ngIf="messageForm.controls.content.touched && messageForm.controls.content.invalid">
           Message content is required.
         </div>

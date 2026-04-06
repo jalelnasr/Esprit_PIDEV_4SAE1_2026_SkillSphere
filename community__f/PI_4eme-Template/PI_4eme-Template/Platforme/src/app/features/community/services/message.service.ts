@@ -62,10 +62,18 @@ export class MessageService extends CommunityBaseService {
   }
 
   sendMessage(receiverId: number, content: string): Observable<Message> {
+    const senderId = this.currentUserId();
+
     return this.http
       .post<BackendMessage | { message?: BackendMessage; data?: BackendMessage }>(
         `${this.communityBaseUrl}/messages/${receiverId}`,
-        { content },
+        {
+          content,
+          sender_id: senderId,
+          receiver_id: receiverId,
+          senderId,
+          receiverId
+        },
         this.authOptions()
       )
       .pipe(

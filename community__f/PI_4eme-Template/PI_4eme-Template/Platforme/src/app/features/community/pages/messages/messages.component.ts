@@ -1,8 +1,8 @@
-import { Component, ElementRef, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
+import { Component, ElementRef, NgZone, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Subscription, catchError, of } from 'rxjs';
+import { Subscription, catchError, finalize, of } from 'rxjs';
 import { ToastService } from '@core/services';
 import { Conversation, Message } from '../../models/message.model';
 import { MessageService } from '../../services/message.service';
@@ -12,6 +12,8 @@ import {
   CommunityUserDisplay
 } from '../../services/community-user-directory.service';
 import { FollowRelationship, FollowService } from '../../services/follow.service';
+import { AudioRecordService } from '../../services/audio-record.service';
+import { SupabaseService } from '../../services/supabase.service';
 
 interface ConversationView {
   id: number;
@@ -36,6 +38,7 @@ interface ConversationView {
 })
 export class MessagesComponent implements OnInit, OnDestroy {
   private readonly fb = inject(FormBuilder);
+  private readonly ngZone = inject(NgZone);
 
   @ViewChild('messagesContainer') private messagesContainer?: ElementRef<HTMLElement>;
 
@@ -47,8 +50,11 @@ export class MessagesComponent implements OnInit, OnDestroy {
   isLoadingFollowedUsers = false;
   isSocketConnected = false;
   isSocketConnecting = false;
+  isRecordingVoice = false;
+  isUploadingVoice = false;
   typingUserId: number | null = null;
   errorMessage = '';
+  voiceErrorMessage = '';
 
   private readonly currentUserId: number | null;
   private readonly typingStopDelayMs = 1200;
@@ -59,6 +65,7 @@ export class MessagesComponent implements OnInit, OnDestroy {
   });
 
   private routeSubscription: Subscription | null = null;
+  private recordingStateSubscription: Subscription | null = null;
   private socketStateSubscription: Subscription | null = null;
   private socketMessageSubscription: Subscription | null = null;
   private socketTypingSubscription: Subscription | null = null;
@@ -77,12 +84,21 @@ export class MessagesComponent implements OnInit, OnDestroy {
     private readonly chatSocketService: ChatSocketService,
     private readonly followService: FollowService,
     private readonly userDirectory: CommunityUserDirectoryService,
+    private readonly audioRecordService: AudioRecordService,
+    private readonly supabaseService: SupabaseService,
     private readonly toast: ToastService
   ) {
     this.currentUserId = this.followService.getCurrentUserIdSafe();
   }
 
   ngOnInit(): void {
+    this.recordingStateSubscription = this.audioRecordService.isRecording$.subscribe((isRecording) => {
+      this.isRecordingVoice = isRecording;
+      this.updateMessageControlDisabledState();
+    });
+
+    this.updateMessageControlDisabledState();
+
     this.restoredSelectionUserId = this.readSelectedConversationUserId();
     this.initSocketConnection();
     this.initFallbackPolling();
@@ -101,6 +117,7 @@ export class MessagesComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.routeSubscription?.unsubscribe();
+    this.recordingStateSubscription?.unsubscribe();
     this.socketStateSubscription?.unsubscribe();
     this.socketMessageSubscription?.unsubscribe();
     this.socketTypingSubscription?.unsubscribe();
@@ -115,6 +132,10 @@ export class MessagesComponent implements OnInit, OnDestroy {
 
     if (this.pollingHandle) {
       clearInterval(this.pollingHandle);
+    }
+
+    if (this.isRecordingVoice) {
+      this.audioRecordService.cancelRecording();
     }
 
     this.chatSocketService.disconnect();
@@ -146,6 +167,18 @@ export class MessagesComponent implements OnInit, OnDestroy {
 
   get isSelectedUserTyping(): boolean {
     return this.typingUserId !== null && this.typingUserId === this.selectedConversation?.other_user.id;
+  }
+
+  trackByMessage(index: number, message: Message): string | number {
+    if (message.id > 0) {
+      return message.id;
+    }
+
+    if (message.client_id) {
+      return message.client_id;
+    }
+
+    return `${message.sender_id}-${message.receiver_id}-${message.created_at}-${message.content}-${index}`;
   }
 
   private initSocketConnection(): void {
@@ -180,22 +213,34 @@ export class MessagesComponent implements OnInit, OnDestroy {
       clearInterval(this.pollingHandle);
     }
 
-    this.pollingHandle = setInterval(() => {
-      if (this.isSocketConnected || this.isSocketConnecting) {
-        return;
-      }
+    this.ngZone.runOutsideAngular(() => {
+      this.pollingHandle = setInterval(() => {
+        if (this.isSocketConnected || this.isSocketConnecting) {
+          return;
+        }
 
-      if (!this.selectedConversation || this.isLoadingConversation) {
-        return;
-      }
+        if (!this.selectedConversation || this.isLoadingConversation) {
+          return;
+        }
 
-      this.loadConversationMessages(this.selectedConversation.other_user.id, { background: true });
+        this.ngZone.run(() => {
+          if (!this.selectedConversation || this.isLoadingConversation) {
+            return;
+          }
 
-      this.pollingTick += 1;
-      if (this.pollingTick % 4 === 0) {
-        this.loadConversations();
-      }
-    }, this.pollingIntervalMs);
+          if (this.isAnyVoiceMessagePlaying()) {
+            return;
+          }
+
+          this.loadConversationMessages(this.selectedConversation.other_user.id, { background: true });
+
+          this.pollingTick += 1;
+          if (this.pollingTick % 4 === 0) {
+            this.loadConversations();
+          }
+        });
+      }, this.pollingIntervalMs);
+    });
   }
 
   private handleIncomingSocketMessage(message: Message): void {
@@ -310,6 +355,10 @@ export class MessagesComponent implements OnInit, OnDestroy {
       event.preventDefault();
     }
 
+    if (this.isRecordingVoice || this.isUploadingVoice) {
+      return;
+    }
+
     if (!this.selectedConversation) {
       return;
     }
@@ -320,11 +369,89 @@ export class MessagesComponent implements OnInit, OnDestroy {
     }
 
     const content = this.messageForm.controls.content.value.trim();
+    this.messageForm.reset({ content: '' });
+    this.sendPreparedMessage(content);
+  }
+
+  onMessageInput(): void {
+    if (this.isRecordingVoice || this.isUploadingVoice) {
+      return;
+    }
+
+    this.sendTypingSignal(true);
+  }
+
+  startRecording(): void {
+    if (!this.selectedConversation) {
+      this.voiceErrorMessage = 'Select a conversation before recording a voice message.';
+      return;
+    }
+
+    if (this.isUploadingVoice || this.isRecordingVoice) {
+      return;
+    }
+
+    this.voiceErrorMessage = '';
+
+    this.audioRecordService.startRecording().catch((error: Error) => {
+      this.voiceErrorMessage = error.message;
+      this.toast.error(error.message);
+    });
+  }
+
+  stopRecording(): void {
+    if (!this.selectedConversation || !this.isRecordingVoice || this.isUploadingVoice) {
+      return;
+    }
+
+    this.voiceErrorMessage = '';
+    this.setVoiceUploadingState(true);
+
+    this.audioRecordService
+      .stopRecording()
+      .then((blob) => {
+        this.supabaseService
+          .uploadVoiceMessage(blob)
+          .pipe(finalize(() => this.setVoiceUploadingState(false)))
+          .subscribe({
+            next: (audioUrl) => {
+              this.errorMessage = '';
+              this.sendPreparedMessage(audioUrl);
+            },
+            error: (error: Error) => {
+              this.voiceErrorMessage = error.message;
+              this.toast.error(error.message);
+            }
+          });
+      })
+      .catch((error: Error) => {
+        this.setVoiceUploadingState(false);
+        this.voiceErrorMessage = error.message;
+        this.toast.error(error.message);
+      });
+  }
+
+  isVoiceMessage(message: Message): boolean {
+    return this.supabaseService.isSupabaseVoiceUrl(message.content);
+  }
+
+  conversationPreviewLabel(content: string): string {
+    if (this.supabaseService.isSupabaseVoiceUrl(content)) {
+      return '🎤 Voice message';
+    }
+
+    return content;
+  }
+
+  private sendPreparedMessage(content: string): void {
+    if (!this.selectedConversation) {
+      return;
+    }
+
     const receiverId = this.selectedConversation.other_user.id;
     const optimisticMessage = this.createOptimisticMessage(receiverId, content);
     this.appendMessageToConversation(this.selectedConversation, optimisticMessage);
 
-    this.messageForm.reset({ content: '' });
     this.sendTypingSignal(false);
     this.scrollToLatest();
 
@@ -359,10 +486,6 @@ export class MessagesComponent implements OnInit, OnDestroy {
         this.toast.error('Live channel unavailable. Message was not delivered.');
       }
     });
-  }
-
-  onMessageInput(): void {
-    this.sendTypingSignal(true);
   }
 
   isOwnMessage(message: Message): boolean {
@@ -664,6 +787,41 @@ export class MessagesComponent implements OnInit, OnDestroy {
 
   private sortMessages(messages: Message[]): Message[] {
     return [...messages].sort((a, b) => a.created_at.localeCompare(b.created_at));
+  }
+
+  private isAnyVoiceMessagePlaying(): boolean {
+    const container = this.messagesContainer?.nativeElement;
+    if (!container) {
+      return false;
+    }
+
+    const players = container.querySelectorAll('audio');
+    for (const player of Array.from(players)) {
+      if (!player.paused && !player.ended) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  private setVoiceUploadingState(isUploading: boolean): void {
+    this.isUploadingVoice = isUploading;
+    this.updateMessageControlDisabledState();
+  }
+
+  private updateMessageControlDisabledState(): void {
+    const contentControl = this.messageForm.controls.content;
+    const shouldDisable = this.isRecordingVoice || this.isUploadingVoice;
+
+    if (shouldDisable && contentControl.enabled) {
+      contentControl.disable({ emitEvent: false });
+      return;
+    }
+
+    if (!shouldDisable && contentControl.disabled) {
+      contentControl.enable({ emitEvent: false });
+    }
   }
 
   private sendTypingSignal(isTyping: boolean): void {

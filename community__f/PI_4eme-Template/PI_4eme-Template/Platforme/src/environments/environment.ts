@@ -3,6 +3,12 @@ export const environment = {
   apiUrl: 'http://localhost:8081',
   communityApiUrl: 'http://localhost:8081',
   wsUrl: 'ws://localhost:8080',
+  supabase: {
+    url: 'https://yvivroonarervdmbpbqz.supabase.co',
+    publishableKey: 'sb_publishable_uVw27yhF8TsFVb_tm-hJAA_KVgE6VLE',
+    voiceMessagesBucket: 'voice-messages',
+    maxVoiceSizeBytes: 5 * 1024 * 1024
+  },
   appName: 'SkillSphere',
   version: '1.0.0',
 

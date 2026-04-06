@@ -319,10 +319,20 @@
   border-radius: 12px;
 }
 
+.voice-message-player {
+  width: min(320px, 62vw);
+  height: 34px;
+  display: block;
+}
+
 .message.own-message .message-bubble {
   background: var(--primary);
   color: #fff;
   border-color: color-mix(in srgb, var(--primary) 80%, var(--border));
+}
+
+.message.own-message .voice-message-player {
+  filter: saturate(0.96) brightness(1.01);
 }
 
 .message-time {
@@ -364,6 +374,40 @@
   align-items: flex-end;
 }
 
+.voice-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.voice-btn {
+  border: 1px solid var(--card-border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface) 90%, var(--primary) 10%);
+  color: var(--primary-strong);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 0.45rem 0.75rem;
+  white-space: nowrap;
+  transition: transform 0.2s ease, filter 0.2s ease, opacity 0.2s ease;
+}
+
+.voice-btn.stop {
+  background: color-mix(in srgb, var(--surface) 86%, var(--danger) 14%);
+  color: var(--danger);
+}
+
+.voice-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(1.02);
+}
+
+.voice-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .message-input {
   padding: 0.7rem 0.85rem;
   border-radius: 18px;
@@ -394,6 +438,27 @@
 .send-btn:disabled {
   opacity: 0.55;
   cursor: not-allowed;
+}
+
+.recording-state {
+  margin-top: 0.45rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.38rem;
+  font-size: 12px;
+  color: var(--danger);
+}
+
+.recording-state.uploading {
+  color: var(--text-muted);
+}
+
+.recording-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--danger);
+  animation: recordPulse 0.9s ease-in-out infinite;
 }
 
 .no-conversation {
@@ -437,6 +502,21 @@
   border-color: color-mix(in srgb, var(--danger) 70%, var(--border));
 }
 
+@keyframes recordPulse {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.65;
+  }
+  50% {
+    transform: scale(1.18);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.9);
+    opacity: 0.65;
+  }
+}
+
 @media (max-width: 960px) {
   .container {
     padding: 1rem;
@@ -454,5 +534,14 @@
 
   .chat-area {
     min-height: 56vh;
+  }
+
+  .input-wrapper {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .voice-controls {
+    justify-content: space-between;
   }
 }
