@@ -34,7 +34,11 @@
       </select>
     </label>
 
-    <button class="clear-filters-btn toolbar-reset" (click)="clearAdvancedFilters()" [disabled]="popularityFilter === 'latest'">
+    <button
+      class="clear-filters-btn toolbar-reset"
+      (click)="clearAdvancedFilters()"
+      [disabled]="popularityFilter === 'latest' && !searchTerm.trim()"
+    >
       Reset filters
     </button>
 
@@ -42,6 +46,27 @@
       {{ useInfiniteScroll ? 'Switch to pages' : 'Infinite scroll' }}
     </button>
   </div>
+
+  <section class="trending-panel">
+    <div class="trending-header">
+      <h3>Trending Questions</h3>
+      <div class="trending-window-actions">
+        <button class="window-btn" [class.active]="trendingWindow === '24h'" (click)="changeTrendingWindow('24h')">24h</button>
+        <button class="window-btn" [class.active]="trendingWindow === '7d'" (click)="changeTrendingWindow('7d')">7d</button>
+      </div>
+    </div>
+
+    <div class="trending-list" *ngIf="trendingTopics.length > 0; else noTrendingTopics">
+      <button class="trending-tag" *ngFor="let topic of trendingTopics" (click)="searchByHashtag(topic.tag)">
+        <span>{{ topic.tag }}</span>
+        <span class="tag-count">{{ topic.mentions }}</span>
+      </button>
+    </div>
+
+    <ng-template #noTrendingTopics>
+      <p class="trending-empty">{{ isLoadingTrending ? 'Loading trending topics...' : 'No trending hashtags yet.' }}</p>
+    </ng-template>
+  </section>
 
   <div class="pagination-hint">
     <span>Page {{ currentPage }} / {{ totalPages }} - {{ totalItems }} questions</span>
@@ -106,6 +131,7 @@
           <div class="question-details">
             <span class="question-author">{{ questionAuthorName(question) }}</span>
             <span class="question-time">{{ question.created_at }}</span>
+            <span class="question-pin-badge" *ngIf="isPinned(question.id)">Pinned</span>
           </div>
         </div>
         <button class="profile-btn" (click)="viewProfile(question.user_id)">
@@ -115,8 +141,32 @@
       </div>
 
       <div class="question-content">
-        <h3 class="question-title">{{ question.title }}</h3>
-        <p class="question-description">{{ question.description }}</p>
+        <ng-container *ngIf="isEditingQuestion(question.id); else questionReadMode">
+          <input class="question-edit-title" type="text" [formControl]="editQuestionForm.controls.title" [disabled]="isUpdatingQuestion(question.id)">
+          <textarea class="question-edit-description" rows="4" [formControl]="editQuestionForm.controls.description" [disabled]="isUpdatingQuestion(question.id)"></textarea>
+
+          <div class="field-error" *ngIf="editQuestionForm.controls.title.touched && editQuestionForm.controls.title.invalid">
+            <span *ngIf="editQuestionForm.controls.title.errors?.['required']">Title is required.</span>
+            <span *ngIf="editQuestionForm.controls.title.errors?.['minlength']">Minimum 5 characters.</span>
+          </div>
+
+          <div class="field-error" *ngIf="editQuestionForm.controls.description.touched && editQuestionForm.controls.description.invalid">
+            <span *ngIf="editQuestionForm.controls.description.errors?.['required']">Description is required.</span>
+            <span *ngIf="editQuestionForm.controls.description.errors?.['minlength']">Minimum 10 characters.</span>
+          </div>
+
+          <div class="edit-actions">
+            <button class="action-btn" type="button" (click)="cancelEditQuestion()" [disabled]="isUpdatingQuestion(question.id)">Cancel</button>
+            <button class="action-btn save" type="button" (click)="saveEditedQuestion(question)" [disabled]="isUpdatingQuestion(question.id)">
+              {{ isUpdatingQuestion(question.id) ? 'Saving...' : 'Save' }}
+            </button>
+          </div>
+        </ng-container>
+
+        <ng-template #questionReadMode>
+          <h3 class="question-title">{{ question.title }}</h3>
+          <p class="question-description">{{ question.description }}</p>
+        </ng-template>
       </div>
 
       <div class="question-stats">
@@ -124,9 +174,36 @@
       </div>
 
       <div class="question-actions">
+        <button class="action-btn pin-btn" [class.pinned]="isPinned(question.id)" (click)="togglePin(question)">
+          <span class="icon">{{ isPinned(question.id) ? '📌' : '📍' }}</span>
+          <span>{{ isPinned(question.id) ? 'Unpin' : 'Pin' }} Question</span>
+        </button>
+
         <button class="action-btn" (click)="toggleAnswers(question)">
           <span class="icon">{{ question.showAnswers ? '🔽' : '🔼' }}</span>
           <span>{{ question.showAnswers ? 'Hide' : 'Show' }} Answers</span>
+        </button>
+
+        <button
+          class="action-btn"
+          *ngIf="canManageQuestion(question)"
+          type="button"
+          (click)="isEditingQuestion(question.id) ? cancelEditQuestion() : startEditQuestion(question)"
+          [disabled]="isUpdatingQuestion(question.id) || isDeletingQuestion(question.id)"
+        >
+          <span class="icon">{{ isEditingQuestion(question.id) ? '✖️' : '✏️' }}</span>
+          <span>{{ isEditingQuestion(question.id) ? 'Cancel Edit' : 'Edit Question' }}</span>
+        </button>
+
+        <button
+          class="action-btn danger"
+          *ngIf="canManageQuestion(question)"
+          type="button"
+          (click)="deleteQuestion(question)"
+          [disabled]="isDeletingQuestion(question.id) || isUpdatingQuestion(question.id)"
+        >
+          <span class="icon">🗑️</span>
+          <span>{{ isDeletingQuestion(question.id) ? 'Deleting...' : 'Delete Question' }}</span>
         </button>
       </div>
 
@@ -193,7 +270,35 @@
             </div>
 
             <div class="answer-content">
-              <p>{{ answer.content }}</p>
+              <ng-container *ngIf="isEditingAnswer(answer.id); else answerReadMode">
+                <textarea
+                  class="answer-edit-field"
+                  rows="3"
+                  [formControl]="editAnswerControl"
+                  [disabled]="isUpdatingAnswer(answer.id)"
+                ></textarea>
+
+                <div class="field-error" *ngIf="editAnswerControl.touched && editAnswerControl.invalid">
+                  <span *ngIf="editAnswerControl.errors?.['required']">Answer content is required.</span>
+                  <span *ngIf="editAnswerControl.errors?.['minlength']">Answer must be at least 5 characters.</span>
+                </div>
+
+                <div class="answer-manage-actions">
+                  <button class="action-btn" type="button" (click)="cancelEditAnswer()" [disabled]="isUpdatingAnswer(answer.id)">Cancel</button>
+                  <button
+                    class="action-btn save"
+                    type="button"
+                    (click)="saveEditedAnswer(question, answer)"
+                    [disabled]="isUpdatingAnswer(answer.id)"
+                  >
+                    {{ isUpdatingAnswer(answer.id) ? 'Saving...' : 'Save' }}
+                  </button>
+                </div>
+              </ng-container>
+
+              <ng-template #answerReadMode>
+                <p>{{ answer.content }}</p>
+              </ng-template>
 
               <div class="github-preview-list" *ngIf="answerGitHubPreviews(answer).length > 0">
                 <div class="github-preview-card" *ngFor="let preview of answerGitHubPreviews(answer)">
@@ -226,6 +331,28 @@
               <span class="vote-count">{{ answer.voteCount }}</span>
               <button class="vote-btn downvote" [class.voted]="currentVote(answer) === 'DOWN'" [disabled]="isVoting(answer.id)" (click)="voteAnswer(answer, 'DOWN')">
                 <span class="icon">👎</span>
+              </button>
+
+              <button
+                class="action-btn small"
+                *ngIf="canManageAnswer(answer)"
+                type="button"
+                (click)="isEditingAnswer(answer.id) ? cancelEditAnswer() : startEditAnswer(question, answer)"
+                [disabled]="isUpdatingAnswer(answer.id) || isDeletingAnswer(answer.id)"
+              >
+                <span class="icon">{{ isEditingAnswer(answer.id) ? '✖️' : '✏️' }}</span>
+                <span>{{ isEditingAnswer(answer.id) ? 'Cancel' : 'Edit' }}</span>
+              </button>
+
+              <button
+                class="action-btn small danger"
+                *ngIf="canManageAnswer(answer)"
+                type="button"
+                (click)="deleteAnswer(question, answer)"
+                [disabled]="isDeletingAnswer(answer.id) || isUpdatingAnswer(answer.id)"
+              >
+                <span class="icon">🗑️</span>
+                <span>{{ isDeletingAnswer(answer.id) ? 'Deleting...' : 'Delete' }}</span>
               </button>
             </div>
           </div>

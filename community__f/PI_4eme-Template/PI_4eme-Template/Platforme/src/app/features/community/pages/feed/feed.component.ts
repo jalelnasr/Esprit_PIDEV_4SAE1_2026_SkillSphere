@@ -2,12 +2,15 @@ import { Component, HostListener, OnDestroy, OnInit, inject } from '@angular/cor
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
-import { catchError, forkJoin, of } from 'rxjs';
+import { catchError, finalize, forkJoin, of } from 'rxjs';
 import { Comment, CreateCommentRequest } from '../../models/comment.model';
 import { CreatePostRequest, Post } from '../../models/post.model';
+import { SuggestedUser } from '../../models/suggestion.model';
 import { PostService } from '../../services/post.service';
 import { CommentService } from '../../services/comment.service';
 import { CommunityUserDirectoryService } from '../../services/community-user-directory.service';
+import { SuggestionService } from '../../services/suggestion.service';
+import { FollowService } from '../../services/follow.service';
 
 interface FeedComment extends Comment {
   likesCount: number;
@@ -53,6 +56,9 @@ export class FeedComponent implements OnInit, OnDestroy {
   trendingWindow: '24h' | '7d' = '24h';
   trendingTopics: TrendingTopic[] = [];
   isLoadingTrending = false;
+  suggestedUsers: SuggestedUser[] = [];
+  isLoadingSuggestedUsers = false;
+  suggestedUsersError = '';
   mediaErrorMessage = '';
   imagePreviewUrl: string | null = null;
   videoPreviewUrl: string | null = null;
@@ -67,11 +73,20 @@ export class FeedComponent implements OnInit, OnDestroy {
   readonly maxVideoSizeBytes = 50 * 1024 * 1024;
 
   private readonly currentUserId = this.resolveCurrentUserId();
+  editingPostId: number | null = null;
+  readonly editPostControl = this.fb.nonNullable.control('', [
+    Validators.required,
+    Validators.minLength(3),
+    Validators.maxLength(1000)
+  ]);
+  private readonly updatingPostIds = new Set<number>();
+  private readonly deletingPostIds = new Set<number>();
   private readonly openedComments = new Set<number>();
   private readonly loadingComments = new Set<number>();
   private readonly commentControls = new Map<number, FormControl<string>>();
   private readonly localMediaByPostId = new Map<number, { imageUrl: string | null; videoUrl: string | null }>();
   private readonly localMediaStorageKey = 'community.localPostMedia.v1';
+  private readonly followingSuggestedUserIds = new Set<number>();
   private readonly pageCache = new Map<number, FeedPost[]>();
   private readonly stateStorageKey = 'community.feed.pagination.v1';
   private restoreScrollY: number | null = null;
@@ -87,13 +102,16 @@ export class FeedComponent implements OnInit, OnDestroy {
     private readonly router: Router,
     private readonly postService: PostService,
     private readonly commentService: CommentService,
-    private readonly userDirectory: CommunityUserDirectoryService
+    private readonly userDirectory: CommunityUserDirectoryService,
+    private readonly suggestionService: SuggestionService,
+    private readonly followService: FollowService
   ) {}
 
   ngOnInit(): void {
     this.restoreState();
     this.restoreLocalMediaRegistry();
     this.refreshTrendingTopics();
+    this.loadSuggestedUsers();
     this.loadPosts();
   }
 
@@ -219,6 +237,61 @@ export class FeedComponent implements OnInit, OnDestroy {
     return Array.from(suggestions)
       .filter((item) => (query ? item.toLowerCase().includes(query) : true))
       .slice(0, 12);
+  }
+
+  isFollowingSuggestedUser(userId: number): boolean {
+    return this.followingSuggestedUserIds.has(userId);
+  }
+
+  followSuggestedUser(user: SuggestedUser): void {
+    if (this.isFollowingSuggestedUser(user.user_id)) {
+      return;
+    }
+
+    this.suggestedUsersError = '';
+    this.followingSuggestedUserIds.add(user.user_id);
+
+    this.followService
+      .followUser(user.user_id)
+      .pipe(finalize(() => this.followingSuggestedUserIds.delete(user.user_id)))
+      .subscribe({
+        next: () => {
+          this.errorMessage = '';
+          this.suggestedUsers = this.suggestedUsers.filter((item) => item.user_id !== user.user_id);
+          this.loadSuggestedUsers();
+        },
+        error: (error: Error) => {
+          this.suggestedUsersError = error.message;
+          this.errorMessage = error.message;
+        }
+      });
+  }
+
+  suggestedUserName(user: SuggestedUser): string {
+    const value = user.display_name?.trim();
+    return value && value.length > 0 ? value : `User #${user.user_id}`;
+  }
+
+  suggestedUserReason(user: SuggestedUser): string {
+    const reasons: string[] = [];
+
+    if (user.shared_groups > 0) {
+      reasons.push(`${user.shared_groups} shared group${user.shared_groups > 1 ? 's' : ''}`);
+    }
+
+    if (user.shared_hashtags > 0) {
+      reasons.push(`${user.shared_hashtags} shared hashtag${user.shared_hashtags > 1 ? 's' : ''}`);
+    }
+
+    if (user.shared_interactions > 0) {
+      reasons.push(`${user.shared_interactions} shared interaction${user.shared_interactions > 1 ? 's' : ''}`);
+    }
+
+    if (user.same_domain) {
+      reasons.push('same domain');
+    }
+
+    return reasons.length > 0 ? reasons.join(' • ') : 'Matches your activity';
   }
 
   goToPage(page: number): void {
@@ -361,6 +434,111 @@ export class FeedComponent implements OnInit, OnDestroy {
         this.errorMessage = error.message;
       }
     });
+  }
+
+  canManagePost(post: FeedPost): boolean {
+    return this.currentUserId !== null && post.user_id === this.currentUserId;
+  }
+
+  isEditingPost(postId: number): boolean {
+    return this.editingPostId === postId;
+  }
+
+  isUpdatingPost(postId: number): boolean {
+    return this.updatingPostIds.has(postId);
+  }
+
+  isDeletingPost(postId: number): boolean {
+    return this.deletingPostIds.has(postId);
+  }
+
+  startEditPost(post: FeedPost): void {
+    if (!this.canManagePost(post) || this.isUpdatingPost(post.id) || this.isDeletingPost(post.id)) {
+      return;
+    }
+
+    this.editingPostId = post.id;
+    this.editPostControl.setValue(post.content ?? '');
+    this.editPostControl.markAsPristine();
+    this.editPostControl.markAsUntouched();
+  }
+
+  cancelEditPost(): void {
+    this.editingPostId = null;
+    this.editPostControl.reset('');
+    this.editPostControl.markAsPristine();
+    this.editPostControl.markAsUntouched();
+  }
+
+  saveEditedPost(post: FeedPost): void {
+    if (!this.canManagePost(post) || !this.isEditingPost(post.id) || this.isUpdatingPost(post.id)) {
+      return;
+    }
+
+    if (this.editPostControl.invalid) {
+      this.editPostControl.markAsTouched();
+      return;
+    }
+
+    const nextContent = this.editPostControl.value.trim();
+    if (!nextContent || nextContent === post.content) {
+      this.cancelEditPost();
+      return;
+    }
+
+    this.updatingPostIds.add(post.id);
+
+    this.postService
+      .updatePost(post.id, {
+        content: nextContent,
+        image_url: post.image_url ?? null,
+        video_url: post.video_url ?? null,
+        group_id: post.group_id ?? null
+      })
+      .pipe(finalize(() => this.updatingPostIds.delete(post.id)))
+      .subscribe({
+        next: (updated) => {
+          post.content = updated.content;
+          post.image_url = updated.image_url ?? null;
+          post.video_url = updated.video_url ?? null;
+          post.group_id = updated.group_id ?? null;
+          this.errorMessage = '';
+          this.cancelEditPost();
+          this.refreshTrendingTopics();
+        },
+        error: (error: Error) => {
+          this.errorMessage = error.message;
+        }
+      });
+  }
+
+  deletePost(post: FeedPost): void {
+    if (!this.canManagePost(post) || this.isDeletingPost(post.id)) {
+      return;
+    }
+
+    const confirmed = typeof window === 'undefined' || window.confirm('Delete this post? This action cannot be undone.');
+    if (!confirmed) {
+      return;
+    }
+
+    this.deletingPostIds.add(post.id);
+
+    this.postService
+      .deletePost(post.id)
+      .pipe(finalize(() => this.deletingPostIds.delete(post.id)))
+      .subscribe({
+        next: () => {
+          this.errorMessage = '';
+          if (this.editingPostId === post.id) {
+            this.cancelEditPost();
+          }
+          this.refreshAfterPostMutation();
+        },
+        error: (error: Error) => {
+          this.errorMessage = error.message;
+        }
+      });
   }
 
   toggleComments(postId: number): void {
@@ -1029,6 +1207,32 @@ export class FeedComponent implements OnInit, OnDestroy {
       });
   }
 
+  loadSuggestedUsers(): void {
+    if (this.currentUserId === null) {
+      this.suggestedUsers = [];
+      this.suggestedUsersError = '';
+      return;
+    }
+
+    this.isLoadingSuggestedUsers = true;
+
+    this.suggestionService
+      .getSuggestedUsers(10)
+      .subscribe({
+        next: (users) => {
+          this.suggestedUsersError = '';
+          this.suggestedUsers = users.filter((user) => user.user_id !== this.currentUserId);
+        },
+        error: (error: Error) => {
+          this.suggestedUsersError = error.message;
+          this.suggestedUsers = [];
+        },
+        complete: () => {
+          this.isLoadingSuggestedUsers = false;
+        }
+      });
+  }
+
   private applyAdvancedFilters(posts: FeedPost[]): FeedPost[] {
     const query = this.searchTerm.trim().toLowerCase();
 
@@ -1176,6 +1380,14 @@ export class FeedComponent implements OnInit, OnDestroy {
     this.pageCache.clear();
     this.loadPosts(1, true);
     this.persistState();
+  }
+
+  private refreshAfterPostMutation(): void {
+    this.currentPage = 1;
+    this.totalPages = 1;
+    this.pageCache.clear();
+    this.loadPosts(1, true);
+    this.refreshTrendingTopics();
   }
 
   private persistState(): void {

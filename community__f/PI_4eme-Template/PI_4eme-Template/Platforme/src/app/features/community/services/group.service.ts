@@ -163,6 +163,12 @@ export class GroupService extends CommunityBaseService {
       );
   }
 
+  deleteGroup(groupId: number): Observable<void> {
+    return this.http
+      .delete<void>(`${this.communityBaseUrl}/groups/${groupId}`, this.authOptions())
+      .pipe(catchError(this.handleError('Delete group')));
+  }
+
   private mapGroup(group: BackendGroup): Group {
     return {
       id: group.groupId,

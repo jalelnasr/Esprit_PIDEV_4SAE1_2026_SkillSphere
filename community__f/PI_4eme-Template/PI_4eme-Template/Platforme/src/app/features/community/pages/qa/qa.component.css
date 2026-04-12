@@ -101,7 +101,8 @@
   transform: none;
 }
 
-.filters-panel {
+.filters-panel,
+.trending-panel {
   margin-bottom: 1rem;
   padding: 0.9rem;
   border: 1px solid var(--card-border);
@@ -138,20 +139,78 @@
   justify-content: flex-end;
 }
 
-.clear-filters-btn {
+.clear-filters-btn,
+.window-btn,
+.trending-tag {
   border: 1px solid var(--card-border);
-  border-radius: 12px;
-  padding: 0.45rem 0.9rem;
+  border-radius: 999px;
   background: color-mix(in srgb, var(--surface) 90%, var(--primary) 10%);
   color: var(--text-main);
   cursor: pointer;
   transition: transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
 }
 
-.clear-filters-btn:hover {
+.clear-filters-btn {
+  border-radius: 12px;
+  padding: 0.45rem 0.9rem;
+}
+
+.clear-filters-btn:hover,
+.window-btn:hover,
+.trending-tag:hover {
   transform: translateY(-1px);
   background: color-mix(in srgb, var(--surface-muted) 76%, var(--primary) 24%);
   border-color: color-mix(in srgb, var(--primary) 28%, var(--card-border));
+}
+
+.trending-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.65rem;
+}
+
+.trending-header h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.trending-window-actions,
+.trending-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.window-btn {
+  padding: 0.28rem 0.58rem;
+  font-size: 12px;
+}
+
+.window-btn.active {
+  background: var(--btn-fill);
+  border-color: transparent;
+  color: #fff;
+}
+
+.trending-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.38rem 0.68rem;
+}
+
+.tag-count {
+  border-radius: 999px;
+  padding: 0.04rem 0.35rem;
+  font-size: 11px;
+  background: color-mix(in srgb, var(--primary) 24%, transparent);
+}
+
+.trending-empty {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 12px;
 }
 
 .pagination-hint {
@@ -325,6 +384,19 @@
   flex-direction: column;
 }
 
+.question-pin-badge {
+  margin-top: 0.2rem;
+  align-self: flex-start;
+  border: 1px solid color-mix(in srgb, var(--primary) 42%, var(--card-border));
+  border-radius: 999px;
+  padding: 0.14rem 0.52rem;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: var(--primary-strong);
+  background: color-mix(in srgb, var(--primary) 18%, var(--surface));
+}
+
 .author-name,
 .question-author,
 .answer-author {
@@ -343,7 +415,10 @@
 
 .question-title-input,
 .question-content-input,
-.answer-field {
+.answer-field,
+.question-edit-title,
+.question-edit-description,
+.answer-edit-field {
   width: 100%;
   border: 1px solid var(--border);
   background: var(--surface);
@@ -360,24 +435,51 @@
   margin-bottom: 0.75rem;
 }
 
+.question-edit-title {
+  padding: 0.75rem;
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 0.55rem;
+}
+
 .question-content-input,
-.answer-field {
+.answer-field,
+.question-edit-description,
+.answer-edit-field {
   padding: 0.85rem;
   resize: none;
   line-height: 1.5;
 }
 
+.question-edit-description,
+.answer-edit-field {
+  border-radius: 10px;
+}
+
 .question-title-input::placeholder,
 .question-content-input::placeholder,
 .answer-field::placeholder,
+.question-edit-title::placeholder,
+.question-edit-description::placeholder,
+.answer-edit-field::placeholder,
 .search-input::placeholder {
   color: var(--text-muted);
 }
 
 .question-title-input:focus,
 .question-content-input:focus,
-.answer-field:focus {
+.answer-field:focus,
+.question-edit-title:focus,
+.question-edit-description:focus,
+.answer-edit-field:focus {
   border-color: var(--primary);
+}
+
+.edit-actions,
+.answer-manage-actions {
+  margin-top: 0.5rem;
+  display: flex;
+  gap: 0.45rem;
 }
 
 .cancel-btn,
@@ -446,6 +548,12 @@
   padding-top: 0.75rem;
 }
 
+.question-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
 .action-btn {
   color: var(--primary);
   font-size: 13px;
@@ -454,6 +562,31 @@
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
+}
+
+.action-btn.save {
+  background: color-mix(in srgb, var(--surface-muted) 68%, var(--primary) 32%);
+}
+
+.action-btn.danger {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 50%, var(--border));
+}
+
+.action-btn.danger:hover {
+  background: color-mix(in srgb, var(--surface-muted) 72%, var(--danger) 28%);
+  border-color: color-mix(in srgb, var(--danger) 58%, var(--border));
+}
+
+.action-btn.small {
+  padding: 0.32rem 0.55rem;
+  font-size: 12px;
+}
+
+.pin-btn.pinned {
+  color: var(--primary-strong);
+  border-color: color-mix(in srgb, var(--primary) 40%, var(--card-border));
+  background: color-mix(in srgb, var(--surface-muted) 68%, var(--primary) 32%);
 }
 
 .answer-input {
@@ -741,6 +874,12 @@
 
   .qa-toolbar {
     grid-template-columns: 1fr;
+  }
+
+  .trending-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.55rem;
   }
 
   .ask-form {

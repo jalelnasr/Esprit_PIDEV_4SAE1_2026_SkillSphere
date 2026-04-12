@@ -325,6 +325,22 @@
   display: block;
 }
 
+.message-image {
+  width: min(300px, 62vw);
+  max-height: 260px;
+  border-radius: 10px;
+  object-fit: cover;
+  display: block;
+}
+
+.message-video {
+  width: min(320px, 62vw);
+  max-height: 260px;
+  border-radius: 10px;
+  background: #000;
+  display: block;
+}
+
 .message.own-message .message-bubble {
   background: var(--primary);
   color: #fff;
@@ -374,10 +390,38 @@
   align-items: flex-end;
 }
 
+.hidden-file-input {
+  display: none;
+}
+
 .voice-controls {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.45rem;
+}
+
+.attachment-btn {
+  border: 1px solid var(--card-border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface) 90%, var(--success) 10%);
+  color: var(--success);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 0.45rem 0.75rem;
+  white-space: nowrap;
+  transition: transform 0.2s ease, filter 0.2s ease, opacity 0.2s ease;
+}
+
+.attachment-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(1.02);
+}
+
+.attachment-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .voice-btn {

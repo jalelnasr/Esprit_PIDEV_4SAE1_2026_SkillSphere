@@ -9,12 +9,15 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 
 @Repository
 public interface PostRepository extends JpaRepository<Post, Long> {
     List<Post> findByUserId(Long userId);
+    List<Post> findByContentContainingAndUserIdNotIn(String marker, Collection<Long> excludedUserIds);
     List<Post> findByGroupId(Long groupId);
+    List<Post> findByGroupIdInAndCreatedAtAfter(Collection<Long> groupIds, LocalDateTime createdAt);
     List<Post> findByCreatedAtAfter(LocalDateTime date);
     List<Post> findByCreatedAtAfterOrderByCreatedAtDesc(LocalDateTime date, Pageable pageable);
     List<Post> findAllByOrderByCreatedAtDesc();

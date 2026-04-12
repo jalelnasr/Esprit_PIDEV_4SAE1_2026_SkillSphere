@@ -31,6 +31,10 @@ export interface CreateAnswerRequest {
   question_id: number;
 }
 
+export interface UpdateAnswerRequest {
+  content: string;
+}
+
 export interface VoteAnswerRequest {
   answer_id: number;
   vote_type: VoteType;

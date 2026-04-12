@@ -82,9 +82,22 @@
           </div>
           <div class="message-content">
             <div class="message-bubble">
-              <ng-container *ngIf="isVoiceMessage(message); else textMessage">
+              <ng-container *ngIf="isVoiceMessage(message); else nonVoiceMessage">
                 <audio class="voice-message-player" controls preload="auto" [src]="message.content"></audio>
               </ng-container>
+
+              <ng-template #nonVoiceMessage>
+                <ng-container *ngIf="isImageMessage(message); else nonImageMessage">
+                  <img class="message-image" [src]="message.content" alt="Shared image" loading="lazy">
+                </ng-container>
+              </ng-template>
+
+              <ng-template #nonImageMessage>
+                <ng-container *ngIf="isVideoMessage(message); else textMessage">
+                  <video class="message-video" controls preload="metadata" [src]="message.content"></video>
+                </ng-container>
+              </ng-template>
+
               <ng-template #textMessage>{{ message.content }}</ng-template>
             </div>
             <div class="message-time">
@@ -107,6 +120,14 @@
 
       <div class="message-input-area">
         <div class="input-wrapper">
+          <input
+            #imageInput
+            type="file"
+            class="hidden-file-input"
+            accept=".jpg,.jpeg,.png,.webp,.gif,image/jpeg,image/png,image/webp,image/gif"
+            (change)="onImageSelected($event)"
+          >
+
           <textarea
             class="message-input"
             placeholder="Type a message..."
@@ -118,10 +139,19 @@
 
           <div class="voice-controls">
             <button
+              class="attachment-btn"
+              type="button"
+              (click)="imageInput.click()"
+              [disabled]="!selectedConversation || isRecordingVoice || isUploadingVoice || isUploadingAttachment"
+            >
+              Send Image
+            </button>
+
+            <button
               class="voice-btn"
               type="button"
               (click)="startRecording()"
-              [disabled]="!selectedConversation || isRecordingVoice || isUploadingVoice"
+              [disabled]="!selectedConversation || isRecordingVoice || isUploadingVoice || isUploadingAttachment"
             >
               Start Recording
             </button>
@@ -130,7 +160,7 @@
               class="voice-btn stop"
               type="button"
               (click)="stopRecording()"
-              [disabled]="!isRecordingVoice || isUploadingVoice"
+              [disabled]="!isRecordingVoice || isUploadingVoice || isUploadingAttachment"
             >
               Stop Recording
             </button>
@@ -139,7 +169,7 @@
           <button
             class="send-btn"
             (click)="sendMessage()"
-            [disabled]="messageForm.invalid || isRecordingVoice || isUploadingVoice"
+            [disabled]="messageForm.invalid || isRecordingVoice || isUploadingVoice || isUploadingAttachment"
           >
             <span class="icon">→</span>
           </button>
@@ -154,10 +184,15 @@
           Uploading voice message...
         </div>
 
+        <div class="recording-state uploading" *ngIf="isUploadingAttachment">
+          Uploading media message...
+        </div>
+
         <div class="socket-warning" *ngIf="!isSocketConnected">
           Live updates reconnecting. Messages may send with fallback mode.
         </div>
         <div class="field-error" *ngIf="voiceErrorMessage">{{ voiceErrorMessage }}</div>
+        <div class="field-error" *ngIf="attachmentErrorMessage">{{ attachmentErrorMessage }}</div>
         <div class="field-error" *ngIf="messageForm.controls.content.touched && messageForm.controls.content.invalid">
           Message content is required.
         </div>

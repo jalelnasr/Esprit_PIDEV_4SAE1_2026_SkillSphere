@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, catchError, map, of } from 'rxjs';
 import { CommunityBaseService } from './community-base.service';
-import { Answer, CreateAnswerRequest, GitHubRepoPreview, VoteType } from '../models/answer.model';
+import { Answer, CreateAnswerRequest, GitHubRepoPreview, UpdateAnswerRequest, VoteType } from '../models/answer.model';
 
 interface BackendGitHubRepoPreview {
   repoName?: string;
@@ -59,6 +59,29 @@ export class AnswerService extends CommunityBaseService {
         map((response) => this.mapAnswer(this.extractEntity<BackendAnswer>(response, ['answer', 'data']), request.question_id)),
         catchError(this.handleError('Add answer'))
       );
+  }
+
+  updateAnswer(answerId: number, request: UpdateAnswerRequest, questionId: number): Observable<Answer> {
+    const payload = {
+      content: request.content
+    };
+
+    return this.http
+      .put<BackendAnswer | { answer?: BackendAnswer; data?: BackendAnswer }>(
+        `${this.communityBaseUrl}/answers/${answerId}`,
+        payload,
+        this.authOptions()
+      )
+      .pipe(
+        map((response) => this.mapAnswer(this.extractEntity<BackendAnswer>(response, ['answer', 'data']), questionId)),
+        catchError(this.handleError('Update answer'))
+      );
+  }
+
+  deleteAnswer(answerId: number): Observable<void> {
+    return this.http
+      .delete<void>(`${this.communityBaseUrl}/answers/${answerId}`, this.authOptions())
+      .pipe(catchError(this.handleError('Delete answer')));
   }
 
   previewGitHub(content: string): Observable<GitHubRepoPreview | null> {

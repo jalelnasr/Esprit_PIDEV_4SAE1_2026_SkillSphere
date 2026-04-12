@@ -23,6 +23,13 @@ export interface CreatePostRequest {
   group_id: number | null;
 }
 
+export interface UpdatePostRequest {
+  content: string;
+  image_url?: string | null;
+  video_url?: string | null;
+  group_id?: number | null;
+}
+
 export interface LikePostRequest {
   post_id: number;
 }

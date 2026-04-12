@@ -65,6 +65,46 @@
     </ng-template>
   </section>
 
+  <section class="trending-panel suggestion-panel">
+    <div class="trending-header">
+      <h3>People You May Know</h3>
+      <button class="window-btn" type="button" (click)="loadSuggestedUsers()" [disabled]="isLoadingSuggestedUsers">
+        {{ isLoadingSuggestedUsers ? 'Loading...' : 'Refresh' }}
+      </button>
+    </div>
+
+    <div class="suggestion-list" *ngIf="suggestedUsers.length > 0; else noSuggestedUsers">
+      <article class="suggestion-item" *ngFor="let user of suggestedUsers">
+        <div class="suggestion-meta">
+          <div class="avatar suggestion-avatar">{{ initials(user.display_name, user.user_id) }}</div>
+          <div class="suggestion-details">
+            <strong class="suggestion-name">{{ suggestedUserName(user) }}</strong>
+            <span class="suggestion-reason">{{ suggestedUserReason(user) }}</span>
+          </div>
+        </div>
+
+        <div class="suggestion-actions">
+          <span class="tag-count">Score {{ user.score }}</span>
+          <button class="post-action-btn" type="button" (click)="viewProfile(user.user_id)">Profile</button>
+          <button
+            class="post-action-btn"
+            type="button"
+            (click)="followSuggestedUser(user)"
+            [disabled]="isFollowingSuggestedUser(user.user_id)"
+          >
+            {{ isFollowingSuggestedUser(user.user_id) ? 'Following...' : 'Follow' }}
+          </button>
+        </div>
+      </article>
+    </div>
+
+    <ng-template #noSuggestedUsers>
+      <p class="trending-empty">{{ isLoadingSuggestedUsers ? 'Loading suggestions...' : 'No user suggestions right now.' }}</p>
+    </ng-template>
+
+    <p class="field-error" *ngIf="suggestedUsersError">{{ suggestedUsersError }}</p>
+  </section>
+
   <div class="pagination-hint">
     <span>Page {{ currentPage }} / {{ totalPages }} - {{ totalItems }} posts</span>
     <span *ngIf="isLoadingPage">Loading...</span>
@@ -199,7 +239,39 @@
       </div>
       
       <div class="post-content">
-        <p>{{ post.content }}</p>
+        <ng-container *ngIf="isEditingPost(post.id); else postReadOnlyContent">
+          <textarea
+            class="post-edit-field"
+            rows="4"
+            [formControl]="editPostControl"
+            [disabled]="isUpdatingPost(post.id)"
+          ></textarea>
+
+          <div class="field-error" *ngIf="editPostControl.touched && editPostControl.invalid">
+            <span *ngIf="editPostControl.errors?.['required']">Content is required.</span>
+            <span *ngIf="editPostControl.errors?.['minlength']">Minimum 3 characters.</span>
+            <span *ngIf="editPostControl.errors?.['maxlength']">Maximum 1000 characters.</span>
+          </div>
+
+          <div class="post-edit-actions">
+            <button class="post-action-btn" type="button" (click)="cancelEditPost()" [disabled]="isUpdatingPost(post.id)">
+              Cancel
+            </button>
+            <button
+              class="post-action-btn edit-save-btn"
+              type="button"
+              (click)="saveEditedPost(post)"
+              [disabled]="isUpdatingPost(post.id)"
+            >
+              {{ isUpdatingPost(post.id) ? 'Saving...' : 'Save' }}
+            </button>
+          </div>
+        </ng-container>
+
+        <ng-template #postReadOnlyContent>
+          <p>{{ post.content }}</p>
+        </ng-template>
+
         <div class="post-hashtags" *ngIf="hashtagsForPost(post).length > 0">
           <button class="hashtag-btn" *ngFor="let tag of hashtagsForPost(post)" (click)="searchByHashtag(tag)">
             {{ tag }}
@@ -224,6 +296,28 @@
         <button class="post-action-btn comment-btn" (click)="toggleComments(post.id)">
           <span>💬</span>
           <span>Comment</span>
+        </button>
+
+        <button
+          class="post-action-btn"
+          *ngIf="canManagePost(post)"
+          type="button"
+          (click)="isEditingPost(post.id) ? cancelEditPost() : startEditPost(post)"
+          [disabled]="isUpdatingPost(post.id) || isDeletingPost(post.id)"
+        >
+          <span>{{ isEditingPost(post.id) ? '✖️' : '✏️' }}</span>
+          <span>{{ isEditingPost(post.id) ? 'Cancel Edit' : 'Edit' }}</span>
+        </button>
+
+        <button
+          class="post-action-btn danger"
+          *ngIf="canManagePost(post)"
+          type="button"
+          (click)="deletePost(post)"
+          [disabled]="isDeletingPost(post.id) || isUpdatingPost(post.id)"
+        >
+          <span>🗑️</span>
+          <span>{{ isDeletingPost(post.id) ? 'Deleting...' : 'Delete' }}</span>
         </button>
       </div>
       

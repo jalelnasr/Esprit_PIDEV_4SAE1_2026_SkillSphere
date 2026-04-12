@@ -7,7 +7,10 @@ export const environment = {
     url: 'https://yvivroonarervdmbpbqz.supabase.co',
     publishableKey: 'sb_publishable_uVw27yhF8TsFVb_tm-hJAA_KVgE6VLE',
     voiceMessagesBucket: 'voice-messages',
-    maxVoiceSizeBytes: 5 * 1024 * 1024
+    messageMediaBucket: 'voice-messages',
+    maxVoiceSizeBytes: 5 * 1024 * 1024,
+    maxImageSizeBytes: 10 * 1024 * 1024,
+    maxVideoSizeBytes: 50 * 1024 * 1024
   },
   appName: 'SkillSphere',
   version: '1.0.0',

@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, catchError, map } from 'rxjs';
 import { CommunityBaseService, CommunityPage } from './community-base.service';
-import { CreatePostRequest, Post } from '../models/post.model';
+import { CreatePostRequest, Post, UpdatePostRequest } from '../models/post.model';
 
 interface BackendPost {
   postId: number;
@@ -101,6 +101,32 @@ export class PostService extends CommunityBaseService {
         map((response) => this.extractList<BackendPost>(response).map((post) => this.mapPost(post))),
         catchError(this.handleError('Get user posts'))
       );
+  }
+
+  updatePost(postId: number, request: UpdatePostRequest): Observable<Post> {
+    const payload = {
+      content: request.content,
+      imageUrl: request.image_url ?? null,
+      videoUrl: request.video_url ?? null,
+      groupId: request.group_id ?? null
+    };
+
+    return this.http
+      .put<BackendPost | { post?: BackendPost; data?: BackendPost }>(
+        `${this.communityBaseUrl}/posts/${postId}`,
+        payload,
+        this.authOptions()
+      )
+      .pipe(
+        map((response) => this.mapPost(this.extractEntity<BackendPost>(response, ['post', 'data']))),
+        catchError(this.handleError('Update post'))
+      );
+  }
+
+  deletePost(postId: number): Observable<void> {
+    return this.http
+      .delete<void>(`${this.communityBaseUrl}/posts/${postId}`, this.authOptions())
+      .pipe(catchError(this.handleError('Delete post')));
   }
 
   private buildPageParams(

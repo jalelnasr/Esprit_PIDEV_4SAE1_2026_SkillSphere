@@ -9,6 +9,8 @@ import { PostService } from '../../services/post.service';
 import { CommunityUserDirectoryService } from '../../services/community-user-directory.service';
 import { CreateGroupRequest, Group } from '../../models/group.model';
 import { CreatePostRequest, Post } from '../../models/post.model';
+import { SuggestedGroup } from '../../models/suggestion.model';
+import { SuggestionService } from '../../services/suggestion.service';
 
 interface GroupPost extends Post {
   likes?: number;
@@ -44,10 +46,19 @@ export class GroupsComponent implements OnInit, OnDestroy {
   searchTerm = '';
   groupFilter: 'all' | 'joined' | 'not-joined' = 'all';
   popularityFilter: 'latest' | 'most-members' = 'latest';
+  suggestedGroups: SuggestedGroup[] = [];
+  isLoadingSuggestedGroups = false;
+  suggestedGroupsError = '';
 
   readonly maxImageSizeBytes = 5 * 1024 * 1024;
   readonly maxVideoSizeBytes = 50 * 1024 * 1024;
   private readonly currentUserId = this.resolveCurrentUserId();
+  editingGroupPostId: number | null = null;
+  readonly groupPostEditControl = this.fb.nonNullable.control('', [
+    Validators.required,
+    Validators.minLength(3),
+    Validators.maxLength(1000)
+  ]);
 
   private readonly openGroupPosts = new Set<number>();
   private readonly loadingGroupPosts = new Set<number>();
@@ -67,6 +78,10 @@ export class GroupsComponent implements OnInit, OnDestroy {
   private readonly groupRoles = new Map<number, string>();
   private readonly joiningGroupIds = new Set<number>();
   private readonly leavingGroupIds = new Set<number>();
+  private readonly joiningSuggestedGroupIds = new Set<number>();
+  private readonly updatingGroupPostIds = new Set<number>();
+  private readonly deletingGroupPostIds = new Set<number>();
+  private readonly deletingGroupIds = new Set<number>();
   private readonly pageCache = new Map<number, GroupView[]>();
   private readonly stateStorageKey = 'community.groups.pagination.v1';
   private searchDebounceHandle: ReturnType<typeof setTimeout> | null = null;
@@ -81,12 +96,14 @@ export class GroupsComponent implements OnInit, OnDestroy {
     private groupService: GroupService,
     private postService: PostService,
     private userDirectory: CommunityUserDirectoryService,
+    private suggestionService: SuggestionService,
     private toast: ToastService
   ) {}
 
   ngOnInit(): void {
     this.restoreState();
     this.restoreLocalMediaRegistry();
+    this.loadSuggestedGroups();
     this.loadGroups();
   }
 
@@ -308,6 +325,85 @@ export class GroupsComponent implements OnInit, OnDestroy {
     this.resetAndReload();
   }
 
+  loadSuggestedGroups(): void {
+    this.isLoadingSuggestedGroups = true;
+
+    this.suggestionService
+      .getSuggestedGroups(10)
+      .subscribe({
+        next: (groups) => {
+          this.suggestedGroupsError = '';
+          this.suggestedGroups = groups;
+        },
+        error: (error: Error) => {
+          this.suggestedGroups = [];
+          this.suggestedGroupsError = error.message;
+        },
+        complete: () => {
+          this.isLoadingSuggestedGroups = false;
+        }
+      });
+  }
+
+  isJoiningSuggestedGroup(groupId: number): boolean {
+    return this.joiningSuggestedGroupIds.has(groupId);
+  }
+
+  joinSuggestedGroup(group: SuggestedGroup): void {
+    if (this.isJoiningSuggestedGroup(group.id)) {
+      return;
+    }
+
+    this.joiningSuggestedGroupIds.add(group.id);
+
+    this.groupService
+      .joinGroup(group.id)
+      .pipe(finalize(() => this.joiningSuggestedGroupIds.delete(group.id)))
+      .subscribe({
+        next: () => {
+          this.suggestedGroups = this.suggestedGroups.filter((item) => item.id !== group.id);
+          this.joinedGroupIds.add(group.id);
+          this.suggestedGroupsError = '';
+          this.errorMessage = '';
+          this.toast.success('Joined group successfully');
+          this.refreshAfterGroupMutation();
+          this.loadSuggestedGroups();
+        },
+        error: (error: Error) => {
+          this.suggestedGroupsError = error.message;
+          this.errorMessage = error.message;
+          this.toast.error(error.message || 'Failed to join group');
+        }
+      });
+  }
+
+  focusSuggestedGroup(group: SuggestedGroup): void {
+    this.searchTerm = group.name;
+    this.resetAndReload();
+  }
+
+  suggestedGroupReason(group: SuggestedGroup): string {
+    const reasons: string[] = [];
+
+    if (group.matched_hashtags > 0) {
+      reasons.push(`${group.matched_hashtags} matching hashtag${group.matched_hashtags > 1 ? 's' : ''}`);
+    }
+
+    if (group.overlap_members > 0) {
+      reasons.push(`${group.overlap_members} shared member${group.overlap_members > 1 ? 's' : ''}`);
+    }
+
+    if (group.trending) {
+      reasons.push('trending');
+    }
+
+    if (group.popular) {
+      reasons.push('popular');
+    }
+
+    return reasons.length > 0 ? reasons.join(' • ') : 'Recommended by your activity';
+  }
+
   @HostListener('window:scroll')
   onWindowScroll(): void {
     if (!this.useInfiniteScroll || this.isLoadingMore || this.isLoadingPage || this.currentPage >= this.totalPages) {
@@ -415,6 +511,45 @@ export class GroupsComponent implements OnInit, OnDestroy {
 
   isGroupAdmin(group: GroupView): boolean {
     return (this.membershipRole(group) ?? '').toLowerCase() === 'admin' || this.isGroupCreator(group);
+  }
+
+  canDeleteGroup(group: GroupView): boolean {
+    return this.isGroupAdmin(group);
+  }
+
+  isDeletingGroup(groupId: number): boolean {
+    return this.deletingGroupIds.has(groupId);
+  }
+
+  deleteGroup(group: GroupView): void {
+    if (!this.canDeleteGroup(group) || this.isDeletingGroup(group.id)) {
+      return;
+    }
+
+    const confirmed = typeof window === 'undefined' || window.confirm('Delete this group? This action cannot be undone.');
+    if (!confirmed) {
+      return;
+    }
+
+    this.deletingGroupIds.add(group.id);
+
+    this.groupService
+      .deleteGroup(group.id)
+      .pipe(finalize(() => this.deletingGroupIds.delete(group.id)))
+      .subscribe({
+        next: () => {
+          this.errorMessage = '';
+          this.joinedGroupIds.delete(group.id);
+          this.groupRoles.delete(group.id);
+          this.openGroupPosts.delete(group.id);
+          this.refreshAfterGroupMutation();
+          this.toast.success('Group deleted');
+        },
+        error: (error: Error) => {
+          this.errorMessage = error.message;
+          this.toast.error(error.message || 'Failed to delete group');
+        }
+      });
   }
 
   groupMembersCount(group: GroupView): number {
@@ -752,6 +887,114 @@ export class GroupsComponent implements OnInit, OnDestroy {
 
   isPostLiked(post: GroupPost): boolean {
     return Boolean(post.is_liked ?? post.isLiked);
+  }
+
+  canManagePost(post: GroupPost): boolean {
+    return this.currentUserId !== null && post.user_id === this.currentUserId;
+  }
+
+  isEditingGroupPost(postId: number): boolean {
+    return this.editingGroupPostId === postId;
+  }
+
+  isUpdatingGroupPost(postId: number): boolean {
+    return this.updatingGroupPostIds.has(postId);
+  }
+
+  isDeletingGroupPost(postId: number): boolean {
+    return this.deletingGroupPostIds.has(postId);
+  }
+
+  startEditGroupPost(post: GroupPost): void {
+    if (!this.canManagePost(post) || this.isUpdatingGroupPost(post.id) || this.isDeletingGroupPost(post.id)) {
+      return;
+    }
+
+    this.editingGroupPostId = post.id;
+    this.groupPostEditControl.setValue(post.content ?? '');
+    this.groupPostEditControl.markAsPristine();
+    this.groupPostEditControl.markAsUntouched();
+  }
+
+  cancelEditGroupPost(): void {
+    this.editingGroupPostId = null;
+    this.groupPostEditControl.reset('');
+    this.groupPostEditControl.markAsPristine();
+    this.groupPostEditControl.markAsUntouched();
+  }
+
+  saveEditedGroupPost(group: GroupView, post: GroupPost): void {
+    if (!this.canManagePost(post) || !this.isEditingGroupPost(post.id) || this.isUpdatingGroupPost(post.id)) {
+      return;
+    }
+
+    if (this.groupPostEditControl.invalid) {
+      this.groupPostEditControl.markAsTouched();
+      return;
+    }
+
+    const nextContent = this.groupPostEditControl.value.trim();
+    if (!nextContent || nextContent === post.content) {
+      this.cancelEditGroupPost();
+      return;
+    }
+
+    this.updatingGroupPostIds.add(post.id);
+
+    this.postService
+      .updatePost(post.id, {
+        content: nextContent,
+        image_url: post.image_url ?? null,
+        video_url: post.video_url ?? null,
+        group_id: group.id
+      })
+      .pipe(finalize(() => this.updatingGroupPostIds.delete(post.id)))
+      .subscribe({
+        next: (updatedPost) => {
+          post.content = updatedPost.content;
+          post.image_url = updatedPost.image_url ?? null;
+          post.video_url = updatedPost.video_url ?? null;
+          post.group_id = updatedPost.group_id ?? group.id;
+          this.errorMessage = '';
+          this.cancelEditGroupPost();
+          this.toast.success('Post updated');
+        },
+        error: (error: Error) => {
+          this.errorMessage = error.message;
+          this.toast.error(error.message || 'Failed to update post');
+        }
+      });
+  }
+
+  deleteGroupPost(group: GroupView, post: GroupPost): void {
+    if (!this.canManagePost(post) || this.isDeletingGroupPost(post.id)) {
+      return;
+    }
+
+    const confirmed = typeof window === 'undefined' || window.confirm('Delete this post? This action cannot be undone.');
+    if (!confirmed) {
+      return;
+    }
+
+    this.deletingGroupPostIds.add(post.id);
+
+    this.postService
+      .deletePost(post.id)
+      .pipe(finalize(() => this.deletingGroupPostIds.delete(post.id)))
+      .subscribe({
+        next: () => {
+          this.errorMessage = '';
+          group.posts = group.posts.filter((item) => item.id !== post.id);
+          if (this.editingGroupPostId === post.id) {
+            this.cancelEditGroupPost();
+          }
+          this.toast.success('Post deleted');
+        },
+        error: (error: Error) => {
+          this.errorMessage = error.message;
+          this.toast.error(error.message || 'Failed to delete post');
+        }
+      });
   }
 
   postAuthorName(post: GroupPost): string {
@@ -1182,6 +1425,14 @@ export class GroupsComponent implements OnInit, OnDestroy {
   }
 
   private resetAndReload(): void {
+    this.currentPage = 1;
+    this.totalPages = 1;
+    this.pageCache.clear();
+    this.loadGroups(1, true);
+    this.persistState();
+  }
+
+  private refreshAfterGroupMutation(): void {
     this.currentPage = 1;
     this.totalPages = 1;
     this.pageCache.clear();

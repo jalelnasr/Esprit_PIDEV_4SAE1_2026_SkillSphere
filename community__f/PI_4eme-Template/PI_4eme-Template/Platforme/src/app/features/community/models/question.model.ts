@@ -17,3 +17,8 @@ export interface CreateQuestionRequest {
   title: string;
   description: string;
 }
+
+export interface UpdateQuestionRequest {
+  title: string;
+  description: string;
+}

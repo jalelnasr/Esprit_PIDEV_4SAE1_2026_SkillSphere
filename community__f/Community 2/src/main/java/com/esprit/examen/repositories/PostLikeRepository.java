@@ -8,12 +8,15 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 
 @Repository
 public interface PostLikeRepository extends JpaRepository<PostLike, Long> {
     List<PostLike> findByPostPostId(Long postId);
     List<PostLike> findByUserId(Long userId);
+    List<PostLike> findByPostPostIdInAndUserIdNotIn(Collection<Long> postIds, Collection<Long> excludedUserIds);
+    List<PostLike> findByPostGroupIdInAndCreatedAtAfter(Collection<Long> groupIds, LocalDateTime createdAt);
     PostLike findByUserIdAndPostPostId(Long userId, Long postId);
     List<PostLike> findByCreatedAtAfterOrderByCreatedAtDesc(LocalDateTime date, Pageable pageable);
     long countByPostPostId(Long postId);

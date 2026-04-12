@@ -2,7 +2,7 @@ import { Component, HostListener, OnDestroy, OnInit, inject } from '@angular/cor
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
-import { finalize, switchMap } from 'rxjs';
+import { catchError, finalize, of, switchMap } from 'rxjs';
 import { Answer, CreateAnswerRequest, GitHubRepoPreview, VoteType } from '../../models/answer.model';
 import { CreateQuestionRequest, Question } from '../../models/question.model';
 import { QuestionService } from '../../services/question.service';
@@ -17,6 +17,11 @@ interface AnswerView extends Answer {
 interface QuestionView extends Question {
   answers: AnswerView[];
   showAnswers: boolean;
+}
+
+interface TrendingTopic {
+  tag: string;
+  mentions: number;
 }
 
 @Component({
@@ -43,7 +48,24 @@ export class QaComponent implements OnInit, OnDestroy {
   sortOrder: 'ASC' | 'DESC' = 'DESC';
   searchTerm = '';
   popularityFilter: 'latest' | 'most-answered' = 'latest';
+  trendingWindow: '24h' | '7d' = '24h';
+  trendingTopics: TrendingTopic[] = [];
+  isLoadingTrending = false;
+  editingQuestionId: number | null = null;
+  editingAnswerId: number | null = null;
+  editingAnswerQuestionId: number | null = null;
 
+  private readonly currentUserId = this.resolveCurrentUserId();
+  readonly editQuestionForm = this.fb.nonNullable.group({
+    title: ['', [Validators.required, Validators.minLength(5)]],
+    description: ['', [Validators.required, Validators.minLength(10)]]
+  });
+  readonly editAnswerControl = this.fb.nonNullable.control('', [Validators.required, Validators.minLength(5)]);
+
+  private readonly updatingQuestionIds = new Set<number>();
+  private readonly deletingQuestionIds = new Set<number>();
+  private readonly updatingAnswerIds = new Set<number>();
+  private readonly deletingAnswerIds = new Set<number>();
   private readonly answerControls = new Map<number, FormControl<string>>();
   private readonly answerDraftPreview = new Map<number, GitHubRepoPreview>();
   private readonly loadingDraftPreview = new Set<number>();
@@ -57,7 +79,9 @@ export class QaComponent implements OnInit, OnDestroy {
   private readonly answerSearchIndex = new Map<number, string>();
   private readonly loadingAnswerSearchIndex = new Set<number>();
   private readonly stateStorageKey = 'community.qa.pagination.v1';
+  private readonly pinnedStorageKey = 'community.qa.pinned.v1';
   private readonly githubRepoUrlPattern = /https?:\/\/(?:www\.)?github\.com\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+/i;
+  private readonly pinnedQuestionIds = new Set<number>();
   private searchDebounceHandle: ReturnType<typeof setTimeout> | null = null;
 
   readonly questionForm = this.fb.nonNullable.group({
@@ -74,6 +98,8 @@ export class QaComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.restoreState();
+    this.restorePinnedQuestions();
+    this.refreshTrendingTopics();
     this.loadQuestions();
   }
 
@@ -85,6 +111,7 @@ export class QaComponent implements OnInit, OnDestroy {
     this.answerPreviewDebounce.forEach((handle) => clearTimeout(handle));
     this.answerPreviewDebounce.clear();
 
+    this.persistPinnedQuestions();
     this.persistState();
   }
 
@@ -178,8 +205,12 @@ export class QaComponent implements OnInit, OnDestroy {
         if (question.description?.trim()) {
           suggestions.add(question.description.trim().slice(0, 80));
         }
+
+        this.extractHashtags(`${question.title || ''} ${question.description || ''}`).forEach((tag) => suggestions.add(tag));
       });
     });
+
+    this.trendingTopics.forEach((topic) => suggestions.add(topic.tag));
 
     return Array.from(suggestions)
       .filter((item) => (query ? item.toLowerCase().includes(query) : true))
@@ -274,7 +305,260 @@ export class QaComponent implements OnInit, OnDestroy {
   }
 
   clearAdvancedFilters(): void {
+    this.searchTerm = '';
     this.popularityFilter = 'latest';
+    this.resetAndReload();
+  }
+
+  togglePin(question: QuestionView): void {
+    if (this.pinnedQuestionIds.has(question.id)) {
+      this.pinnedQuestionIds.delete(question.id);
+    } else {
+      this.pinnedQuestionIds.add(question.id);
+    }
+
+    this.persistPinnedQuestions();
+    this.rebuildVisibleQuestions();
+  }
+
+  isPinned(questionId: number): boolean {
+    return this.pinnedQuestionIds.has(questionId);
+  }
+
+  canManageQuestion(question: QuestionView): boolean {
+    return this.currentUserId !== null && question.user_id === this.currentUserId;
+  }
+
+  isEditingQuestion(questionId: number): boolean {
+    return this.editingQuestionId === questionId;
+  }
+
+  isUpdatingQuestion(questionId: number): boolean {
+    return this.updatingQuestionIds.has(questionId);
+  }
+
+  isDeletingQuestion(questionId: number): boolean {
+    return this.deletingQuestionIds.has(questionId);
+  }
+
+  startEditQuestion(question: QuestionView): void {
+    if (!this.canManageQuestion(question) || this.isUpdatingQuestion(question.id) || this.isDeletingQuestion(question.id)) {
+      return;
+    }
+
+    this.editingQuestionId = question.id;
+    this.editQuestionForm.setValue({
+      title: question.title ?? '',
+      description: question.description ?? ''
+    });
+    this.editQuestionForm.markAsPristine();
+    this.editQuestionForm.markAsUntouched();
+  }
+
+  cancelEditQuestion(): void {
+    this.editingQuestionId = null;
+    this.editQuestionForm.reset({ title: '', description: '' });
+    this.editQuestionForm.markAsPristine();
+    this.editQuestionForm.markAsUntouched();
+  }
+
+  saveEditedQuestion(question: QuestionView): void {
+    if (!this.canManageQuestion(question) || !this.isEditingQuestion(question.id) || this.isUpdatingQuestion(question.id)) {
+      return;
+    }
+
+    if (this.editQuestionForm.invalid) {
+      this.editQuestionForm.markAllAsTouched();
+      return;
+    }
+
+    const raw = this.editQuestionForm.getRawValue();
+    const nextTitle = raw.title.trim();
+    const nextDescription = raw.description.trim();
+    if (!nextTitle || !nextDescription) {
+      this.editQuestionForm.markAllAsTouched();
+      return;
+    }
+
+    if (nextTitle === question.title && nextDescription === question.description) {
+      this.cancelEditQuestion();
+      return;
+    }
+
+    this.updatingQuestionIds.add(question.id);
+
+    this.questionService
+      .updateQuestion(question.id, {
+        title: nextTitle,
+        description: nextDescription
+      })
+      .pipe(finalize(() => this.updatingQuestionIds.delete(question.id)))
+      .subscribe({
+        next: (updatedQuestion) => {
+          question.title = updatedQuestion.title;
+          question.description = updatedQuestion.description;
+          this.errorMessage = '';
+          this.cancelEditQuestion();
+          this.refreshTrendingTopics();
+        },
+        error: (error: Error) => {
+          this.errorMessage = error.message;
+        }
+      });
+  }
+
+  deleteQuestion(question: QuestionView): void {
+    if (!this.canManageQuestion(question) || this.isDeletingQuestion(question.id)) {
+      return;
+    }
+
+    const confirmed = typeof window === 'undefined' || window.confirm('Delete this question? This action cannot be undone.');
+    if (!confirmed) {
+      return;
+    }
+
+    this.deletingQuestionIds.add(question.id);
+
+    this.questionService
+      .deleteQuestion(question.id)
+      .pipe(finalize(() => this.deletingQuestionIds.delete(question.id)))
+      .subscribe({
+        next: () => {
+          this.errorMessage = '';
+          if (this.editingQuestionId === question.id) {
+            this.cancelEditQuestion();
+          }
+          this.refreshAfterQuestionMutation();
+        },
+        error: (error: Error) => {
+          this.errorMessage = error.message;
+        }
+      });
+  }
+
+  canManageAnswer(answer: AnswerView): boolean {
+    return this.currentUserId !== null && answer.user_id === this.currentUserId;
+  }
+
+  isEditingAnswer(answerId: number): boolean {
+    return this.editingAnswerId === answerId;
+  }
+
+  isUpdatingAnswer(answerId: number): boolean {
+    return this.updatingAnswerIds.has(answerId);
+  }
+
+  isDeletingAnswer(answerId: number): boolean {
+    return this.deletingAnswerIds.has(answerId);
+  }
+
+  startEditAnswer(question: QuestionView, answer: AnswerView): void {
+    if (!this.canManageAnswer(answer) || this.isUpdatingAnswer(answer.id) || this.isDeletingAnswer(answer.id)) {
+      return;
+    }
+
+    this.editingAnswerId = answer.id;
+    this.editingAnswerQuestionId = question.id;
+    this.editAnswerControl.setValue(answer.content ?? '');
+    this.editAnswerControl.markAsPristine();
+    this.editAnswerControl.markAsUntouched();
+  }
+
+  cancelEditAnswer(): void {
+    this.editingAnswerId = null;
+    this.editingAnswerQuestionId = null;
+    this.editAnswerControl.reset('');
+    this.editAnswerControl.markAsPristine();
+    this.editAnswerControl.markAsUntouched();
+  }
+
+  saveEditedAnswer(question: QuestionView, answer: AnswerView): void {
+    if (
+      !this.canManageAnswer(answer) ||
+      !this.isEditingAnswer(answer.id) ||
+      this.editingAnswerQuestionId !== question.id ||
+      this.isUpdatingAnswer(answer.id)
+    ) {
+      return;
+    }
+
+    if (this.editAnswerControl.invalid) {
+      this.editAnswerControl.markAsTouched();
+      return;
+    }
+
+    const nextContent = this.editAnswerControl.value.trim();
+    if (!nextContent || nextContent === answer.content) {
+      this.cancelEditAnswer();
+      return;
+    }
+
+    this.updatingAnswerIds.add(answer.id);
+
+    this.answerService
+      .updateAnswer(answer.id, { content: nextContent }, question.id)
+      .pipe(finalize(() => this.updatingAnswerIds.delete(answer.id)))
+      .subscribe({
+        next: (updatedAnswer) => {
+          answer.content = updatedAnswer.content;
+          answer.github_previews = updatedAnswer.github_previews;
+          this.updateAnswerSearchIndex(question);
+          this.errorMessage = '';
+          this.cancelEditAnswer();
+        },
+        error: (error: Error) => {
+          this.errorMessage = error.message;
+        }
+      });
+  }
+
+  deleteAnswer(question: QuestionView, answer: AnswerView): void {
+    if (!this.canManageAnswer(answer) || this.isDeletingAnswer(answer.id)) {
+      return;
+    }
+
+    const confirmed = typeof window === 'undefined' || window.confirm('Delete this answer? This action cannot be undone.');
+    if (!confirmed) {
+      return;
+    }
+
+    this.deletingAnswerIds.add(answer.id);
+
+    this.answerService
+      .deleteAnswer(answer.id)
+      .pipe(finalize(() => this.deletingAnswerIds.delete(answer.id)))
+      .subscribe({
+        next: () => {
+          this.errorMessage = '';
+          question.answers = question.answers.filter((item) => item.id !== answer.id);
+          question.answers_count = question.answers.length;
+          this.updateAnswerSearchIndex(question);
+          if (this.popularityFilter === 'most-answered') {
+            this.rebuildVisibleQuestions();
+          }
+          if (this.editingAnswerId === answer.id) {
+            this.cancelEditAnswer();
+          }
+        },
+        error: (error: Error) => {
+          this.errorMessage = error.message;
+        }
+      });
+  }
+
+  changeTrendingWindow(window: '24h' | '7d'): void {
+    this.trendingWindow = window;
+    this.refreshTrendingTopics();
+    this.persistState();
+  }
+
+  searchByHashtag(tag: string): void {
+    const normalized = tag.trim();
+    if (!normalized) {
+      return;
+    }
+
+    this.searchTerm = normalized.startsWith('#') ? normalized : `#${normalized}`;
     this.resetAndReload();
   }
 
@@ -317,6 +601,7 @@ export class QaComponent implements OnInit, OnDestroy {
         this.hydrateQuestionAuthors([mapped]);
         this.currentPage = 1;
         this.pageCache.clear();
+        this.refreshTrendingTopics();
         this.loadQuestions(1, true);
         this.cancelQuestion();
       },
@@ -443,13 +728,7 @@ export class QaComponent implements OnInit, OnDestroy {
         const mapped = this.mapAnswer(createdAnswer);
         question.answers = [mapped, ...question.answers];
         question.answers_count = question.answers.length;
-        this.answerSearchIndex.set(
-          question.id,
-          question.answers
-            .map((answer) => answer.content || '')
-            .join(' ')
-            .toLowerCase()
-        );
+        this.updateAnswerSearchIndex(question);
         this.hydrateAnswerAuthors(question.answers);
         this.refreshVoteSummary(mapped);
         if (this.popularityFilter === 'most-answered') {
@@ -560,6 +839,86 @@ export class QaComponent implements OnInit, OnDestroy {
     });
   }
 
+  private resolveCurrentUserId(): number | null {
+    if (typeof window === 'undefined' || typeof window.localStorage === 'undefined') {
+      return null;
+    }
+
+    const rawUser = localStorage.getItem('user');
+    if (rawUser) {
+      try {
+        const parsed = JSON.parse(rawUser) as Record<string, unknown>;
+        const storedUserId =
+          this.tryParseNumber(parsed['idUser']) ??
+          this.tryParseNumber(parsed['userId']) ??
+          this.tryParseNumber(parsed['id']);
+
+        if (storedUserId !== null) {
+          return storedUserId;
+        }
+      } catch {
+        // Ignore malformed local user payload
+      }
+    }
+
+    const token = localStorage.getItem('token');
+    if (!token) {
+      return null;
+    }
+
+    const parts = token.split('.');
+    if (parts.length < 2) {
+      return null;
+    }
+
+    try {
+      const payload = this.base64UrlDecode(parts[1]);
+      const parsed = JSON.parse(payload) as Record<string, unknown>;
+      return (
+        this.tryParseNumber(parsed['idUser']) ??
+        this.tryParseNumber(parsed['userId']) ??
+        this.tryParseNumber(parsed['id']) ??
+        this.tryParseNumber(parsed['sub'])
+      );
+    } catch {
+      return null;
+    }
+  }
+
+  private base64UrlDecode(value: string): string {
+    const normalized = value.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=');
+
+    const binary = atob(padded);
+    const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+    return new TextDecoder().decode(bytes);
+  }
+
+  private tryParseNumber(value: unknown): number | null {
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return value;
+    }
+
+    if (typeof value === 'string' && value.trim().length > 0) {
+      const parsed = Number(value);
+      if (Number.isFinite(parsed)) {
+        return parsed;
+      }
+    }
+
+    return null;
+  }
+
+  private updateAnswerSearchIndex(question: QuestionView): void {
+    this.answerSearchIndex.set(
+      question.id,
+      question.answers
+        .map((answer) => answer.content || '')
+        .join(' ')
+        .toLowerCase()
+    );
+  }
+
   private mapQuestion(question: Question): QuestionView {
     const answers = Array.isArray(question.answers)
       ? question.answers.map((answer) => this.mapAnswer(answer))
@@ -592,13 +951,7 @@ export class QaComponent implements OnInit, OnDestroy {
       next: (answers) => {
         question.answers = answers.map((answer) => this.mapAnswer(answer));
         question.answers_count = question.answers.length;
-        this.answerSearchIndex.set(
-          question.id,
-          question.answers
-            .map((answer) => answer.content || '')
-            .join(' ')
-            .toLowerCase()
-        );
+        this.updateAnswerSearchIndex(question);
         this.hydrateAnswerAuthors(question.answers);
         question.answers.forEach((answer) => this.refreshVoteSummary(answer));
         if (this.popularityFilter === 'most-answered') {
@@ -704,6 +1057,41 @@ export class QaComponent implements OnInit, OnDestroy {
     return this.popularityFilter !== 'latest';
   }
 
+  private refreshTrendingTopics(): void {
+    this.isLoadingTrending = true;
+
+    this.questionService
+      .getQuestionsPage(1, 200, { sortBy: 'createdAt', sortOrder: 'DESC' })
+      .pipe(catchError(() => of({ data: [], totalItems: 0, totalPages: 1, currentPage: 1, pageSize: 200 })))
+      .subscribe({
+        next: (response) => {
+          const topics = new Map<string, number>();
+          const windowMillis = this.trendingWindow === '24h' ? 24 * 60 * 60 * 1000 : 7 * 24 * 60 * 60 * 1000;
+          const now = Date.now();
+
+          response.data.forEach((question) => {
+            const createdAt = this.createdAtTimestamp(question.created_at);
+            if (createdAt > 0 && now - createdAt > windowMillis) {
+              return;
+            }
+
+            this.extractHashtags(`${question.title || ''} ${question.description || ''}`).forEach((tag) => {
+              const key = tag.toLowerCase();
+              topics.set(key, (topics.get(key) ?? 0) + 1);
+            });
+          });
+
+          this.trendingTopics = Array.from(topics.entries())
+            .map(([tag, mentions]) => ({ tag, mentions }))
+            .sort((left, right) => right.mentions - left.mentions)
+            .slice(0, 8);
+        },
+        complete: () => {
+          this.isLoadingTrending = false;
+        }
+      });
+  }
+
   private rebuildVisibleQuestions(): void {
     if (!this.useInfiniteScroll) {
       this.questions = this.orderQuestionsForDisplay([...(this.pageCache.get(this.currentPage) ?? [])]);
@@ -722,11 +1110,28 @@ export class QaComponent implements OnInit, OnDestroy {
   }
 
   private orderQuestionsForDisplay(questions: QuestionView[]): QuestionView[] {
-    if (this.popularityFilter === 'most-answered') {
-      return this.sortQuestionsByPopularity(questions);
-    }
+    const ordered =
+      this.popularityFilter === 'most-answered'
+        ? this.sortQuestionsByPopularity(questions)
+        : this.sortQuestionsForDisplay(questions);
 
-    return this.sortQuestionsForDisplay(questions);
+    return this.prioritizePinnedQuestions(ordered);
+  }
+
+  private prioritizePinnedQuestions(questions: QuestionView[]): QuestionView[] {
+    const pinned: QuestionView[] = [];
+    const regular: QuestionView[] = [];
+
+    questions.forEach((question) => {
+      if (this.pinnedQuestionIds.has(question.id)) {
+        pinned.push(question);
+        return;
+      }
+
+      regular.push(question);
+    });
+
+    return [...pinned, ...regular];
   }
 
   private sortQuestionsForDisplay(questions: QuestionView[]): QuestionView[] {
@@ -745,6 +1150,11 @@ export class QaComponent implements OnInit, OnDestroy {
   private createdAtTimestamp(value: string): number {
     const parsed = Date.parse(value || '');
     return Number.isFinite(parsed) ? parsed : 0;
+  }
+
+  private extractHashtags(content: string): string[] {
+    const matches = (content || '').match(/#[A-Za-z0-9_]+/g) ?? [];
+    return Array.from(new Set(matches));
   }
 
   private normalizePageItems(
@@ -856,6 +1266,57 @@ export class QaComponent implements OnInit, OnDestroy {
     this.persistState();
   }
 
+  private refreshAfterQuestionMutation(): void {
+    this.currentPage = 1;
+    this.totalPages = 1;
+    this.pageCache.clear();
+    this.sourcePageCache.clear();
+    this.questionPageIndex.clear();
+    this.loadQuestions(1, true);
+    this.refreshTrendingTopics();
+    this.persistState();
+  }
+
+  private persistPinnedQuestions(): void {
+    if (typeof window === 'undefined' || typeof window.localStorage === 'undefined') {
+      return;
+    }
+
+    const pinnedIds = Array.from(this.pinnedQuestionIds)
+      .filter((id) => Number.isFinite(id) && id > 0)
+      .sort((left, right) => left - right);
+
+    localStorage.setItem(this.pinnedStorageKey, JSON.stringify(pinnedIds));
+  }
+
+  private restorePinnedQuestions(): void {
+    if (typeof window === 'undefined' || typeof window.localStorage === 'undefined') {
+      return;
+    }
+
+    const raw = localStorage.getItem(this.pinnedStorageKey);
+    if (!raw) {
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(raw) as number[];
+      if (!Array.isArray(parsed)) {
+        return;
+      }
+
+      this.pinnedQuestionIds.clear();
+      parsed.forEach((value) => {
+        const parsedId = Number(value);
+        if (Number.isFinite(parsedId) && parsedId > 0) {
+          this.pinnedQuestionIds.add(Math.floor(parsedId));
+        }
+      });
+    } catch {
+      localStorage.removeItem(this.pinnedStorageKey);
+    }
+  }
+
   private persistState(): void {
     if (typeof window === 'undefined' || typeof window.sessionStorage === 'undefined') {
       return;
@@ -869,6 +1330,7 @@ export class QaComponent implements OnInit, OnDestroy {
         sortOrder: this.sortOrder,
         searchTerm: this.searchTerm,
         popularityFilter: this.popularityFilter,
+        trendingWindow: this.trendingWindow,
         scrollY: window.scrollY
       })
     );
@@ -891,6 +1353,7 @@ export class QaComponent implements OnInit, OnDestroy {
         sortOrder?: 'ASC' | 'DESC';
         searchTerm?: string;
         popularityFilter?: 'latest' | 'most-answered';
+        trendingWindow?: '24h' | '7d';
         scrollY?: number;
       };
 
@@ -912,6 +1375,10 @@ export class QaComponent implements OnInit, OnDestroy {
 
       if (state.popularityFilter === 'latest' || state.popularityFilter === 'most-answered') {
         this.popularityFilter = state.popularityFilter;
+      }
+
+      if (state.trendingWindow === '24h' || state.trendingWindow === '7d') {
+        this.trendingWindow = state.trendingWindow;
       }
 
       if (Number.isFinite(state.scrollY)) {

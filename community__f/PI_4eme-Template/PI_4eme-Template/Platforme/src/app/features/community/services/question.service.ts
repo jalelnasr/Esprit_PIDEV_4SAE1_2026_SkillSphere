@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, catchError, map } from 'rxjs';
 import { CommunityBaseService, CommunityPage } from './community-base.service';
-import { CreateQuestionRequest, Question } from '../models/question.model';
+import { CreateQuestionRequest, Question, UpdateQuestionRequest } from '../models/question.model';
 
 interface BackendQuestion {
   questionId: number;
@@ -59,6 +59,30 @@ export class QuestionService extends CommunityBaseService {
         map((response) => this.mapQuestion(this.extractEntity<BackendQuestion>(response, ['question', 'data']))),
         catchError(this.handleError('Create question'))
       );
+  }
+
+  updateQuestion(questionId: number, request: UpdateQuestionRequest): Observable<Question> {
+    const payload = {
+      title: request.title,
+      description: request.description
+    };
+
+    return this.http
+      .put<BackendQuestion | { question?: BackendQuestion; data?: BackendQuestion }>(
+        `${this.communityBaseUrl}/questions/${questionId}`,
+        payload,
+        this.authOptions()
+      )
+      .pipe(
+        map((response) => this.mapQuestion(this.extractEntity<BackendQuestion>(response, ['question', 'data']))),
+        catchError(this.handleError('Update question'))
+      );
+  }
+
+  deleteQuestion(questionId: number): Observable<void> {
+    return this.http
+      .delete<void>(`${this.communityBaseUrl}/questions/${questionId}`, this.authOptions())
+      .pipe(catchError(this.handleError('Delete question')));
   }
 
   private mapQuestion(question: BackendQuestion): Question {

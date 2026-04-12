@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 
 @Repository
@@ -15,6 +16,8 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
     List<Comment> findByPostPostId(Long postId);
     List<Comment> findByPostPostIdOrderByCreatedAtDesc(Long postId);
     List<Comment> findByUserId(Long userId);
+    List<Comment> findByPostPostIdInAndUserIdNotIn(Collection<Long> postIds, Collection<Long> excludedUserIds);
+    List<Comment> findByPostGroupIdInAndCreatedAtAfter(Collection<Long> groupIds, LocalDateTime createdAt);
     List<Comment> findByCreatedAtAfterOrderByCreatedAtDesc(LocalDateTime date, Pageable pageable);
     long countByPostPostId(Long postId);
     long countByCreatedAtBetween(LocalDateTime startDate, LocalDateTime endDate);

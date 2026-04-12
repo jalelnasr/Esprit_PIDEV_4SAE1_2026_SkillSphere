@@ -154,6 +154,85 @@
   border-color: color-mix(in srgb, var(--primary) 28%, var(--card-border));
 }
 
+.suggested-groups-panel {
+  margin-bottom: 1rem;
+  padding: 0.9rem;
+  border: 1px solid var(--card-border);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--surface) 94%, #ffffff 6%);
+}
+
+.suggested-groups-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.6rem;
+}
+
+.suggested-groups-header h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.suggested-groups-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.suggested-group {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+  padding: 0.7rem;
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface) 92%, var(--primary) 8%);
+}
+
+.suggested-group-content,
+.suggested-group-actions {
+  display: flex;
+}
+
+.suggested-group-content {
+  flex-direction: column;
+  gap: 0.28rem;
+}
+
+.suggested-group-actions {
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.suggested-group-name {
+  color: var(--text-main);
+}
+
+.suggested-group-description,
+.suggested-group-meta,
+.suggested-group-reason,
+.suggested-empty {
+  color: var(--text-muted);
+}
+
+.suggested-group-description,
+.suggested-empty {
+  margin: 0;
+}
+
+.suggested-group-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  font-size: 12px;
+}
+
+.suggested-group-reason {
+  font-size: 12px;
+}
+
 .pagination-hint {
   display: flex;
   justify-content: space-between;
@@ -392,6 +471,18 @@
   gap: 0.4rem;
 }
 
+.action-btn.danger,
+.post-action-btn.danger {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 45%, var(--card-border));
+}
+
+.action-btn.danger:hover,
+.post-action-btn.danger:hover {
+  background: color-mix(in srgb, var(--surface-muted) 72%, var(--danger) 28%);
+  border-color: color-mix(in srgb, var(--danger) 55%, var(--card-border));
+}
+
 .action-btn:hover,
 .cancel-btn:hover,
 .post-action-btn:hover,
@@ -592,6 +683,27 @@
   line-height: 1.5;
 }
 
+.post-edit-field {
+  width: 100%;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-main);
+  border-radius: 8px;
+  padding: 0.7rem;
+  resize: vertical;
+}
+
+.post-edit-field:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.post-edit-actions {
+  margin-top: 0.55rem;
+  display: flex;
+  gap: 0.45rem;
+}
+
 .post-image,
 .post-video {
   width: 100%;
@@ -611,6 +723,10 @@
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
+}
+
+.post-action-btn.edit-save-btn {
+  background: color-mix(in srgb, var(--surface) 72%, var(--primary) 28%);
 }
 
 .post-action-btn.liked {
@@ -775,6 +891,16 @@
 
   .groups-toolbar {
     grid-template-columns: 1fr;
+  }
+
+  .suggested-groups-header,
+  .suggested-group {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .suggested-group-actions {
+    width: 100%;
   }
 
   .create-group-modal {

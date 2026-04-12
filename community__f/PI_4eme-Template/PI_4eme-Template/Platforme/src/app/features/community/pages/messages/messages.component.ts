@@ -52,9 +52,11 @@ export class MessagesComponent implements OnInit, OnDestroy {
   isSocketConnecting = false;
   isRecordingVoice = false;
   isUploadingVoice = false;
+  isUploadingAttachment = false;
   typingUserId: number | null = null;
   errorMessage = '';
   voiceErrorMessage = '';
+  attachmentErrorMessage = '';
 
   private readonly currentUserId: number | null;
   private readonly typingStopDelayMs = 1200;
@@ -228,7 +230,7 @@ export class MessagesComponent implements OnInit, OnDestroy {
             return;
           }
 
-          if (this.isAnyVoiceMessagePlaying()) {
+          if (this.isAnyMediaPlaying()) {
             return;
           }
 
@@ -355,7 +357,7 @@ export class MessagesComponent implements OnInit, OnDestroy {
       event.preventDefault();
     }
 
-    if (this.isRecordingVoice || this.isUploadingVoice) {
+    if (this.isRecordingVoice || this.isUploadingVoice || this.isUploadingAttachment) {
       return;
     }
 
@@ -374,7 +376,7 @@ export class MessagesComponent implements OnInit, OnDestroy {
   }
 
   onMessageInput(): void {
-    if (this.isRecordingVoice || this.isUploadingVoice) {
+    if (this.isRecordingVoice || this.isUploadingVoice || this.isUploadingAttachment) {
       return;
     }
 
@@ -387,7 +389,7 @@ export class MessagesComponent implements OnInit, OnDestroy {
       return;
     }
 
-    if (this.isUploadingVoice || this.isRecordingVoice) {
+    if (this.isUploadingVoice || this.isUploadingAttachment || this.isRecordingVoice) {
       return;
     }
 
@@ -400,7 +402,7 @@ export class MessagesComponent implements OnInit, OnDestroy {
   }
 
   stopRecording(): void {
-    if (!this.selectedConversation || !this.isRecordingVoice || this.isUploadingVoice) {
+    if (!this.selectedConversation || !this.isRecordingVoice || this.isUploadingVoice || this.isUploadingAttachment) {
       return;
     }
 
@@ -431,8 +433,20 @@ export class MessagesComponent implements OnInit, OnDestroy {
       });
   }
 
+  onImageSelected(event: Event): void {
+    this.handleImageSelection(event);
+  }
+
   isVoiceMessage(message: Message): boolean {
     return this.supabaseService.isSupabaseVoiceUrl(message.content);
+  }
+
+  isImageMessage(message: Message): boolean {
+    return this.supabaseService.isSupabaseImageUrl(message.content);
+  }
+
+  isVideoMessage(message: Message): boolean {
+    return this.supabaseService.isSupabaseVideoUrl(message.content);
   }
 
   conversationPreviewLabel(content: string): string {
@@ -440,7 +454,53 @@ export class MessagesComponent implements OnInit, OnDestroy {
       return '🎤 Voice message';
     }
 
+    if (this.supabaseService.isSupabaseImageUrl(content)) {
+      return '📷 Image';
+    }
+
+    if (this.supabaseService.isSupabaseVideoUrl(content)) {
+      return '🎬 Video';
+    }
+
     return content;
+  }
+
+  private handleImageSelection(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+
+    if (!file) {
+      return;
+    }
+
+    if (!this.selectedConversation) {
+      this.attachmentErrorMessage = 'Select a conversation before sending media.';
+      this.toast.error(this.attachmentErrorMessage);
+      return;
+    }
+
+    if (this.isRecordingVoice || this.isUploadingVoice || this.isUploadingAttachment) {
+      return;
+    }
+
+    this.attachmentErrorMessage = '';
+    this.voiceErrorMessage = '';
+    this.setAttachmentUploadingState(true);
+
+    this.supabaseService
+      .uploadMessageImage(file)
+      .pipe(finalize(() => this.setAttachmentUploadingState(false)))
+      .subscribe({
+        next: (mediaUrl) => {
+          this.errorMessage = '';
+          this.sendPreparedMessage(mediaUrl);
+        },
+        error: (error: Error) => {
+          this.attachmentErrorMessage = error.message;
+          this.toast.error(error.message);
+        }
+      });
   }
 
   private sendPreparedMessage(content: string): void {
@@ -789,13 +849,13 @@ export class MessagesComponent implements OnInit, OnDestroy {
     return [...messages].sort((a, b) => a.created_at.localeCompare(b.created_at));
   }
 
-  private isAnyVoiceMessagePlaying(): boolean {
+  private isAnyMediaPlaying(): boolean {
     const container = this.messagesContainer?.nativeElement;
     if (!container) {
       return false;
     }
 
-    const players = container.querySelectorAll('audio');
+    const players = container.querySelectorAll<HTMLMediaElement>('audio, video');
     for (const player of Array.from(players)) {
       if (!player.paused && !player.ended) {
         return true;
@@ -810,9 +870,14 @@ export class MessagesComponent implements OnInit, OnDestroy {
     this.updateMessageControlDisabledState();
   }
 
+  private setAttachmentUploadingState(isUploading: boolean): void {
+    this.isUploadingAttachment = isUploading;
+    this.updateMessageControlDisabledState();
+  }
+
   private updateMessageControlDisabledState(): void {
     const contentControl = this.messageForm.controls.content;
-    const shouldDisable = this.isRecordingVoice || this.isUploadingVoice;
+    const shouldDisable = this.isRecordingVoice || this.isUploadingVoice || this.isUploadingAttachment;
 
     if (shouldDisable && contentControl.enabled) {
       contentControl.disable({ emitEvent: false });

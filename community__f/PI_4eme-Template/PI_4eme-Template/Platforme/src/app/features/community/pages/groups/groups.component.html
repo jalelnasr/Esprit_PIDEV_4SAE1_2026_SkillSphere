@@ -56,6 +56,48 @@
     </button>
   </div>
 
+  <section class="suggested-groups-panel">
+    <div class="suggested-groups-header">
+      <h3>Suggested Groups</h3>
+      <button class="clear-filters-btn" type="button" (click)="loadSuggestedGroups()" [disabled]="isLoadingSuggestedGroups">
+        {{ isLoadingSuggestedGroups ? 'Loading...' : 'Refresh' }}
+      </button>
+    </div>
+
+    <div class="suggested-groups-list" *ngIf="suggestedGroups.length > 0; else noSuggestedGroups">
+      <article class="suggested-group" *ngFor="let suggestion of suggestedGroups">
+        <div class="suggested-group-content">
+          <strong class="suggested-group-name">{{ suggestion.name }}</strong>
+          <p class="suggested-group-description">{{ suggestion.description || 'No description provided.' }}</p>
+          <div class="suggested-group-meta">
+            <span>Score {{ suggestion.score }}</span>
+            <span>{{ suggestion.members_count }} members</span>
+            <span *ngIf="suggestion.recent_activity > 0">{{ suggestion.recent_activity }} recent activities</span>
+          </div>
+          <div class="suggested-group-reason">{{ suggestedGroupReason(suggestion) }}</div>
+        </div>
+
+        <div class="suggested-group-actions">
+          <button class="action-btn" type="button" (click)="focusSuggestedGroup(suggestion)">View</button>
+          <button
+            class="join-btn"
+            type="button"
+            (click)="joinSuggestedGroup(suggestion)"
+            [disabled]="isJoiningSuggestedGroup(suggestion.id)"
+          >
+            {{ isJoiningSuggestedGroup(suggestion.id) ? 'Joining...' : 'Join Group' }}
+          </button>
+        </div>
+      </article>
+    </div>
+
+    <ng-template #noSuggestedGroups>
+      <p class="suggested-empty">{{ isLoadingSuggestedGroups ? 'Loading group suggestions...' : 'No group suggestions available right now.' }}</p>
+    </ng-template>
+
+    <p class="field-error" *ngIf="suggestedGroupsError">{{ suggestedGroupsError }}</p>
+  </section>
+
   <div class="pagination-hint">
     <span>Page {{ currentPage }} / {{ totalPages }} - {{ totalItems }} groups</span>
     <span *ngIf="isLoadingPage">Loading...</span>
@@ -154,6 +196,17 @@
         <button class="action-btn" [disabled]="!isGroupMember(group)" (click)="togglePosts(group)">
           <span class="icon">📝</span>
           <span>{{ isGroupMember(group) ? (isPostsOpen(group.id) ? 'Hide Posts' : 'View Posts') : 'Join to View Posts' }}</span>
+        </button>
+
+        <button
+          class="action-btn danger"
+          *ngIf="canDeleteGroup(group)"
+          type="button"
+          (click)="deleteGroup(group)"
+          [disabled]="isDeletingGroup(group.id)"
+        >
+          <span class="icon">🗑️</span>
+          <span>{{ isDeletingGroup(group.id) ? 'Deleting Group...' : 'Delete Group' }}</span>
         </button>
       </div>
 
@@ -266,7 +319,39 @@
             </div>
 
             <div class="post-content">
-              <p>{{ post.content }}</p>
+              <ng-container *ngIf="isEditingGroupPost(post.id); else groupPostReadOnly">
+                <textarea
+                  class="post-edit-field"
+                  rows="3"
+                  [formControl]="groupPostEditControl"
+                  [disabled]="isUpdatingGroupPost(post.id)"
+                ></textarea>
+
+                <div class="field-error" *ngIf="groupPostEditControl.touched && groupPostEditControl.invalid">
+                  <span *ngIf="groupPostEditControl.errors?.['required']">Content is required.</span>
+                  <span *ngIf="groupPostEditControl.errors?.['minlength']">Minimum 3 characters.</span>
+                  <span *ngIf="groupPostEditControl.errors?.['maxlength']">Maximum 1000 characters.</span>
+                </div>
+
+                <div class="post-edit-actions">
+                  <button class="post-action-btn" type="button" (click)="cancelEditGroupPost()" [disabled]="isUpdatingGroupPost(post.id)">
+                    Cancel
+                  </button>
+                  <button
+                    class="post-action-btn edit-save-btn"
+                    type="button"
+                    (click)="saveEditedGroupPost(group, post)"
+                    [disabled]="isUpdatingGroupPost(post.id)"
+                  >
+                    {{ isUpdatingGroupPost(post.id) ? 'Saving...' : 'Save' }}
+                  </button>
+                </div>
+              </ng-container>
+
+              <ng-template #groupPostReadOnly>
+                <p>{{ post.content }}</p>
+              </ng-template>
+
               <div class="post-media" *ngIf="post.image_url || post.video_url">
                 <img *ngIf="post.image_url" [src]="post.image_url" alt="Post image" class="post-image" />
                 <video *ngIf="post.video_url" [src]="post.video_url" controls class="post-video"></video>
@@ -281,6 +366,28 @@
               <button class="post-action-btn like-btn" [class.liked]="isPostLiked(post)" (click)="togglePostLike(post)">
                 <span>{{ isPostLiked(post) ? '❤️' : '🤍' }}</span>
                 <span>Like</span>
+              </button>
+
+              <button
+                class="post-action-btn"
+                *ngIf="canManagePost(post)"
+                type="button"
+                (click)="isEditingGroupPost(post.id) ? cancelEditGroupPost() : startEditGroupPost(post)"
+                [disabled]="isUpdatingGroupPost(post.id) || isDeletingGroupPost(post.id)"
+              >
+                <span>{{ isEditingGroupPost(post.id) ? '✖️' : '✏️' }}</span>
+                <span>{{ isEditingGroupPost(post.id) ? 'Cancel Edit' : 'Edit' }}</span>
+              </button>
+
+              <button
+                class="post-action-btn danger"
+                *ngIf="canManagePost(post)"
+                type="button"
+                (click)="deleteGroupPost(group, post)"
+                [disabled]="isDeletingGroupPost(post.id) || isUpdatingGroupPost(post.id)"
+              >
+                <span>🗑️</span>
+                <span>{{ isDeletingGroupPost(post.id) ? 'Deleting...' : 'Delete' }}</span>
               </button>
             </div>
           </div>

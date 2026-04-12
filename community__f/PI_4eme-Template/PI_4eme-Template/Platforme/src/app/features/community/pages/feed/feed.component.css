@@ -212,6 +212,62 @@
   font-size: 12px;
 }
 
+.suggestion-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.suggestion-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.8rem;
+  border: 1px solid var(--feed-card-border);
+  border-radius: 12px;
+  padding: 0.6rem 0.7rem;
+  background: color-mix(in srgb, var(--feed-surface) 92%, var(--feed-primary) 8%);
+}
+
+.suggestion-meta,
+.suggestion-actions,
+.suggestion-details {
+  display: flex;
+}
+
+.suggestion-meta {
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.suggestion-details {
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.suggestion-name {
+  font-size: 14px;
+  color: var(--feed-text);
+}
+
+.suggestion-reason {
+  font-size: 12px;
+  color: var(--feed-muted);
+}
+
+.suggestion-actions {
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.suggestion-avatar {
+  width: 36px;
+  height: 36px;
+  font-size: 12px;
+}
+
 .post-hashtags {
   margin-top: 0.6rem;
 }
@@ -426,6 +482,28 @@
   margin-bottom: 1.25rem;
 }
 
+.post-edit-field {
+  width: 100%;
+  border: 1px solid var(--feed-border);
+  border-radius: 10px;
+  background: var(--feed-surface);
+  color: var(--feed-text);
+  padding: 0.8rem;
+  resize: vertical;
+  min-height: 96px;
+}
+
+.post-edit-field:focus {
+  border-color: var(--feed-primary);
+  outline: none;
+}
+
+.post-edit-actions {
+  margin-top: 0.55rem;
+  display: flex;
+  gap: 0.45rem;
+}
+
 .post-content-input::placeholder,
 .comment-field::placeholder {
   color: var(--feed-muted);
@@ -638,6 +716,20 @@
   border-color: rgba(231, 76, 60, 0.3);
 }
 
+.post-action-btn.edit-save-btn {
+  background: color-mix(in srgb, var(--feed-surface) 72%, var(--feed-primary) 28%);
+}
+
+.post-action-btn.danger {
+  color: var(--feed-danger);
+  border-color: color-mix(in srgb, var(--feed-danger) 45%, var(--feed-card-border));
+}
+
+.post-action-btn.danger:hover {
+  background: color-mix(in srgb, var(--feed-surface) 72%, var(--feed-danger) 28%);
+  border-color: color-mix(in srgb, var(--feed-danger) 55%, var(--feed-card-border));
+}
+
 .profile-btn {
   padding: 0.5rem 1rem;
   font-size: 12px;
@@ -807,6 +899,16 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 0.55rem;
+  }
+
+  .suggestion-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .suggestion-actions {
+    width: 100%;
+    justify-content: flex-start;
   }
 
   .create-post-modal {

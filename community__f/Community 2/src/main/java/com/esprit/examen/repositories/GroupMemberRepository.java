@@ -8,12 +8,15 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 
 @Repository
 public interface GroupMemberRepository extends JpaRepository<GroupMember, Long> {
     List<GroupMember> findByGroupGroupId(Long groupId);
+    List<GroupMember> findByGroupGroupIdIn(Collection<Long> groupIds);
     List<GroupMember> findByUserId(Long userId);
+    List<GroupMember> findByUserIdIn(Collection<Long> userIds);
     GroupMember findByGroupGroupIdAndUserId(Long groupId, Long userId);
     boolean existsByGroupGroupIdAndUserId(Long groupId, Long userId);
     long countByGroupGroupId(Long groupId);
