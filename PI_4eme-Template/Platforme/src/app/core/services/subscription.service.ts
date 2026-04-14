@@ -121,7 +121,6 @@ export class SubscriptionService {
     const userStr = localStorage.getItem('user');
     if (userStr) {
       const user = JSON.parse(userStr);
-      // Try both id and idUser for compatibility
       return user.idUser || user.id || 0;
     }
     return 0;

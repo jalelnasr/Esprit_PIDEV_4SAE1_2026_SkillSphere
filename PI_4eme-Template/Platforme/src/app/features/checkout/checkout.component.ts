@@ -58,7 +58,10 @@ export class CheckoutComponent implements OnInit {
   }
 
   loadUserEmail(): void {
-    // Try to get email from localStorage user object
+    // Guard against SSR (Server-Side Rendering) where localStorage doesn't exist
+    if (typeof window === 'undefined' || typeof window.localStorage === 'undefined') {
+      return;
+    }
     const userStr = localStorage.getItem('user');
     if (userStr) {
       try {
