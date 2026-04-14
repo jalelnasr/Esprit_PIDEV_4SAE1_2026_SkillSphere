@@ -4,11 +4,14 @@ import com.esprit.examen.dto.AnswerResponseDTO;
 import com.esprit.examen.dto.GitHubRepoPreviewDTO;
 import com.esprit.examen.entities.Answer;
 import com.esprit.examen.services.AnswerService;
+import com.esprit.examen.services.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -20,10 +23,26 @@ public class AnswerController {
     @Autowired
     private AnswerService answerService;
 
+    @Autowired
+    private UserService userService;
+
+    @PostMapping("/{questionId}")
+    @Operation(summary = "Create a new answer with authenticated user")
+    public ResponseEntity<AnswerResponseDTO> createAnswer(@RequestBody Answer answer, @PathVariable Long questionId) {
+        Long currentUserId = userService.getCurrentUserId();
+        Answer created = answerService.createAnswer(answer, currentUserId, questionId);
+        return ResponseEntity.ok(answerService.toResponse(created));
+    }
+
     @PostMapping("/{userId}/{questionId}")
-    @Operation(summary = "Create a new answer")
+    @Operation(summary = "Create a new answer (legacy path with user id)")
     public ResponseEntity<AnswerResponseDTO> createAnswer(@RequestBody Answer answer, @PathVariable Long userId, @PathVariable Long questionId) {
-        Answer created = answerService.createAnswer(answer, userId, questionId);
+        Long currentUserId = userService.getCurrentUserId();
+        if (!currentUserId.equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot create answer for another user");
+        }
+
+        Answer created = answerService.createAnswer(answer, currentUserId, questionId);
         return ResponseEntity.ok(answerService.toResponse(created));
     }
 

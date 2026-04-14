@@ -7,7 +7,11 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -18,19 +22,39 @@ import java.util.List;
 @EnableWebSecurity
 public class SecurityConfig {
 
+    private final JwtProxyAuthenticationFilter jwtProxyAuthenticationFilter;
+
+    public SecurityConfig(JwtProxyAuthenticationFilter jwtProxyAuthenticationFilter) {
+        this.jwtProxyAuthenticationFilter = jwtProxyAuthenticationFilter;
+    }
+
+    private static final String[] PUBLIC_PATHS = {
+        "/api-docs/**",
+        "/v3/api-docs/**",
+        "/swagger-ui/**",
+        "/swagger-ui.html",
+        "/actuator/**",
+        "/api/notifications/**",
+        "/api/community/notifications/**",
+        "/notifications/**",
+        "/community/notifications/**"
+    };
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
             .cors(Customizer.withDefaults())
             .csrf(AbstractHttpConfigurer::disable)
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .exceptionHandling(ex -> ex.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
-                .requestMatchers("/actuator/**").permitAll()
-                .requestMatchers("/api/**").permitAll()  // Allow all API endpoints for testing
-                .anyRequest().permitAll()
-            );
-        
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                .requestMatchers(PUBLIC_PATHS).permitAll()
+                .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                .anyRequest().authenticated()
+            )
+            .addFilterBefore(jwtProxyAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+
         return http.build();
     }
 

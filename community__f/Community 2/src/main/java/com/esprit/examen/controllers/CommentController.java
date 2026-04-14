@@ -2,11 +2,14 @@ package com.esprit.examen.controllers;
 
 import com.esprit.examen.entities.Comment;
 import com.esprit.examen.services.CommentService;
+import com.esprit.examen.services.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -18,10 +21,25 @@ public class CommentController {
     @Autowired
     private CommentService commentService;
 
+    @Autowired
+    private UserService userService;
+
+    @PostMapping("/{postId}")
+    @Operation(summary = "Create a new comment with authenticated user")
+    public ResponseEntity<Comment> createComment(@RequestBody Comment comment, @PathVariable Long postId) {
+        Long currentUserId = userService.getCurrentUserId();
+        return ResponseEntity.ok(commentService.createComment(comment, currentUserId, postId));
+    }
+
     @PostMapping("/{userId}/{postId}")
-    @Operation(summary = "Create a new comment")
+    @Operation(summary = "Create a new comment (legacy path with user id)")
     public ResponseEntity<Comment> createComment(@RequestBody Comment comment, @PathVariable Long userId, @PathVariable Long postId) {
-        return ResponseEntity.ok(commentService.createComment(comment, userId, postId));
+        Long currentUserId = userService.getCurrentUserId();
+        if (!currentUserId.equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot create comment for another user");
+        }
+
+        return ResponseEntity.ok(commentService.createComment(comment, currentUserId, postId));
     }
 
     @GetMapping("/{id}")

@@ -6,6 +6,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.*;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -19,12 +20,15 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         var user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
+        List<SimpleGrantedAuthority> authorities = new ArrayList<>();
+        authorities.add(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()));
+
         return new org.springframework.security.core.userdetails.User(
                 user.getEmail(),
                 user.getPasswordHash(),
                 user.getIsActive() != null ? user.getIsActive() : true,
                 true, true, true,
-                List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()))
+                authorities
         );
     }
 }

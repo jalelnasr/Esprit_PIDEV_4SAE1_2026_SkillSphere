@@ -1,0 +1,6 @@
+com\esprit\apigateway2\controller\GatewayInfoController$RouteSummary.class
+com\esprit\apigateway2\config\OpenApiConfig.class
+com\esprit\apigateway2\controller\GatewayInfoController$ServiceSummary.class
+com\esprit\apigateway2\ApiGateway2Application.class
+com\esprit\apigateway2\controller\GatewayInfoController$GatewayServicesResponse.class
+com\esprit\apigateway2\controller\GatewayInfoController.class

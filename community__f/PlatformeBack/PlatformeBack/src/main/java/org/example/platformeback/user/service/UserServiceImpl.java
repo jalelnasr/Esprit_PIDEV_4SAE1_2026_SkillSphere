@@ -117,26 +117,6 @@ public class UserServiceImpl implements UserService {
         return toResponse(getById(id));
     }
 
-    // ✅ NEW: Admin update user info
-    @Override
-    public UserResponse adminUpdateUser(Long id, AdminUpdateUserRequest req) {
-        User u = getById(id);
-
-        if (req.email() != null && !req.email().isBlank()) {
-            if (userRepository.existsByEmailAndIdUserNot(req.email(), id)) {
-                throw new RuntimeException("Email already exists");
-            }
-            u.setEmail(req.email());
-        }
-
-        if (req.nom() != null && !req.nom().isBlank()) u.setNom(req.nom());
-        if (req.prenom() != null && !req.prenom().isBlank()) u.setPrenom(req.prenom());
-        if (req.phone() != null) u.setPhone(req.phone());
-        if (req.adresse() != null) u.setAdresse(req.adresse());
-
-        return toResponse(userRepository.save(u));
-    }
-
     @Override
     public UserResponse adminUpdateRole(Long id, Role role) {
         User u = getById(id);
@@ -149,26 +129,5 @@ public class UserServiceImpl implements UserService {
         User u = getById(id);
         u.setIsActive(active);
         return toResponse(userRepository.save(u));
-    }
-
-    // ✅ NEW: Admin reset password
-    @Override
-    public void adminResetPassword(Long id, AdminResetPasswordRequest req) {
-        if (req == null || req.newPassword() == null || req.newPassword().length() < 8) {
-            throw new RuntimeException("New password must be at least 8 characters");
-        }
-
-        User u = getById(id);
-        u.setPasswordHash(passwordEncoder.encode(req.newPassword()));
-        userRepository.save(u);
-    }
-
-    // ✅ NEW: Admin delete user
-    @Override
-    public void adminDeleteUser(Long id) {
-        if (!userRepository.existsById(id)) {
-            throw new RuntimeException("User not found");
-        }
-        userRepository.deleteById(id);
     }
 }

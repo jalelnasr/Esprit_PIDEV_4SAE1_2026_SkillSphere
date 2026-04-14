@@ -47,11 +47,9 @@ export class QuestionService extends CommunityBaseService {
   }
 
   createQuestion(request: CreateQuestionRequest): Observable<Question> {
-    const userId = this.currentUserId();
-
     return this.http
       .post<BackendQuestion | { question?: BackendQuestion; data?: BackendQuestion }>(
-        `${this.communityBaseUrl}/questions/${userId}`,
+        `${this.communityBaseUrl}/questions`,
         request,
         this.authOptions()
       )

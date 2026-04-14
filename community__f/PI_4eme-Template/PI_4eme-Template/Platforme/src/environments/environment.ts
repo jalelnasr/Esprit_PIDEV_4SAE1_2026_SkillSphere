@@ -2,7 +2,7 @@ export const environment = {
   production: false,
   apiUrl: 'http://localhost:8081',
   communityApiUrl: 'http://localhost:8081',
-  wsUrl: 'ws://localhost:8080',
+  wsUrl: 'ws://localhost:8081',
   supabase: {
     url: 'https://yvivroonarervdmbpbqz.supabase.co',
     publishableKey: 'sb_publishable_uVw27yhF8TsFVb_tm-hJAA_KVgE6VLE',

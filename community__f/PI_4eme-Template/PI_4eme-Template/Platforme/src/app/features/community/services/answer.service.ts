@@ -47,11 +47,9 @@ export class AnswerService extends CommunityBaseService {
   }
 
   addAnswer(request: CreateAnswerRequest): Observable<Answer> {
-    const userId = this.currentUserId();
-
     return this.http
       .post<BackendAnswer | { answer?: BackendAnswer; data?: BackendAnswer }>(
-        `${this.communityBaseUrl}/answers/${userId}/${request.question_id}`,
+        `${this.communityBaseUrl}/answers/${request.question_id}`,
         { content: request.content },
         this.authOptions()
       )
@@ -116,11 +114,10 @@ export class AnswerService extends CommunityBaseService {
   }
 
   voteAnswer(answerId: number, voteType: VoteType): Observable<void> {
-    const userId = this.currentUserId();
     const params = new HttpParams().set('voteType', voteType);
 
     return this.http
-      .post<void>(`${this.communityBaseUrl}/answer-votes/${userId}/${answerId}`, null, {
+      .post<void>(`${this.communityBaseUrl}/answer-votes/${answerId}`, null, {
         ...this.authOptions(),
         params
       })
@@ -128,10 +125,8 @@ export class AnswerService extends CommunityBaseService {
   }
 
   removeVote(answerId: number): Observable<void> {
-    const userId = this.currentUserId();
-
     return this.http
-      .delete<void>(`${this.communityBaseUrl}/answer-votes/${userId}/${answerId}`, this.authOptions())
+      .delete<void>(`${this.communityBaseUrl}/answer-votes/${answerId}`, this.authOptions())
       .pipe(catchError(this.handleError('Remove answer vote')));
   }
 

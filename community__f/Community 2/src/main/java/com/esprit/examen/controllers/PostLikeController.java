@@ -6,8 +6,10 @@ import com.esprit.examen.services.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -30,9 +32,14 @@ public class PostLikeController {
     }
 
     @PostMapping("/{userId}/{postId}")
-    @Operation(summary = "Like a post with explicit user id")
+    @Operation(summary = "Like a post with explicit user id (legacy)")
     public ResponseEntity<PostLike> likePostByUser(@PathVariable Long userId, @PathVariable Long postId) {
-        return ResponseEntity.ok(postLikeService.likePost(userId, postId));
+        Long currentUserId = userService.getCurrentUserId();
+        if (!currentUserId.equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot like posts for another user");
+        }
+
+        return ResponseEntity.ok(postLikeService.likePost(currentUserId, postId));
     }
 
     @DeleteMapping("/{postId}")
@@ -44,9 +51,14 @@ public class PostLikeController {
     }
 
     @DeleteMapping("/{userId}/{postId}")
-    @Operation(summary = "Unlike a post with explicit user id")
+    @Operation(summary = "Unlike a post with explicit user id (legacy)")
     public ResponseEntity<Void> unlikePostByUser(@PathVariable Long userId, @PathVariable Long postId) {
-        postLikeService.unlikePost(userId, postId);
+        Long currentUserId = userService.getCurrentUserId();
+        if (!currentUserId.equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot unlike posts for another user");
+        }
+
+        postLikeService.unlikePost(currentUserId, postId);
         return ResponseEntity.ok().build();
     }
 

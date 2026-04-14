@@ -1,4 +1,4 @@
-export type BackendRole = 'APPRENANT' | 'FORMATEUR' | 'RH_ENTREPRISE' | 'ADMIN';
+export type BackendRole = 'USER' | 'APPRENANT' | 'FORMATEUR' | 'RH_ENTREPRISE' | 'ADMIN';
 
 export interface BackendUser {
   idUser: number;

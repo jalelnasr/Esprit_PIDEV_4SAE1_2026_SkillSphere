@@ -19,11 +19,6 @@ public interface UserService {
     UserResponse adminGetUser(Long id);
 
     // Update parts
-    UserResponse adminUpdateUser(Long id, AdminUpdateUserRequest req);          // ✅ NEW
     UserResponse adminUpdateRole(Long id, Role role);
     UserResponse adminSetActive(Long id, Boolean active);
-
-    // Extra admin actions
-    void adminResetPassword(Long id, AdminResetPasswordRequest req);            // ✅ NEW
-    void adminDeleteUser(Long id);                                              // ✅ NEW
 }

@@ -25,11 +25,9 @@ export class CommentService extends CommunityBaseService {
   }
 
   addComment(request: CreateCommentRequest): Observable<Comment> {
-    const userId = this.currentUserId();
-
     return this.http
       .post<BackendComment | { comment?: BackendComment; data?: BackendComment }>(
-        `${this.communityBaseUrl}/comments/${userId}/${request.post_id}`,
+        `${this.communityBaseUrl}/comments/${request.post_id}`,
         { content: request.content },
         this.authOptions()
       )
@@ -52,18 +50,14 @@ export class CommentService extends CommunityBaseService {
   }
 
   likeComment(commentId: number): Observable<void> {
-    const userId = this.currentUserId();
-
     return this.http
-      .post<void>(`${this.communityBaseUrl}/comment-likes/${userId}/${commentId}`, null, this.authOptions())
+      .post<void>(`${this.communityBaseUrl}/comment-likes/${commentId}`, null, this.authOptions())
       .pipe(catchError(this.handleError('Like comment')));
   }
 
   unlikeComment(commentId: number): Observable<void> {
-    const userId = this.currentUserId();
-
     return this.http
-      .delete<void>(`${this.communityBaseUrl}/comment-likes/${userId}/${commentId}`, this.authOptions())
+      .delete<void>(`${this.communityBaseUrl}/comment-likes/${commentId}`, this.authOptions())
       .pipe(catchError(this.handleError('Unlike comment')));
   }
 

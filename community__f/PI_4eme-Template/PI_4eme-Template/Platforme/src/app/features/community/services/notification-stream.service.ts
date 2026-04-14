@@ -547,18 +547,8 @@ export class NotificationStreamService implements OnDestroy {
       baseUrls.push(normalizedApiUrl);
     }
 
-    const hasLocalGatewayBase = [normalizedCommunityApiUrl, normalizedApiUrl].some(
-      (candidate) =>
-        typeof candidate === 'string' &&
-        (/localhost:8081(\/|$)/i.test(candidate) || /127\.0\.0\.1:8081(\/|$)/i.test(candidate))
-    );
-
-    if (hasLocalGatewayBase) {
-      baseUrls.push('http://localhost:8082', 'http://127.0.0.1:8082');
-    }
-
     if (baseUrls.length === 0) {
-      baseUrls.push('http://localhost:8081', 'http://localhost:8082');
+      baseUrls.push('http://localhost:8081');
     }
 
     return Array.from(new Set(baseUrls));

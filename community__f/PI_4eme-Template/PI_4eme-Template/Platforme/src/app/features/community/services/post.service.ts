@@ -160,18 +160,14 @@ export class PostService extends CommunityBaseService {
   }
 
   likePost(postId: number): Observable<void> {
-    const userId = this.currentUserId();
-
     return this.http
-      .post<void>(`${this.communityBaseUrl}/post-likes/${userId}/${postId}`, null, this.authOptions())
+      .post<void>(`${this.communityBaseUrl}/post-likes/${postId}`, null, this.authOptions())
       .pipe(catchError(this.handleError('Like post')));
   }
 
   unlikePost(postId: number): Observable<void> {
-    const userId = this.currentUserId();
-
     return this.http
-      .delete<void>(`${this.communityBaseUrl}/post-likes/${userId}/${postId}`, this.authOptions())
+      .delete<void>(`${this.communityBaseUrl}/post-likes/${postId}`, this.authOptions())
       .pipe(catchError(this.handleError('Unlike post')));
   }
 

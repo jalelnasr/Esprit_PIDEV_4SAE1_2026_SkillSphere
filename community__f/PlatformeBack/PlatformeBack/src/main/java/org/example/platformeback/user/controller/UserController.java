@@ -64,13 +64,6 @@ public class UserController {
         return userService.adminGetUser(id);
     }
 
-    // ✅ NEW: Admin update user info
-    @PreAuthorize("hasRole('ADMIN')")
-    @PutMapping("/admin/{id}")
-    public UserResponse adminUpdate(@PathVariable Long id, @RequestBody AdminUpdateUserRequest req) {
-        return userService.adminUpdateUser(id, req);
-    }
-
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/admin/{id}/role")
     public UserResponse adminRole(@PathVariable Long id, @RequestParam Role role) {
@@ -81,19 +74,5 @@ public class UserController {
     @PutMapping("/admin/{id}/active")
     public UserResponse adminActive(@PathVariable Long id, @RequestParam Boolean active) {
         return userService.adminSetActive(id, active);
-    }
-
-    // ✅ NEW: Admin reset password
-    @PreAuthorize("hasRole('ADMIN')")
-    @PutMapping("/admin/{id}/password")
-    public void adminResetPassword(@PathVariable Long id, @RequestBody AdminResetPasswordRequest req) {
-        userService.adminResetPassword(id, req);
-    }
-
-    // ✅ NEW: Delete user
-    @PreAuthorize("hasRole('ADMIN')")
-    @DeleteMapping("/admin/{id}")
-    public void adminDelete(@PathVariable Long id) {
-        userService.adminDeleteUser(id);
     }
 }

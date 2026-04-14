@@ -2,11 +2,15 @@ package com.esprit.examen.controllers;
 
 import com.esprit.examen.entities.Question;
 import com.esprit.examen.services.QuestionService;
+import com.esprit.examen.services.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
+
+import org.springframework.http.HttpStatus;
 
 import java.util.List;
 
@@ -18,10 +22,25 @@ public class QuestionController {
     @Autowired
     private QuestionService questionService;
 
+    @Autowired
+    private UserService userService;
+
+    @PostMapping
+    @Operation(summary = "Create a new question with authenticated user")
+    public ResponseEntity<Question> createQuestion(@RequestBody Question question) {
+        Long currentUserId = userService.getCurrentUserId();
+        return ResponseEntity.ok(questionService.createQuestion(question, currentUserId));
+    }
+
     @PostMapping("/{userId}")
-    @Operation(summary = "Create a new question")
+    @Operation(summary = "Create a new question (legacy path with user id)")
     public ResponseEntity<Question> createQuestion(@RequestBody Question question, @PathVariable Long userId) {
-        return ResponseEntity.ok(questionService.createQuestion(question, userId));
+        Long currentUserId = userService.getCurrentUserId();
+        if (!currentUserId.equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot create question for another user");
+        }
+
+        return ResponseEntity.ok(questionService.createQuestion(question, currentUserId));
     }
 
     @GetMapping

@@ -6,8 +6,10 @@ import com.esprit.examen.services.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -38,6 +40,11 @@ public class MessageController {
     @GetMapping("/between/{senderId}/{receiverId}")
     @Operation(summary = "Get messages between two users")
     public ResponseEntity<List<Message>> getMessagesBetweenUsers(@PathVariable Long senderId, @PathVariable Long receiverId) {
+        Long currentUserId = userService.getCurrentUserId();
+        if (!currentUserId.equals(senderId) && !currentUserId.equals(receiverId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied");
+        }
+
         return ResponseEntity.ok(messageService.getMessagesBetweenUsers(senderId, receiverId));
     }
 
@@ -51,18 +58,33 @@ public class MessageController {
     @GetMapping("/sent/{senderId}")
     @Operation(summary = "Get sent messages")
     public ResponseEntity<List<Message>> getSentMessages(@PathVariable Long senderId) {
+        Long currentUserId = userService.getCurrentUserId();
+        if (!currentUserId.equals(senderId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied");
+        }
+
         return ResponseEntity.ok(messageService.getSentMessages(senderId));
     }
 
     @GetMapping("/received/{receiverId}")
     @Operation(summary = "Get received messages")
     public ResponseEntity<List<Message>> getReceivedMessages(@PathVariable Long receiverId) {
+        Long currentUserId = userService.getCurrentUserId();
+        if (!currentUserId.equals(receiverId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied");
+        }
+
         return ResponseEntity.ok(messageService.getReceivedMessages(receiverId));
     }
 
     @GetMapping("/unread/{receiverId}")
     @Operation(summary = "Get unread messages")
     public ResponseEntity<List<Message>> getUnreadMessages(@PathVariable Long receiverId) {
+        Long currentUserId = userService.getCurrentUserId();
+        if (!currentUserId.equals(receiverId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied");
+        }
+
         return ResponseEntity.ok(messageService.getUnreadMessages(receiverId));
     }
 

@@ -187,7 +187,7 @@ export class ChatSocketService implements OnDestroy {
       return apiUrl;
     }
 
-    return 'http://localhost:8080';
+    return 'http://localhost:8081';
   }
 
   private buildConnectHeaders(currentUserId: number): Record<string, string> {

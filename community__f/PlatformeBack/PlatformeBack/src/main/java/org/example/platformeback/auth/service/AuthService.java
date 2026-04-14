@@ -29,7 +29,7 @@ public class AuthService {
                 .prenom(req.prenom())
                 .email(req.email())
                 .passwordHash(passwordEncoder.encode(req.password()))
-                .role(org.example.platformeback.user.model.Role.APPRENANT) // FORCE
+                .role(org.example.platformeback.user.model.Role.APPRENANT)
                 .phone(req.phone())
                 .adresse(req.adresse())
                 .isActive(true) // FORCE
