@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>UserController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">PlatformeBack</a> &gt; <a href="index.source.html" class="el_package">org.example.platformeback.user.controller</a> &gt; <span class="el_source">UserController.java</span></div><h1>UserController.java</h1><pre class="source lang-java linenums">package org.example.platformeback.user.controller;
+
+import lombok.RequiredArgsConstructor;
+import org.example.platformeback.user.dto.*;
+import org.example.platformeback.user.model.Role;
+import org.example.platformeback.user.service.UserService;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping(&quot;/api/users&quot;)
+<span class="fc" id="L15">@RequiredArgsConstructor</span>
+@CrossOrigin(origins = &quot;http://localhost:4200&quot;)
+public class UserController {
+
+    private final UserService userService;
+
+    // ======================
+    //  Everyone (connected)
+    // ======================
+
+    @GetMapping(&quot;/me&quot;)
+    public UserResponse me(Authentication auth) {
+<span class="nc" id="L27">        return userService.getMe(auth.getName());</span>
+    }
+
+    @PutMapping(&quot;/me&quot;)
+    public UserResponse updateMe(Authentication auth, @RequestBody UserUpdateRequest req) {
+<span class="nc" id="L32">        return userService.updateMe(auth.getName(), req);</span>
+    }
+
+    @PutMapping(&quot;/me/password&quot;)
+    public void changePassword(Authentication auth, @RequestBody ChangePasswordRequest req) {
+<span class="nc" id="L37">        userService.changeMyPassword(auth.getName(), req);</span>
+<span class="nc" id="L38">    }</span>
+
+    // ======================
+    //  Admin only (CRUD)
+    // ======================
+
+    @PreAuthorize(&quot;hasRole('ADMIN')&quot;)
+    @PostMapping(&quot;/admin&quot;)
+    public UserResponse adminCreate(@RequestBody AdminCreateUserRequest req) {
+<span class="nc" id="L47">        return userService.adminCreateUser(req);</span>
+    }
+
+    @PreAuthorize(&quot;hasRole('ADMIN')&quot;)
+    @GetMapping(&quot;/admin&quot;)
+    public List&lt;UserResponse&gt; adminList() {
+<span class="nc" id="L53">        return userService.adminListUsers();</span>
+    }
+
+    @PreAuthorize(&quot;hasRole('ADMIN')&quot;)
+    @GetMapping(&quot;/admin/{id}&quot;)
+    public UserResponse adminGet(@PathVariable Long id) {
+<span class="nc" id="L59">        return userService.adminGetUser(id);</span>
+    }
+
+    @PreAuthorize(&quot;hasRole('ADMIN')&quot;)
+    @PutMapping(&quot;/admin/{id}&quot;)
+    public UserResponse adminUpdate(@PathVariable Long id, @RequestBody AdminUpdateUserRequest req) {
+<span class="nc" id="L65">        return userService.adminUpdateUser(id, req);</span>
+    }
+
+    @PreAuthorize(&quot;hasRole('ADMIN')&quot;)
+    @PutMapping(&quot;/admin/{id}/role&quot;)
+    public UserResponse adminRole(@PathVariable Long id, @RequestParam Role role) {
+<span class="nc" id="L71">        return userService.adminUpdateRole(id, role);</span>
+    }
+
+    @PreAuthorize(&quot;hasRole('ADMIN')&quot;)
+    @PutMapping(&quot;/admin/{id}/active&quot;)
+    public UserResponse adminActive(@PathVariable Long id, @RequestParam Boolean active) {
+<span class="nc" id="L77">        return userService.adminSetActive(id, active);</span>
+    }
+
+    @PreAuthorize(&quot;hasRole('ADMIN')&quot;)
+    @PutMapping(&quot;/admin/{id}/password&quot;)
+    public void adminResetPassword(@PathVariable Long id, @RequestBody AdminResetPasswordRequest req) {
+<span class="nc" id="L83">        userService.adminResetPassword(id, req);</span>
+<span class="nc" id="L84">    }</span>
+
+    @PreAuthorize(&quot;hasRole('ADMIN')&quot;)
+    @DeleteMapping(&quot;/admin/{id}&quot;)
+    public void adminDelete(@PathVariable Long id) {
+<span class="nc" id="L89">        userService.adminDeleteUser(id);</span>
+<span class="nc" id="L90">    }</span>
+
+    // ======================
+    //  ⭐ NEW: Public endpoint for role verification
+    //  Used by Professional Events microservice
+    // ======================
+
+    /**
+     * Get user role by ID
+     * Used by Professional Events to verify if user can register to competitions
+     * Only APPRENANT can register, FORMATEUR cannot
+     */
+    @GetMapping(&quot;/{userId}/role&quot;)
+    public String getUserRole(@PathVariable Long userId) {
+<span class="nc" id="L104">        UserResponse user = userService.adminGetUser(userId);</span>
+<span class="nc" id="L105">        return user.role().name(); // Returns &quot;APPRENANT&quot; or &quot;FORMATEUR&quot; or &quot;ADMIN&quot;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

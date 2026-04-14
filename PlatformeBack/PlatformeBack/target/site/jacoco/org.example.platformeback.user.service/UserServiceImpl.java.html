@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>UserServiceImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">PlatformeBack</a> &gt; <a href="index.source.html" class="el_package">org.example.platformeback.user.service</a> &gt; <span class="el_source">UserServiceImpl.java</span></div><h1>UserServiceImpl.java</h1><pre class="source lang-java linenums">package org.example.platformeback.user.service;
+
+import lombok.RequiredArgsConstructor;
+import org.example.platformeback.user.dto.*;
+import org.example.platformeback.user.model.Role;
+import org.example.platformeback.user.model.User;
+import org.example.platformeback.user.repository.UserRepository;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+@Service
+<span class="fc" id="L14">@RequiredArgsConstructor</span>
+public class UserServiceImpl implements UserService {
+
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+
+    private UserResponse toResponse(User u) {
+<span class="fc" id="L21">        return new UserResponse(</span>
+<span class="fc" id="L22">                u.getIdUser(),</span>
+<span class="fc" id="L23">                u.getNom(),</span>
+<span class="fc" id="L24">                u.getPrenom(),</span>
+<span class="fc" id="L25">                u.getEmail(),</span>
+<span class="fc" id="L26">                u.getRole(),</span>
+<span class="fc" id="L27">                u.getPhone(),</span>
+<span class="fc" id="L28">                u.getAdresse(),</span>
+<span class="fc" id="L29">                u.getIsActive(),</span>
+<span class="fc" id="L30">                u.getCreatedAt()</span>
+        );
+    }
+
+    private User getByEmail(String email) {
+<span class="fc" id="L35">        return userRepository.findByEmail(email)</span>
+<span class="fc" id="L36">                .orElseThrow(() -&gt; new RuntimeException(&quot;User not found&quot;));</span>
+    }
+
+    private User getById(Long id) {
+<span class="fc" id="L40">        return userRepository.findById(id)</span>
+<span class="fc" id="L41">                .orElseThrow(() -&gt; new RuntimeException(&quot;User not found&quot;));</span>
+    }
+
+    // ---------- Everyone ----------
+    @Override
+    public UserResponse getMe(String email) {
+<span class="fc" id="L47">        return toResponse(getByEmail(email));</span>
+    }
+
+    @Override
+    public UserResponse updateMe(String email, UserUpdateRequest req) {
+<span class="fc" id="L52">        User u = getByEmail(email);</span>
+
+<span class="fc bfc" id="L54" title="All 2 branches covered.">        if (req.nom() != null) u.setNom(req.nom());</span>
+<span class="pc bpc" id="L55" title="1 of 2 branches missed.">        if (req.prenom() != null) u.setPrenom(req.prenom());</span>
+<span class="fc bfc" id="L56" title="All 2 branches covered.">        if (req.phone() != null) u.setPhone(req.phone());</span>
+<span class="pc bpc" id="L57" title="1 of 2 branches missed.">        if (req.adresse() != null) u.setAdresse(req.adresse());</span>
+
+<span class="fc" id="L59">        return toResponse(userRepository.save(u));</span>
+    }
+
+    @Override
+    public void changeMyPassword(String email, ChangePasswordRequest req) {
+<span class="fc" id="L64">        User u = getByEmail(email);</span>
+
+<span class="fc bfc" id="L66" title="All 2 branches covered.">        if (!passwordEncoder.matches(req.oldPassword(), u.getPasswordHash())) {</span>
+<span class="fc" id="L67">            throw new RuntimeException(&quot;Old password incorrect&quot;);</span>
+        }
+
+<span class="pc bpc" id="L70" title="1 of 4 branches missed.">        if (req.newPassword() == null || req.newPassword().length() &lt; 8) {</span>
+<span class="fc" id="L71">            throw new RuntimeException(&quot;New password must be at least 8 characters&quot;);</span>
+        }
+
+<span class="fc" id="L74">        u.setPasswordHash(passwordEncoder.encode(req.newPassword()));</span>
+<span class="fc" id="L75">        userRepository.save(u);</span>
+<span class="fc" id="L76">    }</span>
+
+    // ---------- Admin ----------
+    @Override
+    public UserResponse adminCreateUser(AdminCreateUserRequest req) {
+<span class="fc bfc" id="L81" title="All 2 branches covered.">        if (userRepository.existsByEmail(req.email())) {</span>
+<span class="fc" id="L82">            throw new RuntimeException(&quot;Email already exists&quot;);</span>
+        }
+
+<span class="pc bpc" id="L85" title="1 of 4 branches missed.">        if (req.password() == null || req.password().length() &lt; 8) {</span>
+<span class="fc" id="L86">            throw new RuntimeException(&quot;Password must be at least 8 characters&quot;);</span>
+        }
+
+<span class="fc bfc" id="L89" title="All 2 branches covered.">        Role role = (req.role() != null) ? req.role() : Role.APPRENANT;</span>
+
+<span class="fc" id="L91">        User u = User.builder()</span>
+<span class="fc" id="L92">                .nom(req.nom())</span>
+<span class="fc" id="L93">                .prenom(req.prenom())</span>
+<span class="fc" id="L94">                .email(req.email())</span>
+<span class="fc" id="L95">                .passwordHash(passwordEncoder.encode(req.password()))</span>
+<span class="fc" id="L96">                .role(role)</span>
+<span class="fc" id="L97">                .phone(req.phone())</span>
+<span class="fc" id="L98">                .adresse(req.adresse())</span>
+<span class="fc bfc" id="L99" title="All 2 branches covered.">                .isActive(req.isActive() != null ? req.isActive() : true)</span>
+<span class="fc" id="L100">                .build();</span>
+
+<span class="fc" id="L102">        return toResponse(userRepository.save(u));</span>
+    }
+
+    @Override
+    public List&lt;UserResponse&gt; adminListUsers() {
+<span class="fc" id="L107">        return userRepository.findAll().stream().map(this::toResponse).toList();</span>
+    }
+
+    @Override
+    public UserResponse adminGetUser(Long id) {
+<span class="fc" id="L112">        return toResponse(getById(id));</span>
+    }
+
+    // ✅ NEW: Admin update user info
+    @Override
+    public UserResponse adminUpdateUser(Long id, AdminUpdateUserRequest req) {
+<span class="fc" id="L118">        User u = getById(id);</span>
+
+<span class="pc bpc" id="L120" title="1 of 4 branches missed.">        if (req.email() != null &amp;&amp; !req.email().isBlank()) {</span>
+<span class="pc bpc" id="L121" title="1 of 2 branches missed.">            if (userRepository.existsByEmailAndIdUserNot(req.email(), id)) {</span>
+<span class="fc" id="L122">                throw new RuntimeException(&quot;Email already exists&quot;);</span>
+            }
+<span class="nc" id="L124">            u.setEmail(req.email());</span>
+        }
+
+<span class="pc bpc" id="L127" title="2 of 4 branches missed.">        if (req.nom() != null &amp;&amp; !req.nom().isBlank()) u.setNom(req.nom());</span>
+<span class="pc bpc" id="L128" title="2 of 4 branches missed.">        if (req.prenom() != null &amp;&amp; !req.prenom().isBlank()) u.setPrenom(req.prenom());</span>
+<span class="pc bpc" id="L129" title="1 of 2 branches missed.">        if (req.phone() != null) u.setPhone(req.phone());</span>
+<span class="pc bpc" id="L130" title="1 of 2 branches missed.">        if (req.adresse() != null) u.setAdresse(req.adresse());</span>
+
+<span class="fc" id="L132">        return toResponse(userRepository.save(u));</span>
+    }
+
+    @Override
+    public UserResponse adminUpdateRole(Long id, Role role) {
+<span class="fc" id="L137">        User u = getById(id);</span>
+<span class="fc" id="L138">        u.setRole(role);</span>
+<span class="fc" id="L139">        return toResponse(userRepository.save(u));</span>
+    }
+
+    @Override
+    public UserResponse adminSetActive(Long id, Boolean active) {
+<span class="fc" id="L144">        User u = getById(id);</span>
+<span class="fc" id="L145">        u.setIsActive(active);</span>
+<span class="fc" id="L146">        return toResponse(userRepository.save(u));</span>
+    }
+
+    // ✅ NEW: Admin reset password
+    @Override
+    public void adminResetPassword(Long id, AdminResetPasswordRequest req) {
+<span class="pc bpc" id="L152" title="1 of 6 branches missed.">        if (req == null || req.newPassword() == null || req.newPassword().length() &lt; 8) {</span>
+<span class="fc" id="L153">            throw new RuntimeException(&quot;New password must be at least 8 characters&quot;);</span>
+        }
+
+<span class="fc" id="L156">        User u = getById(id);</span>
+<span class="fc" id="L157">        u.setPasswordHash(passwordEncoder.encode(req.newPassword()));</span>
+<span class="fc" id="L158">        userRepository.save(u);</span>
+<span class="fc" id="L159">    }</span>
+
+    // ✅ NEW: Admin delete user
+    @Override
+    public void adminDeleteUser(Long id) {
+<span class="fc bfc" id="L164" title="All 2 branches covered.">        if (!userRepository.existsById(id)) {</span>
+<span class="fc" id="L165">            throw new RuntimeException(&quot;User not found&quot;);</span>
+        }
+<span class="fc" id="L167">        userRepository.deleteById(id);</span>
+<span class="fc" id="L168">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

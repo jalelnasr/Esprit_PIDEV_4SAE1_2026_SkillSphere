@@ -1,0 +1,35 @@
+-------------------------------------------------------------------------------
+Test set: org.example.professional_events.service.CompetitionServiceTest
+-------------------------------------------------------------------------------
+Tests run: 11, Failures: 1, Errors: 2, Skipped: 0, Time elapsed: 0.720 s <<< FAILURE! -- in org.example.professional_events.service.CompetitionServiceTest
+org.example.professional_events.service.CompetitionServiceTest.testRegisterParticipantMaxParticipantsReached -- Time elapsed: 0.017 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: Expected java.lang.RuntimeException to be thrown, but nothing was thrown.
+	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:152)
+	at org.junit.jupiter.api.AssertThrows.assertThrows(AssertThrows.java:73)
+	at org.junit.jupiter.api.AssertThrows.assertThrows(AssertThrows.java:35)
+	at org.junit.jupiter.api.Assertions.assertThrows(Assertions.java:3115)
+	at org.example.professional_events.service.CompetitionServiceTest.testRegisterParticipantMaxParticipantsReached(CompetitionServiceTest.java:129)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+org.example.professional_events.service.CompetitionServiceTest.testRegisterParticipantSuccess -- Time elapsed: 0.021 s <<< ERROR!
+org.mockito.exceptions.misusing.UnnecessaryStubbingException: 
+
+Unnecessary stubbings detected.
+Clean & maintainable test code requires zero unnecessary code.
+Following stubbings are unnecessary (click to navigate to relevant line of code):
+  1. -> at org.example.professional_events.service.CompetitionServiceTest.testRegisterParticipantSuccess(CompetitionServiceTest.java:85)
+Please remove unnecessary stubbings or use 'lenient' strictness. More info: javadoc for UnnecessaryStubbingException class.
+	at org.mockito.junit.jupiter.MockitoExtension.afterEach(MockitoExtension.java:192)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+org.example.professional_events.service.CompetitionServiceTest.testDeleteCompetition -- Time elapsed: 0.008 s <<< ERROR!
+java.lang.NullPointerException: Cannot invoke "org.example.professional_events.service.TeamService.getTeamsWithMembers(java.lang.Long)" because "this.teamService" is null
+	at org.example.professional_events.service.CompetitionService.deleteCompetition(CompetitionService.java:80)
+	at org.example.professional_events.service.CompetitionServiceTest.testDeleteCompetition(CompetitionServiceTest.java:192)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
