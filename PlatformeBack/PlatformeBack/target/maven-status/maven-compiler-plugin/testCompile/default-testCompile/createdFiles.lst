@@ -1,4 +1,0 @@
-org\example\platformeback\PlatformeBackApplicationTests.class
-org\example\platformeback\security\JwtServiceTest.class
-org\example\platformeback\auth\service\AuthServiceTest.class
-org\example\platformeback\user\service\UserServiceTest.class
