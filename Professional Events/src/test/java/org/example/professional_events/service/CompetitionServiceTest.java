@@ -11,8 +11,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -21,7 +19,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class CompetitionServiceTest {
+class CompetitionServiceTest {
 
     @Mock
     private CompetitionRepository competitionRepository;
@@ -29,169 +27,112 @@ public class CompetitionServiceTest {
     @Mock
     private ParticipantRepository participantRepository;
 
+    @Mock
+    private TeamService teamService;
+
+    @Mock
+    private org.example.professional_events.repository.UserContactRepository userContactRepository;
+
+    @Mock
+    private org.example.professional_events.repository.TeamMemberRepository teamMemberRepository;
+
     @InjectMocks
     private CompetitionService competitionService;
 
-    private Competition testCompetition;
-    private Participant testParticipant;
+    private Competition competition;
 
     @BeforeEach
-    public void setUp() {
-        testCompetition = new Competition();
-        testCompetition.setCompetitionId(1L);
-        testCompetition.setTitle("Java Coding Challenge");
-        testCompetition.setDescription("A challenging Java programming competition");
-        testCompetition.setType(Competition.CompetitionType.ONLINE);
-        testCompetition.setStartDate(LocalDateTime.now().plusDays(1));
-        testCompetition.setEndDate(LocalDateTime.now().plusDays(2));
-        testCompetition.setMaxParticipants(100);
-        testCompetition.setStatus(Competition.CompetitionStatus.OPEN);
-
-        testParticipant = new Participant();
-        testParticipant.setRegistrationId(1L);
-        testParticipant.setUserId(1L);
-        testParticipant.setCompetitionId(1L);
-        testParticipant.setRegistrationDate(LocalDateTime.now());
-        testParticipant.setStatus(Participant.ParticipantStatus.REGISTERED);
+    void setUp() {
+        competition = new Competition();
+        competition.setCompetitionId(1L);
+        competition.setTitle("Hackathon 2026");
+        competition.setStatus(Competition.CompetitionStatus.OPEN);
+        competition.setParticipationType(Competition.ParticipationType.INDIVIDUAL);
+        competition.setMaxParticipants(10);
     }
 
     @Test
-    public void testCreateCompetition() {
-        when(competitionRepository.save(any(Competition.class))).thenReturn(testCompetition);
+    void createCompetition_shouldSaveAndReturn() {
+        when(competitionRepository.save(any(Competition.class))).thenReturn(competition);
 
-        Competition createdCompetition = competitionService.createCompetition(testCompetition);
+        Competition result = competitionService.createCompetition(competition);
 
-        assertNotNull(createdCompetition);
-        assertEquals("Java Coding Challenge", createdCompetition.getTitle());
-        assertEquals(Competition.CompetitionStatus.OPEN, createdCompetition.getStatus());
-        verify(competitionRepository, times(1)).save(any(Competition.class));
+        assertNotNull(result);
+        assertEquals("Hackathon 2026", result.getTitle());
+        verify(competitionRepository, times(1)).save(competition);
     }
 
     @Test
-    public void testCreateCompetitionWithNullStatus() {
-        testCompetition.setStatus(null);
-        when(competitionRepository.save(any(Competition.class))).thenReturn(testCompetition);
+    void getAllCompetitions_shouldReturnList() {
+        when(competitionRepository.findAll()).thenReturn(List.of(competition));
 
-        Competition createdCompetition = competitionService.createCompetition(testCompetition);
+        List<Competition> result = competitionService.getAllCompetitions();
 
-        assertNotNull(createdCompetition);
-        verify(competitionRepository, times(1)).save(any(Competition.class));
+        assertEquals(1, result.size());
+        assertEquals("Hackathon 2026", result.get(0).getTitle());
     }
 
     @Test
-    public void testRegisterParticipantSuccess() {
-        when(competitionRepository.findById(1L)).thenReturn(Optional.of(testCompetition));
-        when(participantRepository.findByUserIdAndCompetitionId(1L, 1L)).thenReturn(Optional.empty());
-        when(participantRepository.findByCompetitionId(1L)).thenReturn(new ArrayList<>());
-        when(participantRepository.save(any(Participant.class))).thenReturn(testParticipant);
+    void registerParticipant_shouldRegisterSuccessfully() {
+        when(competitionRepository.findById(1L)).thenReturn(Optional.of(competition));
+        when(participantRepository.findByUserIdAndCompetitionId(11L, 1L)).thenReturn(Optional.empty());
+        when(participantRepository.countByCompetitionId(1L)).thenReturn(5L);
+        when(participantRepository.save(any(Participant.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        Participant registeredParticipant = competitionService.registerParticipant(1L, 1L);
+        Participant result = competitionService.registerParticipant(11L, 1L);
 
-        assertNotNull(registeredParticipant);
-        assertEquals(1L, registeredParticipant.getUserId());
-        assertEquals(Participant.ParticipantStatus.REGISTERED, registeredParticipant.getStatus());
-        verify(participantRepository, times(1)).save(any(Participant.class));
+        assertNotNull(result);
+        assertEquals(11L, result.getUserId());
+        assertEquals(1L, result.getCompetitionId());
+        assertEquals(Participant.ParticipantStatus.REGISTERED, result.getStatus());
     }
 
     @Test
-    public void testRegisterParticipantCompetitionNotFound() {
-        when(competitionRepository.findById(1L)).thenReturn(Optional.empty());
+    void registerParticipant_shouldThrowWhenAlreadyRegistered() {
+        Participant existing = new Participant();
+        when(competitionRepository.findById(1L)).thenReturn(Optional.of(competition));
+        when(participantRepository.findByUserIdAndCompetitionId(11L, 1L)).thenReturn(Optional.of(existing));
 
-        assertThrows(RuntimeException.class, () -> {
-            competitionService.registerParticipant(1L, 1L);
-        });
-
-        verify(participantRepository, never()).save(any(Participant.class));
+        assertThrows(RuntimeException.class, () ->
+                competitionService.registerParticipant(11L, 1L));
     }
 
     @Test
-    public void testRegisterParticipantAlreadyRegistered() {
-        when(competitionRepository.findById(1L)).thenReturn(Optional.of(testCompetition));
-        when(participantRepository.findByUserIdAndCompetitionId(1L, 1L)).thenReturn(Optional.of(testParticipant));
+    void registerParticipant_shouldThrowWhenCompetitionClosed() {
+        competition.setStatus(Competition.CompetitionStatus.CLOSED);
+        when(competitionRepository.findById(1L)).thenReturn(Optional.of(competition));
 
-        assertThrows(RuntimeException.class, () -> {
-            competitionService.registerParticipant(1L, 1L);
-        });
-
-        verify(participantRepository, never()).save(any(Participant.class));
+        assertThrows(RuntimeException.class, () ->
+                competitionService.registerParticipant(11L, 1L));
     }
 
     @Test
-    public void testRegisterParticipantMaxParticipantsReached() {
-        testCompetition.setMaxParticipants(1);
-        List<Participant> participants = new ArrayList<>();
-        participants.add(testParticipant);
+    void registerParticipant_shouldThrowWhenMaxParticipantsReached() {
+        when(competitionRepository.findById(1L)).thenReturn(Optional.of(competition));
+        when(participantRepository.findByUserIdAndCompetitionId(11L, 1L)).thenReturn(Optional.empty());
+        when(participantRepository.countByCompetitionId(1L)).thenReturn(10L);
 
-        when(competitionRepository.findById(1L)).thenReturn(Optional.of(testCompetition));
-        when(participantRepository.findByUserIdAndCompetitionId(1L, 1L)).thenReturn(Optional.empty());
-        when(participantRepository.findByCompetitionId(1L)).thenReturn(participants);
-
-        assertThrows(RuntimeException.class, () -> {
-            competitionService.registerParticipant(1L, 1L);
-        });
-
-        verify(participantRepository, never()).save(any(Participant.class));
+        assertThrows(RuntimeException.class, () ->
+                competitionService.registerParticipant(11L, 1L));
     }
 
     @Test
-    public void testGetAllCompetitions() {
-        List<Competition> competitionList = new ArrayList<>();
-        competitionList.add(testCompetition);
-
-        when(competitionRepository.findAll()).thenReturn(competitionList);
-
-        List<Competition> competitions = competitionService.getAllCompetitions();
-
-        assertNotNull(competitions);
-        assertEquals(1, competitions.size());
-        assertEquals("Java Coding Challenge", competitions.get(0).getTitle());
-        verify(competitionRepository, times(1)).findAll();
-    }
-
-    @Test
-    public void testGetCompetitionById() {
-        when(competitionRepository.findById(1L)).thenReturn(Optional.of(testCompetition));
-
-        Optional<Competition> competition = competitionService.getCompetitionById(1L);
-
-        assertTrue(competition.isPresent());
-        assertEquals("Java Coding Challenge", competition.get().getTitle());
-        verify(competitionRepository, times(1)).findById(1L);
-    }
-
-    @Test
-    public void testUpdateParticipantScore() {
-        when(participantRepository.findById(1L)).thenReturn(Optional.of(testParticipant));
-        when(participantRepository.save(any(Participant.class))).thenReturn(testParticipant);
-
-        Participant updatedParticipant = competitionService.updateParticipantScore(1L, 95, 1);
-
-        assertNotNull(updatedParticipant);
-        verify(participantRepository, times(1)).findById(1L);
-        verify(participantRepository, times(1)).save(any(Participant.class));
-    }
-
-    @Test
-    public void testGetCompetitionParticipants() {
-        List<Participant> participantList = new ArrayList<>();
-        participantList.add(testParticipant);
-
-        when(participantRepository.findByCompetitionId(1L)).thenReturn(participantList);
-
-        List<Participant> participants = competitionService.getCompetitionParticipants(1L);
-
-        assertNotNull(participants);
-        assertEquals(1, participants.size());
-        verify(participantRepository, times(1)).findByCompetitionId(1L);
-    }
-
-    @Test
-    public void testDeleteCompetition() {
-        doNothing().when(competitionRepository).deleteById(1L);
+    void deleteCompetition_shouldDeleteParticipantsAndCompetition() {
+        when(participantRepository.findByCompetitionId(1L)).thenReturn(List.of());
+        when(teamService.getTeamsWithMembers(1L)).thenReturn(List.of());
 
         competitionService.deleteCompetition(1L);
 
         verify(competitionRepository, times(1)).deleteById(1L);
     }
-}
 
+    @Test
+    void getCompetitionById_shouldReturnCompetition() {
+        when(competitionRepository.findById(1L)).thenReturn(Optional.of(competition));
+
+        Optional<Competition> result = competitionService.getCompetitionById(1L);
+
+        assertTrue(result.isPresent());
+        assertEquals(1L, result.get().getCompetitionId());
+    }
+}

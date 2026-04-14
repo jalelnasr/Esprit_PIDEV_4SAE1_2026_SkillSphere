@@ -30,7 +30,7 @@ public class Leaderboard {
     @Column(name = "team_id")
     private Long teamId;
 
-    @Column(name = "rank", nullable = false)
+    @Column(name = "leaderboard_rank", nullable = false)
     private Integer rank;
 
     @Column(name = "score", nullable = false)

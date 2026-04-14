@@ -48,7 +48,7 @@ public class Participant {
     @Column(name = "score")
     private Integer score;
 
-    @Column(name = "rank")
+    @Column(name = "participant_rank")
     private Integer rank;
 
     // Getters and Setters
