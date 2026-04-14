@@ -8,13 +8,18 @@ import com.example.platformevaluationservice.evalution.service.QuizService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
+import com.example.platformevaluationservice.evalution.dto.QuizResponse;
+import java.util.List;
+import com.example.platformevaluationservice.evalution.dto.*;
 
 @RestController
 @RequestMapping("/api/formateur/quizzes")
 @RequiredArgsConstructor
 public class FormateurQuizController {
-
+    @GetMapping("/quizzes")
+    public ResponseEntity<List<QuizResponse>> getAllQuizzes() {
+        return ResponseEntity.ok(quizService.getAllQuizzes());
+    }
     private final QuizService quizService;
 
     // =====================================================
@@ -65,6 +70,18 @@ public class FormateurQuizController {
             @PathVariable Long quizId) {
 
         QuizResponse response = quizService.getQuizById(quizId);
+        return ResponseEntity.ok(response);
+    }
+
+    // =====================================================
+    // GET ALL QUIZZES FOR A FORMATEUR
+    // GET /api/formateur/quizzes/formateur/{formateurId}
+    // =====================================================
+    @GetMapping("/formateur/{formateurId}")
+    public ResponseEntity<List<QuizResponse>> getQuizzesByFormateur(
+            @PathVariable Long formateurId) {
+
+        List<QuizResponse> response = quizService.getQuizzesByFormateurId(formateurId);
         return ResponseEntity.ok(response);
     }
 

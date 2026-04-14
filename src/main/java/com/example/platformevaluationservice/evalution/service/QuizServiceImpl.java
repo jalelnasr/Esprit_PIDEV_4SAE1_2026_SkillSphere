@@ -1,16 +1,24 @@
 package com.example.platformevaluationservice.evalution.service;
 
 import com.example.platformevaluationservice.evalution.dto.*;
+import com.example.platformevaluationservice.evalution.dto.apprenant.ApprenantQuizSubmissionRequest;
+import com.example.platformevaluationservice.evalution.dto.apprenant.ApprenantQuizSubmissionResult;
 import com.example.platformevaluationservice.evalution.model.*;
+import com.example.platformevaluationservice.evalution.repository.AttemptRepository;
 import com.example.platformevaluationservice.evalution.repository.ChoiceRepository;
 import com.example.platformevaluationservice.evalution.repository.EvaluationRepository;
 import com.example.platformevaluationservice.evalution.repository.QuestionRepository;
 import com.example.platformevaluationservice.evalution.repository.QuizRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -20,15 +28,17 @@ public class QuizServiceImpl implements QuizService {
     private final QuestionRepository questionRepo;
     private final ChoiceRepository choiceRepo;
     private final EvaluationRepository evaluationRepo;
+    private final AttemptRepository attemptRepo;
 
-    // ===============================
-    // CREATE QUIZ
-    // ===============================
     @Override
     public QuizResponse createQuiz(Long evaluationId, CreateQuizRequest request) {
 
         Evaluation evaluation = evaluationRepo.findById(evaluationId)
                 .orElseThrow(() -> new RuntimeException("Evaluation not found"));
+
+        if (evaluation.getQuiz() != null) {
+            throw new RuntimeException("A quiz already exists for this evaluation");
+        }
 
         Quiz quiz = new Quiz();
         quiz.setPassingScore(request.getPassingScore());
@@ -37,7 +47,6 @@ public class QuizServiceImpl implements QuizService {
         List<Question> questions = new ArrayList<>();
 
         if (request.getQuestions() != null) {
-
             for (QuestionRequest q : request.getQuestions()) {
 
                 Question question = new Question();
@@ -48,14 +57,11 @@ public class QuizServiceImpl implements QuizService {
                 List<Choice> choices = new ArrayList<>();
 
                 if (q.getChoices() != null) {
-
                     for (ChoiceRequest c : q.getChoices()) {
-
                         Choice choice = new Choice();
                         choice.setLabel(c.getLabel());
                         choice.setIsCorrect(c.getIsCorrect());
                         choice.setQuestion(question);
-
                         choices.add(choice);
                     }
                 }
@@ -72,9 +78,6 @@ public class QuizServiceImpl implements QuizService {
         return mapToQuizResponse(quiz);
     }
 
-    // ===============================
-    // ADD QUESTION
-    // ===============================
     @Override
     public QuestionResponse addQuestion(Long quizId, CreateQuestionRequest request) {
 
@@ -91,9 +94,6 @@ public class QuizServiceImpl implements QuizService {
         return mapToQuestionResponse(question);
     }
 
-    // ===============================
-    // ADD CHOICE
-    // ===============================
     @Override
     public ChoiceResponse addChoice(Long questionId, CreateChoiceRequest request) {
 
@@ -110,9 +110,6 @@ public class QuizServiceImpl implements QuizService {
         return mapToChoiceResponse(choice);
     }
 
-    // ===============================
-    // GET QUIZ WITH QUESTIONS + CHOICES
-    // ===============================
     @Override
     public QuizResponse getQuizById(Long quizId) {
 
@@ -122,16 +119,132 @@ public class QuizServiceImpl implements QuizService {
         return mapToQuizResponse(quiz);
     }
 
-    // ===============================
-    // MAPPING METHODS
-    // ===============================
+    @Override
+    public List<QuizResponse> getAllQuizzes() {
+        return quizRepo.findAll().stream()
+                .map(this::mapToQuizResponse)
+                .toList();
+    }
+
+    @Override
+    public List<QuizResponse> getAvailableQuizzesForApprenant() {
+        return evaluationRepo.findByStatus(EvaluationStatus.PUBLISHED).stream()
+                .filter(evaluation -> evaluation.getQuiz() != null)
+                .map(Evaluation::getQuiz)
+                .map(this::mapToQuizResponse)
+                .toList();
+    }
+
+    @Override
+    public ApprenantQuizSubmissionResult submitQuizForApprenant(Long quizId, Long apprenantId, ApprenantQuizSubmissionRequest request) {
+        if (apprenantId == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthenticated apprenant");
+        }
+
+        Quiz quiz = quizRepo.findById(quizId)
+            .orElseGet(() -> evaluationRepo.findById(quizId)
+                .map(Evaluation::getQuiz)
+                .orElse(null));
+
+        if (quiz == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Quiz not found");
+        }
+
+        if (quiz.getEvaluation() == null || quiz.getEvaluation().getStatus() != EvaluationStatus.PUBLISHED) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Quiz not available");
+        }
+
+        Map<Long, Long> selectedByQuestion = new HashMap<>();
+        if (request != null && request.getAnswers() != null) {
+            for (ApprenantQuizSubmissionRequest.AnswerItem answer : request.getAnswers()) {
+                if (answer.getQuestionId() != null && answer.getChoiceId() != null) {
+                    selectedByQuestion.put(answer.getQuestionId(), answer.getChoiceId());
+                }
+            }
+        }
+
+        double totalPoints = 0;
+        double earnedPoints = 0;
+
+        if (quiz.getQuestions() != null) {
+            for (Question question : quiz.getQuestions()) {
+                int points = question.getPoints() != null ? question.getPoints() : 0;
+                totalPoints += points;
+
+                Long selectedChoiceId = selectedByQuestion.get(question.getId());
+                if (selectedChoiceId == null || question.getChoices() == null) {
+                    continue;
+                }
+
+                boolean isCorrect = question.getChoices().stream()
+                        .anyMatch(choice -> selectedChoiceId.equals(choice.getId()) && Boolean.TRUE.equals(choice.getIsCorrect()));
+
+                if (isCorrect) {
+                    earnedPoints += points;
+                }
+            }
+        }
+
+        int currentAttemptScore = totalPoints <= 0 ? 0 : (int) Math.round((earnedPoints / totalPoints) * 100.0);
+        int passingScore = quiz.getPassingScore() != null ? quiz.getPassingScore() : 0;
+
+        Attempt bestAttempt = attemptRepo
+                .findTopByApprenantIdAndEvaluation_IdOrderByScoreDesc(apprenantId, quiz.getEvaluation().getId())
+                .orElse(null);
+
+        int previousBest = bestAttempt != null && bestAttempt.getScore() != null
+                ? (int) Math.round(bestAttempt.getScore())
+                : -1;
+
+        boolean improved = previousBest < 0 || currentAttemptScore > previousBest;
+        int effectiveBestScore = Math.max(previousBest, currentAttemptScore);
+        boolean alreadyPassed = previousBest >= passingScore;
+
+        if (bestAttempt == null) {
+            Attempt attempt = new Attempt();
+            attempt.setApprenantId(apprenantId);
+            attempt.setEvaluation(quiz.getEvaluation());
+            attempt.setScore((double) currentAttemptScore);
+            attempt.setPassed(currentAttemptScore >= passingScore);
+            attempt.setStartedAt(Instant.now());
+            attempt.setSubmittedAt(Instant.now());
+            attemptRepo.save(attempt);
+        } else if (improved) {
+            bestAttempt.setScore((double) currentAttemptScore);
+            bestAttempt.setPassed(currentAttemptScore >= passingScore);
+            bestAttempt.setSubmittedAt(Instant.now());
+            attemptRepo.save(bestAttempt);
+        }
+
+        ApprenantQuizSubmissionResult result = new ApprenantQuizSubmissionResult();
+        result.setQuizId(quizId);
+        result.setScore(effectiveBestScore);
+        result.setCurrentAttemptScore(currentAttemptScore);
+        result.setPassingScore(passingScore);
+        result.setPassed(effectiveBestScore >= passingScore);
+        result.setImproved(improved);
+        result.setAlreadyPassed(alreadyPassed || effectiveBestScore >= passingScore);
+        return result;
+    }
+
+    @Override
+    public List<QuizResponse> getQuizzesByFormateurId(Long formateurId) {
+        return evaluationRepo.findByFormateurId(formateurId).stream()
+                .filter(evaluation -> evaluation.getQuiz() != null)
+                .map(Evaluation::getQuiz)
+                .map(this::mapToQuizResponse)
+                .toList();
+    }
 
     private QuizResponse mapToQuizResponse(Quiz quiz) {
 
         QuizResponse response = new QuizResponse();
         response.setId(quiz.getId());
         response.setPassingScore(quiz.getPassingScore());
-        response.setEvaluationId(quiz.getEvaluation().getId());
+
+        if (quiz.getEvaluation() != null) {
+            response.setEvaluationId(quiz.getEvaluation().getId());
+        }
 
         if (quiz.getQuestions() != null) {
             response.setQuestions(

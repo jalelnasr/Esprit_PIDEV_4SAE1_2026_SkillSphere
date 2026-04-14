@@ -1,6 +1,5 @@
 package com.example.platformevaluationservice.evalution.service;
 
-
 import com.example.platformevaluationservice.evalution.dto.CreateEvaluation;
 import com.example.platformevaluationservice.evalution.dto.UpdateEvaluation;
 import com.example.platformevaluationservice.evalution.model.Evaluation;
@@ -12,6 +11,10 @@ public interface EvaluationService {
     Evaluation create(CreateEvaluation request);
 
     List<Evaluation> getByFormateur(Long formateurId);
+
+    List<Evaluation> searchByFormateurAndTitle(Long formateurId, String title);
+
+    List<Evaluation> getPublishedForApprenant();
 
     Evaluation getById(Long id);
 

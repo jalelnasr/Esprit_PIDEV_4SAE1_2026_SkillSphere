@@ -16,38 +16,38 @@ public class FormateurEvaluationController {
 
     private final EvaluationService service;
 
-    // Create
     @PostMapping
     public Evaluation create(@RequestBody CreateEvaluation request) {
         return service.create(request);
     }
 
-    // Get all by formateur
     @GetMapping("/formateur/{formateurId}")
     public List<Evaluation> getByFormateur(@PathVariable Long formateurId) {
         return service.getByFormateur(formateurId);
     }
 
-    // Get by id
+    @GetMapping("/formateur/{formateurId}/search")
+    public List<Evaluation> searchByFormateurAndTitle(@PathVariable Long formateurId,
+                                                      @RequestParam String title) {
+        return service.searchByFormateurAndTitle(formateurId, title);
+    }
+
     @GetMapping("/{id}")
     public Evaluation getById(@PathVariable Long id) {
         return service.getById(id);
     }
 
-    // Update
     @PutMapping("/{id}")
     public Evaluation update(@PathVariable Long id,
                              @RequestBody UpdateEvaluation request) {
         return service.update(id, request);
     }
 
-    // Delete
     @DeleteMapping("/{id}")
     public void delete(@PathVariable Long id) {
         service.delete(id);
     }
 
-    // Publish
     @PutMapping("/{id}/publish")
     public Evaluation publish(@PathVariable Long id) {
         return service.publish(id);

@@ -1,22 +1,25 @@
 package com.example.platformevaluationservice.evalution.service;
 
-import com.example.platformevaluationservice.evalution.dto.CreateCertificate;
-import com.example.platformevaluationservice.evalution.dto.UpdateCertificate;
-import com.example.platformevaluationservice.evalution.model.Certificate;
+import com.example.platformevaluationservice.evalution.dto.certificate.CertificateRequestDetailDto;
+import com.example.platformevaluationservice.evalution.dto.certificate.CertificateResponseDto;
+import com.example.platformevaluationservice.evalution.dto.certificate.RequestCertificateDto;
+import com.example.platformevaluationservice.evalution.model.CertificateStatus;
 
 import java.util.List;
 
 public interface CertificateService {
 
-    Certificate create(CreateCertificate request);
+    CertificateResponseDto requestCertificate(Long apprenantId, RequestCertificateDto request);
 
-    List<Certificate> getAll();
+    List<CertificateResponseDto> getCertificatesForApprenant(Long apprenantId);
 
-    Certificate getById(Long id);
+    byte[] downloadCertificateForApprenant(Long apprenantId, Long certificateId);
 
-    Certificate update(Long id, UpdateCertificate request);
+    List<CertificateRequestDetailDto> getRequestsForFormateur(Long formateurId, CertificateStatus status);
 
-    void delete(Long id);
+    CertificateResponseDto approveRequest(Long formateurId, Long certificateId, String note);
 
-    List<Certificate> getByApprenant(Long apprenantId);
+    CertificateResponseDto rejectRequest(Long formateurId, Long certificateId, String note);
+
+    byte[] downloadCertificateForFormateur(Long formateurId, Long certificateId);
 }

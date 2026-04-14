@@ -1,10 +1,15 @@
 package com.example.platformevaluationservice.evalution.controller;
 
-import com.example.platformevaluationservice.evalution.dto.CreateCertificate;
-import com.example.platformevaluationservice.evalution.dto.UpdateCertificate;
-import com.example.platformevaluationservice.evalution.model.Certificate;
+import com.example.platformevaluationservice.evalution.dto.certificate.CertificateDecisionDto;
+import com.example.platformevaluationservice.evalution.dto.certificate.CertificateRequestDetailDto;
+import com.example.platformevaluationservice.evalution.dto.certificate.CertificateResponseDto;
+import com.example.platformevaluationservice.evalution.model.CertificateStatus;
+import com.example.platformevaluationservice.evalution.security.SecurityUtils;
 import com.example.platformevaluationservice.evalution.service.CertificateService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -15,41 +20,37 @@ import java.util.List;
 public class CertificateController {
 
     private final CertificateService service;
+    private final SecurityUtils securityUtils;
 
-    // Create
-    @PostMapping
-    public Certificate create(@RequestBody CreateCertificate request) {
-        return service.create(request);
+    @GetMapping("/requests")
+    public List<CertificateRequestDetailDto> getRequests(@RequestParam(required = false) CertificateStatus status) {
+        Long formateurId = securityUtils.currentUserId();
+        return service.getRequestsForFormateur(formateurId, status);
     }
 
-    // Get all
-    @GetMapping
-    public List<Certificate> getAll() {
-        return service.getAll();
+    @PostMapping("/{id}/approve")
+    public CertificateResponseDto approve(@PathVariable Long id, @RequestBody(required = false) CertificateDecisionDto request) {
+        Long formateurId = securityUtils.currentUserId();
+        String note = request != null ? request.getNote() : null;
+        return service.approveRequest(formateurId, id, note);
     }
 
-    // Get by id
-    @GetMapping("/{id}")
-    public Certificate getById(@PathVariable Long id) {
-        return service.getById(id);
+    @PostMapping("/{id}/reject")
+    public CertificateResponseDto reject(@PathVariable Long id, @RequestBody(required = false) CertificateDecisionDto request) {
+        Long formateurId = securityUtils.currentUserId();
+        String note = request != null ? request.getNote() : null;
+        return service.rejectRequest(formateurId, id, note);
     }
 
-    // Get by apprenant
-    @GetMapping("/apprenant/{apprenantId}")
-    public List<Certificate> getByApprenant(@PathVariable Long apprenantId) {
-        return service.getByApprenant(apprenantId);
-    }
+    @GetMapping("/{id}/download")
+    public ResponseEntity<byte[]> download(@PathVariable Long id) {
+        Long formateurId = securityUtils.currentUserId();
+        byte[] pdf = service.downloadCertificateForFormateur(formateurId, id);
+        String filename = "certificate-" + id + ".pdf";
 
-    // Update
-    @PutMapping("/{id}")
-    public Certificate update(@PathVariable Long id,
-                              @RequestBody UpdateCertificate request) {
-        return service.update(id, request);
-    }
-
-    // Delete
-    @DeleteMapping("/{id}")
-    public void delete(@PathVariable Long id) {
-        service.delete(id);
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .body(pdf);
     }
 }
