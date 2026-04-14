@@ -4,12 +4,11 @@ import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angula
 import { Router } from '@angular/router';
 import { CompetitionApiService } from '../../services/competition-api.service';
 import { CreateCompetitionRequest } from '../../models/competition.model';
-import { LocationPickerComponent, SelectedLocation } from '../../../../shared/components/location-picker/location-picker.component';
 
 @Component({
   selector: 'app-competition-create',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, LocationPickerComponent],
+  imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './competition-create.component.html',
   styleUrls: ['./competition-create.component.css']
 })
@@ -59,13 +58,7 @@ export class CompetitionCreateComponent {
 
       // TEAM fields
       numberOfTeams: [{ value: null, disabled: true }, []],
-      participantsPerTeam: [{ value: null, disabled: true }, []],
-
-      // LOCATION fields (PHYSICAL only)
-      locationName: [''],
-      locationAddress: [''],
-      latitude: [null],
-      longitude: [null]
+      participantsPerTeam: [{ value: null, disabled: true }, []]
     });
 
     this.setupParticipationTypeBehavior();
@@ -213,15 +206,9 @@ export class CompetitionCreateComponent {
     if (formValue.participationType === 'TEAM') {
       request.numberOfTeams = formValue.numberOfTeams;
       request.participantsPerTeam = formValue.participantsPerTeam;
-      request.maxParticipants = (Number(formValue.numberOfTeams) || 0) * (Number(formValue.participantsPerTeam) || 0);
-    }
 
-    // LOCATION fields (PHYSICAL only)
-    if (formValue.type === 'PHYSICAL') {
-      request.locationName = formValue.locationName;
-      request.locationAddress = formValue.locationAddress;
-      request.latitude = formValue.latitude ? Number(formValue.latitude) : null;
-      request.longitude = formValue.longitude ? Number(formValue.longitude) : null;
+      // ✅ enforce total calculation again
+      request.maxParticipants = (Number(formValue.numberOfTeams) || 0) * (Number(formValue.participantsPerTeam) || 0);
     }
 
     this.competitionService.createCompetition(request).subscribe({
@@ -273,20 +260,5 @@ export class CompetitionCreateComponent {
 
   cancel() {
     this.router.navigate(['/competitions']);
-  }
-
-  onLocationSelected(loc: SelectedLocation) {
-    if (loc.latitude && loc.longitude) {
-      this.competitionForm.patchValue({
-        locationName: loc.locationName,
-        locationAddress: loc.locationAddress,
-        latitude: loc.latitude,
-        longitude: loc.longitude
-      });
-    } else {
-      this.competitionForm.patchValue({
-        locationName: '', locationAddress: '', latitude: null, longitude: null
-      });
-    }
   }
 }

@@ -3,12 +3,6 @@
     <h1>🏆 {{ 'competitions.title' | translate }}</h1>
     <div class="header-actions">
       <app-language-selector></app-language-selector>
-      <button class="btn btn-map" (click)="toggleMap()">
-        🗺️ {{ showMap ? 'Masquer la carte' : 'Voir sur la carte' }}
-      </button>
-      <button *ngIf="isFormateur" class="btn btn-info" routerLink="/competitions/dashboard">
-        📊 Dashboard
-      </button>
       <button *ngIf="isFormateur" class="btn btn-success" routerLink="/competitions/sms">
         📱 SMS
       </button>
@@ -16,15 +10,6 @@
         ➕ {{ 'competitions.create' | translate }}
       </button>
     </div>
-  </div>
-
-  <!-- CARTE GLOBALE -->
-  <div *ngIf="showMap" class="map-section">
-    <h3>🗺️ Carte des événements présentiel</h3>
-    <app-competition-map
-      [locations]="allLocations"
-      mapId="competitions-global-map">
-    </app-competition-map>
   </div>
 
   <div *ngIf="loading" class="loading">
@@ -50,9 +35,6 @@
           </span>
           <span class="badge" [ngClass]="getTypeBadgeClass(competition.type)">
             {{ competition.type }}
-          </span>
-          <span class="badge badge-live" *ngIf="liveCompetitionIds.has(competition.competitionId)">
-            🔴 LIVE
           </span>
         </div>
       </div>

@@ -132,18 +132,33 @@ export class TeamCardsManagerComponent implements OnInit {
   }
 
   declareFinalWinner() {
+    if (this.matches.length === 0) {
+      alert('❌ Aucun match disponible. Effectuez d\'abord le tirage au sort.');
+      return;
+    }
+
     // Trouver les gagnants des matchs
     const winners = this.matches
       .filter(m => m.winnerTeamId)
       .map(m => m.winnerTeamId === m.team1.teamId ? m.team1 : m.team2);
 
     if (winners.length === 0) {
-      alert('❌ Aucun gagnant de match déclaré');
+      alert('❌ Aucun gagnant de match déclaré. Déclarez d\'abord les gagnants des matchs.');
+      return;
+    }
+
+    if (winners.length < this.matches.length) {
+      alert('❌ Tous les matchs doivent avoir un gagnant avant de déclarer le gagnant final.');
       return;
     }
 
     // Pour l'instant, on prend le premier gagnant (tu peux améliorer ça)
     const finalWinner = winners[0];
+
+    if (!finalWinner || !finalWinner.teamId) {
+      alert('❌ Gagnant invalide');
+      return;
+    }
 
     if (!confirm(`Déclarer ${finalWinner.teamName} comme GAGNANT FINAL de la compétition?`)) {
       return;

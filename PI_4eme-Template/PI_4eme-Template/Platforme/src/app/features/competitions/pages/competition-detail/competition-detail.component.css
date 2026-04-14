@@ -116,46 +116,6 @@
   margin-bottom: 1rem;
 }
 
-.location-info {
-  margin-bottom: 1rem;
-  padding: 0.75rem 1rem;
-  background: var(--bg-secondary);
-  border-radius: 8px;
-  border-left: 4px solid #10b981;
-}
-
-.location-info p {
-  margin: 0.25rem 0;
-  color: var(--text-primary);
-}
-
-.location-address {
-  font-size: 0.9rem;
-  color: var(--text-secondary) !important;
-}
-
-.access-locked, .chat-locked {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 2rem;
-  background: var(--bg-secondary);
-  border-radius: 10px;
-  border: 1px dashed var(--border-color);
-  text-align: center;
-  color: var(--text-secondary);
-}
-
-.access-locked span, .chat-locked span {
-  font-size: 2rem;
-}
-
-.access-locked p, .chat-locked p {
-  margin: 0;
-  font-size: 0.95rem;
-}
-
 .info-section p {
   color: var(--text-secondary);
   line-height: 1.6;
@@ -468,7 +428,7 @@
 
 .btn-primary {
   background-color: var(--primary-color);
-  color: white !important;
+  color: white;
 }
 
 .btn-primary:hover {
@@ -477,12 +437,12 @@
 
 .btn-secondary {
   background-color: var(--secondary-color);
-  color: white !important;
+  color: white;
 }
 
 .btn-success {
   background-color: #28a745;
-  color: white !important;
+  color: white;
 }
 
 .btn-success:hover {
@@ -491,7 +451,7 @@
 
 .btn-danger {
   background-color: #dc3545;
-  color: white !important;
+  color: white;
 }
 
 .btn-danger:hover {
@@ -500,7 +460,7 @@
 
 .btn-info {
   background-color: #17a2b8;
-  color: white !important;
+  color: white;
 }
 
 .btn-info:hover {

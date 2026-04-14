@@ -74,11 +74,6 @@ export class CompetitionApiService {
     return this.http.get<Competition[]>(`${this.baseUrl}/competitions/my-created`);
   }
 
-  // ✅ GET /competitions/locations - Toutes les localisations des événements physiques
-  getCompetitionLocations(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.baseUrl}/competitions/locations`);
-  }
-
   // ✅ GET /competitions/{id}/my-registration - Vérifier mon inscription
   getMyRegistration(competitionId: number): Observable<Participant> {
     return this.http.get<Participant>(`${this.baseUrl}/competitions/${competitionId}/my-registration`);

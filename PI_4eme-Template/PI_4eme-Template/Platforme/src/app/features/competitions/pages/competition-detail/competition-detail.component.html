@@ -59,44 +59,6 @@
           </div>
         </section>
 
-        <!-- CARTE LOCALISATION (PHYSICAL uniquement) -->
-        <section class="info-section" *ngIf="competition.type === 'PHYSICAL' && competition.latitude && competition.longitude">
-          <h2>📍 Localisation de l'événement</h2>
-          <div class="location-info">
-            <p><strong>📍 {{ competition.locationName }}</strong></p>
-            <p *ngIf="competition.locationAddress" class="location-address">{{ competition.locationAddress }}</p>
-          </div>
-          <app-competition-map
-            [singleLocation]="{
-              competitionId: competition.competitionId,
-              title: competition.title,
-              locationName: competition.locationName || '',
-              locationAddress: competition.locationAddress || '',
-              latitude: competition.latitude,
-              longitude: competition.longitude,
-              status: competition.status,
-              type: competition.type,
-              startDate: competition.startDate
-            }"
-            mapId="competition-detail-map">
-          </app-competition-map>
-        </section>
-
-        <!-- LIVE STREAM - Apprenant -->
-        <section class="info-section" *ngIf="!isFormateur()">
-          <h2>🔴 Live Stream</h2>
-          <div class="access-locked" *ngIf="!hasAccess">
-            <span>🔒</span>
-            <p>Inscrivez-vous à cet événement pour accéder au live stream et au chat.</p>
-          </div>
-          <app-stream-player *ngIf="hasAccess" [competitionId]="competition.competitionId" [isParticipant]="true"></app-stream-player>
-        </section>
-
-        <!-- LIVE STREAM - Formateur (gestion) -->
-        <section class="info-section" *ngIf="isFormateur()">
-          <app-stream-manager [competitionId]="competition.competitionId"></app-stream-manager>
-        </section>
-
         <!-- ✅ TEAMS (only non-full teams are in availableTeams) -->
         <section class="info-section" *ngIf="canParticipateAsTeam()">
           <h2>👥 Groupes disponibles (non complets) : {{ availableTeams.length }}</h2>
@@ -240,15 +202,9 @@
           </button>
         </div>
 
-        <!-- 💬 CHAT EN TEMPS RÉEL - seulement pour participants et formateur -->
-        <div class="chat-section" *ngIf="hasAccess">
+        <!-- 💬 CHAT EN TEMPS RÉEL -->
+        <div class="chat-section">
           <app-competition-chat [competitionId]="competition.competitionId"></app-competition-chat>
-        </div>
-
-        <!-- Message si non participant -->
-        <div class="chat-locked" *ngIf="!hasAccess && !isFormateur()">
-          <span>💬</span>
-          <p>Inscrivez-vous pour accéder au chat de l'événement</p>
         </div>
 
         <!-- 📱 SMS TEST PANEL -->

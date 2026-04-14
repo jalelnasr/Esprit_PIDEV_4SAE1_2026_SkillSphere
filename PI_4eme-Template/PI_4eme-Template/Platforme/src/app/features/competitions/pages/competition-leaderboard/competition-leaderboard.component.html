@@ -32,6 +32,9 @@
         <div class="rank-number">2</div>
         <div class="participant-name">{{ leaderboard[1].participantName || 'Participant ' + leaderboard[1].userId }}</div>
         <div class="score">{{ leaderboard[1].score }} pts</div>
+        <div class="podium-members" *ngIf="leaderboard[1].teamMembers && leaderboard[1].teamMembers.length > 0">
+          <small *ngFor="let member of leaderboard[1].teamMembers">{{ member }}</small>
+        </div>
       </div>
 
       <div class="podium-item first" *ngIf="leaderboard[0]">
@@ -39,6 +42,9 @@
         <div class="rank-number">1</div>
         <div class="participant-name">{{ leaderboard[0].participantName || 'Participant ' + leaderboard[0].userId }}</div>
         <div class="score">{{ leaderboard[0].score }} pts</div>
+        <div class="podium-members" *ngIf="leaderboard[0].teamMembers && leaderboard[0].teamMembers.length > 0">
+          <small *ngFor="let member of leaderboard[0].teamMembers">{{ member }}</small>
+        </div>
       </div>
 
       <div class="podium-item third" *ngIf="leaderboard[2]">
@@ -46,6 +52,9 @@
         <div class="rank-number">3</div>
         <div class="participant-name">{{ leaderboard[2].participantName || 'Participant ' + leaderboard[2].userId }}</div>
         <div class="score">{{ leaderboard[2].score }} pts</div>
+        <div class="podium-members" *ngIf="leaderboard[2].teamMembers && leaderboard[2].teamMembers.length > 0">
+          <small *ngFor="let member of leaderboard[2].teamMembers">{{ member }}</small>
+        </div>
       </div>
     </div>
 

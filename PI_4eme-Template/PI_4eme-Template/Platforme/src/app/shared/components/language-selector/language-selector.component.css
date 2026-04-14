@@ -12,7 +12,6 @@
   border: 1px solid #ddd;
   border-radius: 6px;
   background: white;
-  color: #333;
   cursor: pointer;
   transition: all 0.2s;
   font-size: 14px;
@@ -35,22 +34,4 @@
 
 .name {
   font-weight: 500;
-}
-
-/* Dark mode support */
-[data-theme="dark"] .lang-btn {
-  background: #374151;
-  border-color: #4b5563;
-  color: #f9fafb;
-}
-
-[data-theme="dark"] .lang-btn:hover {
-  background: #4b5563;
-  border-color: #4CAF50;
-}
-
-[data-theme="dark"] .lang-btn.active {
-  background: #4CAF50;
-  color: white;
-  border-color: #4CAF50;
 }

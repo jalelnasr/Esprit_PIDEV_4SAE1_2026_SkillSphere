@@ -9,14 +9,11 @@ import { TeamCardsManagerComponent } from '../../components/team-cards-manager/t
 import { CompetitionChatComponent } from '../../components/competition-chat/competition-chat.component';
 import { LanguageSelectorComponent } from '../../../../shared/components/language-selector/language-selector.component';
 import { TranslateModule } from '@ngx-translate/core';
-import { CompetitionMapComponent } from '../../../../shared/components/competition-map/competition-map.component';
-import { StreamPlayerComponent } from '../../../../shared/components/stream-player/stream-player.component';
-import { StreamManagerComponent } from '../../../../shared/components/stream-manager/stream-manager.component';
 
 @Component({
   selector: 'app-competition-detail',
   standalone: true,
-  imports: [CommonModule, RouterModule, ReactiveFormsModule, FormsModule, TeamCardsManagerComponent, CompetitionChatComponent, LanguageSelectorComponent, TranslateModule, CompetitionMapComponent, StreamPlayerComponent, StreamManagerComponent],
+  imports: [CommonModule, RouterModule, ReactiveFormsModule, FormsModule, TeamCardsManagerComponent, CompetitionChatComponent, LanguageSelectorComponent, TranslateModule],
   templateUrl: './competition-detail.component.html',
   styleUrls: ['./competition-detail.component.css']
 })
@@ -27,7 +24,6 @@ export class CompetitionDetailComponent implements OnInit {
 
   isRegistered = false;
   myParticipation: Participant | null = null;
-  hasAccess = false; // true si formateur OU participant inscrit
 
   myTeamMember: TeamMemberDTO | null = null;
 
@@ -91,37 +87,15 @@ export class CompetitionDetailComponent implements OnInit {
   }
 
   checkRegistration(competitionId: number) {
-    // Formateur a toujours accès
-    if (this.isFormateur()) {
-      this.hasAccess = true;
-      return;
-    }
-
     this.competitionService.getMyRegistration(competitionId).subscribe({
       next: (participant) => {
         this.myParticipation = participant;
         this.isRegistered = true;
-        this.hasAccess = true; // Accès immédiat au chat et stream
       },
-      error: () => {
+      error: (err) => {
+        // 404 = pas inscrit
         this.myParticipation = null;
         this.isRegistered = false;
-        this.hasAccess = false;
-        // Vérifier aussi si membre d'une équipe
-        this.checkTeamAccess(competitionId);
-      }
-    });
-  }
-
-  checkTeamAccess(competitionId: number) {
-    this.competitionService.getMyTeam(competitionId).subscribe({
-      next: (dto) => {
-        this.myTeamMember = dto;
-        this.hasAccess = !!dto; // Accès si membre d'une équipe
-      },
-      error: () => {
-        this.myTeamMember = null;
-        this.hasAccess = false;
       }
     });
   }
@@ -150,8 +124,6 @@ export class CompetitionDetailComponent implements OnInit {
       next: (participant) => {
         this.myParticipation = participant;
         this.isRegistered = true;
-        // Afficher chat et stream immédiatement
-        this.hasAccess = true;
         alert('✅ Inscription réussie !');
       },
       error: (err) => {
@@ -170,7 +142,6 @@ export class CompetitionDetailComponent implements OnInit {
       next: () => {
         this.myParticipation = null;
         this.isRegistered = false;
-        this.hasAccess = false;
         alert('✅ Inscription annulée');
       },
       error: (err) => {
@@ -194,9 +165,6 @@ export class CompetitionDetailComponent implements OnInit {
     this.competitionService.joinTeam(teamId).subscribe({
       next: (dto) => {
         this.myTeamMember = dto;
-        this.isRegistered = true;
-        // Afficher chat et stream immédiatement
-        this.hasAccess = true;
         this.closeJoinTeamModal();
         this.loadTeams(this.competition!.competitionId);
         alert("✅ Vous avez rejoint le groupe !");
@@ -215,7 +183,6 @@ export class CompetitionDetailComponent implements OnInit {
     this.competitionService.leaveTeam(this.myTeamMember.teamId).subscribe({
       next: () => {
         this.myTeamMember = null;
-        this.hasAccess = false;
         if (this.competition) this.loadTeams(this.competition.competitionId);
         alert("✅ Vous avez quitté le groupe");
       },
