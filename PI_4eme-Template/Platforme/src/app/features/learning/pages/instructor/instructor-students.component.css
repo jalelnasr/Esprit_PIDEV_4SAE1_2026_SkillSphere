@@ -1,5 +1,5 @@
 .instructor-students {
-  padding: 2rem;
+  padding: 1.5rem;
   max-width: 1400px;
   margin: 0 auto;
 }
@@ -12,9 +12,9 @@
 }
 
 .header-left h1 {
-  font-size: 2rem;
-  margin: 0 0 0.5rem 0;
-  color: #1a1a1a;
+  font-size: 1.75rem;
+  margin: 0 0 0.25rem 0;
+  color: var(--text-primary);
 }
 
 .header-left p {
@@ -24,7 +24,7 @@
 
 .btn-export {
   padding: 0.75rem 1.5rem;
-  background: #4CAF50;
+  background: linear-gradient(135deg, #0F9B8E, #0d8a7e);
   color: white;
   border: none;
   border-radius: 8px;
@@ -37,9 +37,9 @@
 }
 
 .btn-export:hover {
-  background: #45a049;
+  background: linear-gradient(135deg, #0d8a7e, #0b7a70);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+  box-shadow: 0 4px 12px rgba(15, 155, 142, 0.3);
 }
 
 /* Statistics Grid */
@@ -139,7 +139,7 @@
 .loading i {
   font-size: 3rem;
   margin-bottom: 1rem;
-  color: #2196F3;
+  color: #0F9B8E;
 }
 
 /* Students List */
@@ -195,7 +195,7 @@
 
 .progress-badge.in-progress {
   background: #E3F2FD;
-  color: #2196F3;
+  color: #0F9B8E;
 }
 
 .progress-badge.completed {
@@ -222,7 +222,7 @@
 }
 
 .detail-item i {
-  color: #2196F3;
+  color: #0F9B8E;
 }
 
 /* Progress Section */
@@ -265,7 +265,7 @@
 }
 
 .progress-fill.completed {
-  background: #4CAF50;
+  background: linear-gradient(135deg, #0F9B8E, #0d8a7e);
 }
 
 /* Empty State */
@@ -326,3 +326,24 @@
     gap: 0.75rem;
   }
 }
+
+/* ── Professional Design Upgrade ─────────────── */
+
+.instructor-students { padding: 1.5rem; max-width: 1400px; margin: 0 auto; }
+
+.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); }
+.header-left h1 { font-size: 1.75rem; font-weight: 700; color: var(--text-primary); margin: 0 0 0.25rem 0; letter-spacing: -0.02em; }
+.header-left p { color: var(--text-secondary); font-size: 0.9rem; margin: 0; }
+
+.btn-export { padding: 0.65rem 1.5rem; background: linear-gradient(135deg, #0F9B8E, #0d8a7e); color: white; border: none; border-radius: 10px; cursor: pointer; font-size: 0.875rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem; transition: all 0.2s; box-shadow: 0 4px 12px rgba(15,155,142,0.3); }
+.btn-export:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(15,155,142,0.4); }
+
+.stat-card { background: var(--bg-primary); padding: 1.5rem; border-radius: 14px; border: 1.5px solid var(--border-color); display: flex; align-items: center; gap: 1rem; transition: all 0.25s ease; }
+.stat-card:hover { transform: translateY(-4px); box-shadow: 0 12px 32px rgba(0,0,0,0.1); border-color: rgba(15,155,142,0.3); }
+.stat-info h3 { font-size: 2rem; font-weight: 800; color: var(--text-primary); margin: 0 0 0.15rem 0; letter-spacing: -0.03em; }
+.stat-info p { color: var(--text-secondary); margin: 0; font-size: 0.85rem; font-weight: 500; }
+
+.filter-group select, .filter-group input { padding: 0.6rem 1rem; border: 1.5px solid var(--border-color); border-radius: 8px; font-size: 0.9rem; background: var(--bg-primary); color: var(--text-primary); transition: border-color 0.2s; }
+.filter-group select:focus, .filter-group input:focus { outline: none; border-color: #0F9B8E; }
+.filter-group label { font-size: 0.78rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; }
+

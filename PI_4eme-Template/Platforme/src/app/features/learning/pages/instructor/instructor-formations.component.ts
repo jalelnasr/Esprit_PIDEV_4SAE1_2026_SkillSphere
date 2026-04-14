@@ -142,12 +142,14 @@ import { FormationModalComponent } from './formation-modal.component';
 
     .btn-create {
       padding: 0.75rem 1.5rem;
-      background: #4CAF50;
+      background: linear-gradient(135deg, #0F9B8E, #0d8a7e);
       color: white;
       border: none;
-      border-radius: 8px;
+      border-radius: 10px;
       cursor: pointer;
       font-size: 1rem;
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(15, 155, 142, 0.3);
       display: flex;
       align-items: center;
       gap: 0.5rem;
@@ -155,9 +157,9 @@ import { FormationModalComponent } from './formation-modal.component';
     }
 
     .btn-create:hover {
-      background: #45a049;
+      background: #0d8a7e;
       transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+      box-shadow: 0 4px 12px rgba(15, 155, 142, 0.3);
     }
 
     .formations-grid {
@@ -231,7 +233,7 @@ import { FormationModalComponent } from './formation-modal.component';
 
     .status-published {
       background: #E8F5E9;
-      color: #4CAF50;
+      color: #0F9B8E;
     }
 
     .description {
@@ -263,7 +265,7 @@ import { FormationModalComponent } from './formation-modal.component';
     }
 
     .stat i {
-      color: #4CAF50;
+      color: #0F9B8E;
     }
 
     .actions {
@@ -274,7 +276,7 @@ import { FormationModalComponent } from './formation-modal.component';
     .btn-manage {
       flex: 1;
       padding: 0.75rem;
-      background: #4CAF50;
+      background: #0F9B8E;
       color: white;
       border: none;
       border-radius: 8px;
@@ -288,12 +290,12 @@ import { FormationModalComponent } from './formation-modal.component';
     }
 
     .btn-manage:hover {
-      background: #45a049;
+      background: #0d8a7e;
     }
 
     .btn-publish {
       padding: 0.75rem 1rem;
-      background: #4CAF50;
+      background: #0F9B8E;
       color: white;
       border: none;
       border-radius: 8px;
@@ -306,7 +308,7 @@ import { FormationModalComponent } from './formation-modal.component';
     }
 
     .btn-publish:hover {
-      background: #45a049;
+      background: #0d8a7e;
     }
 
     .btn-unpublish {
@@ -381,7 +383,7 @@ import { FormationModalComponent } from './formation-modal.component';
 
     .btn-create-large {
       padding: 1rem 2rem;
-      background: #4CAF50;
+      background: #0F9B8E;
       color: white;
       border: none;
       border-radius: 8px;
@@ -394,9 +396,9 @@ import { FormationModalComponent } from './formation-modal.component';
     }
 
     .btn-create-large:hover {
-      background: #45a049;
+      background: #0d8a7e;
       transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+      box-shadow: 0 4px 12px rgba(15, 155, 142, 0.3);
     }
 
     .loading {
@@ -408,7 +410,7 @@ import { FormationModalComponent } from './formation-modal.component';
     .loading i {
       font-size: 3rem;
       margin-bottom: 1rem;
-      color: #4CAF50;
+      color: #0F9B8E;
     }
 
     @media (max-width: 768px) {
@@ -588,3 +590,4 @@ export class InstructorFormationsComponent implements OnInit {
     return formation.id;
   }
 }
+
