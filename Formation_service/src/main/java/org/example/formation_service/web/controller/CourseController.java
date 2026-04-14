@@ -1,5 +1,7 @@
 package org.example.formation_service.web.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,10 +21,12 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/courses")
 @RequiredArgsConstructor
 @Slf4j
+@Tag(name = "Formations", description = "CRUD des formations, publication et gestion du contenu")
 public class CourseController {
     
     private final CourseService courseService;
     
+    @Operation(summary = "Créer une formation", description = "Accessible aux formateurs et admins")
     @PostMapping
     public ResponseEntity<CourseResponse> createCourse(@Valid @RequestBody CourseRequest request) {
         log.info("Creating course - title: {}, level: {}, createdBy: {}", 
@@ -44,6 +48,7 @@ public class CourseController {
         return ResponseEntity.ok(toResponse(course));
     }
     
+    @Operation(summary = "Publier une formation", description = "Change le statut de DRAFT à PUBLISHED")
     @PostMapping("/{id}/publish")
     public ResponseEntity<CourseResponse> publishCourse(@PathVariable Long id) {
         Course course = courseService.publishCourse(id);
@@ -56,6 +61,7 @@ public class CourseController {
         return ResponseEntity.ok(toResponse(course));
     }
     
+    @Operation(summary = "Lister toutes les formations", description = "Filtrable par statut (DRAFT, PUBLISHED, ARCHIVED)")
     @GetMapping
     public ResponseEntity<List<CourseResponse>> getCourses(@RequestParam(required = false) CourseStatus status) {
         List<Course> courses = courseService.getCoursesByStatus(status);

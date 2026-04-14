@@ -8,6 +8,8 @@ import org.example.formation_service.domain.entity.LessonProgress;
 import org.example.formation_service.repository.CourseRepository;
 import org.example.formation_service.repository.EnrollmentRepository;
 import org.example.formation_service.repository.LessonProgressRepository;
+import org.example.formation_service.feign.UserServiceClient;
+import org.example.formation_service.feign.dto.UserDto;
 import org.example.formation_service.web.dto.StudentProgressResponse;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +26,7 @@ public class StudentTrackingService {
     private final CourseRepository courseRepository;
     private final EnrollmentRepository enrollmentRepository;
     private final LessonProgressRepository lessonProgressRepository;
+    private final UserServiceClient userServiceClient;
     
     @Transactional(readOnly = true)
     public List<StudentProgressResponse> getInstructorStudents(Long instructorId) {
@@ -72,6 +75,10 @@ public class StudentTrackingService {
     private StudentProgressResponse buildStudentProgressResponse(Enrollment enrollment) {
         Course course = enrollment.getCourse();
         
+        // Fetch real user data from User Service via Feign (with fallback)
+        UserDto user = userServiceClient.getUserById(enrollment.getUserId());
+        String userName = user.getPrenom() + " " + user.getNom();
+        String userEmail = user.getEmail();
         // Get all lessons for this course
         int totalLessons = course.getLessons() != null ? course.getLessons().size() : 0;
         
@@ -106,8 +113,8 @@ public class StudentTrackingService {
         return StudentProgressResponse.builder()
             .enrollmentId(enrollment.getId())
             .userId(enrollment.getUserId())
-            .userName("User " + enrollment.getUserId()) // Placeholder - would fetch from User Service
-            .userEmail("user" + enrollment.getUserId() + "@example.com") // Placeholder
+            .userName(userName)
+            .userEmail(userEmail)
             .courseId(course.getId())
             .courseTitle(course.getTitle())
             .completionPercent(completionPercent) // Use calculated percentage, not enrollment.getCompletionPercent()

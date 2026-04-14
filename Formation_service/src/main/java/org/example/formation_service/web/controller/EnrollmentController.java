@@ -1,5 +1,7 @@
 package org.example.formation_service.web.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.example.formation_service.domain.entity.Enrollment;
@@ -16,10 +18,13 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
+@Tag(name = "Inscriptions", description = "Inscription aux formations avec contrôle d'accès par abonnement")
 public class EnrollmentController {
     
     private final EnrollmentService enrollmentService;
     
+    @Operation(summary = "S'inscrire à une formation",
+        description = "Vérifie l'abonnement actif, le niveau d'accès et la limite mensuelle avant inscription")
     @PostMapping("/courses/{id}/enroll")
     public ResponseEntity<EnrollmentResponse> enroll(@PathVariable Long id, @Valid @RequestBody EnrollmentRequest request) {
         Enrollment enrollment = enrollmentService.enroll(request.getUserId(), id);
@@ -32,6 +37,7 @@ public class EnrollmentController {
         return ResponseEntity.ok(toResponse(enrollment));
     }
     
+    @Operation(summary = "Mes inscriptions", description = "Retourne toutes les inscriptions d'un apprenant")
     @GetMapping("/users/{userId}/enrollments")
     public ResponseEntity<List<EnrollmentResponse>> getUserEnrollments(@PathVariable Long userId) {
         List<Enrollment> enrollments = enrollmentService.getUserEnrollments(userId);

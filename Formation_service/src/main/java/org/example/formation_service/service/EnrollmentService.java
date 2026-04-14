@@ -1,7 +1,6 @@
 package org.example.formation_service.service;
 
 import lombok.RequiredArgsConstructor;
-import org.example.formation_service.client.UserServiceValidator;
 import org.example.formation_service.domain.entity.Course;
 import org.example.formation_service.domain.entity.Enrollment;
 import org.example.formation_service.domain.entity.Lesson;
@@ -9,6 +8,7 @@ import org.example.formation_service.domain.entity.LessonProgress;
 import org.example.formation_service.domain.enums.CourseStatus;
 import org.example.formation_service.domain.enums.EnrollmentStatus;
 import org.example.formation_service.exception.BusinessException;
+import org.example.formation_service.feign.UserServiceClient;
 import org.example.formation_service.repository.EnrollmentRepository;
 import org.example.formation_service.repository.LessonProgressRepository;
 import org.example.formation_service.repository.LessonRepository;
@@ -25,7 +25,7 @@ public class EnrollmentService {
     private final LessonRepository lessonRepository;
     private final LessonProgressRepository lessonProgressRepository;
     private final CourseService courseService;
-    private final UserServiceValidator userServiceValidator;
+    private final UserServiceClient userServiceClient;
     private final AccessControlService accessControlService;
     
     @Transactional
@@ -33,8 +33,11 @@ public class EnrollmentService {
         // NEW: Check access control FIRST
         accessControlService.checkCanEnroll(userId, courseId);
         
-        // Vérifier que l'utilisateur existe
-        userServiceValidator.validateUserExists(userId);
+        // Vérifier que l'utilisateur existe via Feign (User Service)
+        Boolean userExists = userServiceClient.userExists(userId);
+        if (!userExists) {
+            throw new BusinessException("USER_NOT_FOUND", "Utilisateur introuvable");
+        }
         
         // Vérifier que le cours existe
         Course course = courseService.getCourseById(courseId);

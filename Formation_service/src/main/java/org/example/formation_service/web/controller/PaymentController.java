@@ -1,5 +1,7 @@
 package org.example.formation_service.web.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.formation_service.domain.entity.SubscriptionPayment;
@@ -15,6 +17,7 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/payments")
 @RequiredArgsConstructor
 @Slf4j
+@Tag(name = "Paiements", description = "Historique des paiements et validation admin (OTP par email)")
 public class PaymentController {
     
     private final PaymentService paymentService;

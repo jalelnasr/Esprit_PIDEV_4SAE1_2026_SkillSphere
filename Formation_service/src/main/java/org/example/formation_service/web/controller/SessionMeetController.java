@@ -1,5 +1,7 @@
 package org.example.formation_service.web.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.example.formation_service.service.SessionMeetService;
 import org.example.formation_service.web.dto.CalendarEventResponse;
@@ -15,6 +17,7 @@ import java.util.Map;
 @RequestMapping("/api")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*")
+@Tag(name = "Meets Virtuels", description = "Gestion des sessions Jitsi — calendrier formateur et apprenant")
 public class SessionMeetController {
 
     private final SessionMeetService meetService;

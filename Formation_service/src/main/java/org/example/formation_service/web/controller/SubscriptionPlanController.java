@@ -1,5 +1,7 @@
 package org.example.formation_service.web.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.formation_service.domain.entity.SubscriptionPlan;
@@ -15,10 +17,12 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/subscription-plans")
 @RequiredArgsConstructor
 @Slf4j
+@Tag(name = "Plans d'abonnement", description = "Plans Basic / Plus / Premium — endpoint public, aucune auth requise")
 public class SubscriptionPlanController {
     
     private final SubscriptionPlanService planService;
     
+    @Operation(summary = "Lister les plans actifs", description = "Retourne tous les plans d'abonnement disponibles")
     @GetMapping
     public ResponseEntity<List<SubscriptionPlanResponse>> getAllActivePlans() {
         log.info("Fetching all active subscription plans");

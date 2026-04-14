@@ -14,7 +14,6 @@ import org.example.formation_service.web.dto.MeetResponse;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.ArrayList;
@@ -215,7 +214,7 @@ public class SessionMeetService {
     private void notifyEnrolledStudents(SessionMeet meet, Session session) {
         try {
             List<Long> enrolledUserIds = enrollmentRepository
-                .findByCourse_IdAndStatus(session.getCourse().getId(), 
+                .findByCourse_IdAndStatus(session.getCourse().getId(),
                     org.example.formation_service.domain.enums.EnrollmentStatus.ACTIVE)
                 .stream()
                 .map(e -> e.getUserId())
@@ -224,7 +223,6 @@ public class SessionMeetService {
             String subject = "📹 Nouveau meet planifié: " + meet.getTitle();
             String body = buildMeetEmailBody(meet);
 
-            // Send to each enrolled student (email fetched via user service in real scenario)
             // For now we log — wire to emailService when user emails are available
             System.out.println("📧 Would notify " + enrolledUserIds.size() + " students about meet: " + meet.getTitle());
         } catch (Exception e) {
