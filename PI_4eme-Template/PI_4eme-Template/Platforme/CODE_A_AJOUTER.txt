@@ -1,0 +1,12 @@
+// ⭐ COPIER CE CODE ET LE COLLER DANS UserController.java
+// AVANT LE DERNIER } DE LA CLASSE
+
+    /**
+     * Get user role by ID
+     * Used by Professional Events to verify if user can register to competitions
+     */
+    @GetMapping("/{userId}/role")
+    public String getUserRole(@PathVariable Long userId) {
+        UserResponse user = userService.adminGetUser(userId);
+        return user.role().name(); // ⚠️ IMPORTANT: user.role() car UserResponse est un record
+    }

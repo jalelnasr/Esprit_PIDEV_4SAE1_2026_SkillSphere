@@ -1,0 +1,281 @@
+<div class="dashboard-container">
+  <div class="dashboard-header">
+    <h1>📊 Dashboard Formateur</h1>
+    <button class="btn-refresh" (click)="loadDashboardStats()">
+      🔄 Actualiser
+    </button>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Chargement des statistiques...</p>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="error" class="error-state">
+    <p>❌ {{ error }}</p>
+    <button class="btn-retry" (click)="loadDashboardStats()">Réessayer</button>
+  </div>
+
+  <!-- Dashboard Content -->
+  <div *ngIf="!loading && !error && stats" class="dashboard-content">
+    
+    <!-- Stats Cards -->
+    <div class="stats-grid">
+      <div class="stat-card primary">
+        <div class="stat-icon">🏆</div>
+        <div class="stat-info">
+          <h3>{{ stats.totalCompetitions }}</h3>
+          <p>Total Compétitions</p>
+        </div>
+      </div>
+
+      <div class="stat-card success">
+        <div class="stat-icon">✅</div>
+        <div class="stat-info">
+          <h3>{{ stats.activeCompetitions }}</h3>
+          <p>Compétitions Actives</p>
+        </div>
+      </div>
+
+      <div class="stat-card info">
+        <div class="stat-icon">👥</div>
+        <div class="stat-info">
+          <h3>{{ stats.totalParticipants }}</h3>
+          <p>Total Participants</p>
+        </div>
+      </div>
+
+      <div class="stat-card warning">
+        <div class="stat-icon">📈</div>
+        <div class="stat-info">
+          <h3>{{ stats.participationRate.toFixed(1) }}%</h3>
+          <p>Taux de Participation</p>
+        </div>
+      </div>
+
+      <div class="stat-card secondary">
+        <div class="stat-icon">👨‍👩‍👧‍👦</div>
+        <div class="stat-info">
+          <h3>{{ stats.totalTeams }}</h3>
+          <p>Total Équipes</p>
+        </div>
+      </div>
+
+      <div class="stat-card danger">
+        <div class="stat-icon">💬</div>
+        <div class="stat-info">
+          <h3>{{ stats.totalMessages }}</h3>
+          <p>Messages Échangés</p>
+        </div>
+      </div>
+
+      <div class="stat-card purple">
+        <div class="stat-icon">🔔</div>
+        <div class="stat-info">
+          <h3>{{ stats.totalNotifications }}</h3>
+          <p>Notifications Envoyées</p>
+        </div>
+      </div>
+
+      <div class="stat-card teal">
+        <div class="stat-icon">✔️</div>
+        <div class="stat-info">
+          <h3>{{ stats.completedCompetitions }}</h3>
+          <p>Compétitions Terminées</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="charts-section">
+      <div class="chart-card">
+        <canvas #typeChart></canvas>
+      </div>
+
+      <div class="chart-card">
+        <canvas #statusChart></canvas>
+      </div>
+
+      <div class="chart-card full-width">
+        <canvas #monthlyChart></canvas>
+      </div>
+    </div>
+
+    <!-- Top Competitions -->
+    <div class="section-card">
+      <h2>🏅 Top 5 Compétitions (par participants)</h2>
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Titre</th>
+              <th>Type</th>
+              <th>Statut</th>
+              <th>Participants</th>
+              <th>Équipes</th>
+              <th>Messages</th>
+              <th>Taux de Remplissage</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let comp of stats.topCompetitions">
+              <td>{{ comp.title }}</td>
+              <td><span [class]="'badge ' + getTypeBadgeClass(comp.type)">{{ comp.type }}</span></td>
+              <td><span [class]="'badge ' + getStatusBadgeClass(comp.status)">{{ comp.status }}</span></td>
+              <td>{{ comp.participantCount }} / {{ comp.maxParticipants }}</td>
+              <td>{{ comp.teamCount }}</td>
+              <td>{{ comp.messageCount }}</td>
+              <td>
+                <div class="progress-bar">
+                  <div class="progress-fill" [style.width.%]="comp.fillRate"></div>
+                  <span class="progress-text">{{ comp.fillRate.toFixed(0) }}%</span>
+                </div>
+              </td>
+              <td>
+                <a [routerLink]="['/competitions', comp.competitionId]" class="btn-view">Voir</a>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Message Statistics -->
+    <div class="section-card">
+      <h2>💬 Statistiques des Messages</h2>
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Compétition</th>
+              <th>Messages</th>
+              <th>Participants Actifs</th>
+              <th>Moyenne par Participant</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let msg of stats.messageStats">
+              <td>{{ msg.competitionTitle }}</td>
+              <td>{{ msg.messageCount }}</td>
+              <td>{{ msg.uniqueParticipants }}</td>
+              <td>{{ msg.uniqueParticipants > 0 ? (msg.messageCount / msg.uniqueParticipants).toFixed(1) : 0 }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Search and Filter Section -->
+    <div class="section-card">
+      <div class="filter-header">
+        <h2>🔍 Recherche et Filtrage</h2>
+        <button class="btn-toggle" (click)="toggleFilters()">
+          {{ showFilters ? 'Masquer' : 'Afficher' }} les filtres
+        </button>
+      </div>
+
+      <!-- Quick Search -->
+      <div class="quick-search">
+        <input 
+          type="text" 
+          [(ngModel)]="filter.searchTerm" 
+          (keyup.enter)="quickSearch()"
+          placeholder="Recherche rapide par titre ou description..."
+          class="search-input"
+        />
+        <button class="btn-search" (click)="quickSearch()">Rechercher</button>
+      </div>
+
+      <!-- Advanced Filters -->
+      <div *ngIf="showFilters" class="filters-panel">
+        <div class="filter-grid">
+          <div class="filter-group">
+            <label>Type</label>
+            <select [(ngModel)]="filter.type" class="filter-select">
+              <option value="">Tous</option>
+              <option value="ONLINE">En ligne</option>
+              <option value="PHYSICAL">Physique</option>
+              <option value="HYBRID">Hybride</option>
+            </select>
+          </div>
+
+          <div class="filter-group">
+            <label>Statut</label>
+            <select [(ngModel)]="filter.status" class="filter-select">
+              <option value="">Tous</option>
+              <option value="DRAFT">Brouillon</option>
+              <option value="OPEN">Ouvert</option>
+              <option value="IN_PROGRESS">En cours</option>
+              <option value="COMPLETED">Terminé</option>
+              <option value="CANCELLED">Annulé</option>
+            </select>
+          </div>
+
+          <div class="filter-group">
+            <label>Type de Participation</label>
+            <select [(ngModel)]="filter.participationType" class="filter-select">
+              <option value="">Tous</option>
+              <option value="INDIVIDUAL">Individuel</option>
+              <option value="TEAM">Équipe</option>
+              <option value="BOTH">Les deux</option>
+            </select>
+          </div>
+
+          <div class="filter-group">
+            <label>Trier par</label>
+            <select [(ngModel)]="filter.sortBy" class="filter-select">
+              <option value="title">Titre</option>
+              <option value="startDate">Date de début</option>
+              <option value="endDate">Date de fin</option>
+              <option value="participantCount">Nombre de participants</option>
+            </select>
+          </div>
+
+          <div class="filter-group">
+            <label>Ordre</label>
+            <select [(ngModel)]="filter.sortDirection" class="filter-select">
+              <option value="ASC">Croissant</option>
+              <option value="DESC">Décroissant</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="filter-actions">
+          <button class="btn-apply" (click)="applyFilters()">Appliquer les filtres</button>
+          <button class="btn-reset" (click)="resetFilters()">Réinitialiser</button>
+        </div>
+      </div>
+
+      <!-- Filtered Results -->
+      <div *ngIf="filteredCompetitions.length > 0" class="filtered-results">
+        <h3>Résultats ({{ filteredCompetitions.length }})</h3>
+        <div class="competition-grid">
+          <div *ngFor="let comp of filteredCompetitions" class="competition-card">
+            <h4>{{ comp.title }}</h4>
+            <p class="comp-description">{{ comp.description }}</p>
+            <div class="comp-meta">
+              <span [class]="'badge ' + getTypeBadgeClass(comp.type)">{{ comp.type }}</span>
+              <span [class]="'badge ' + getStatusBadgeClass(comp.status)">{{ comp.status }}</span>
+            </div>
+            <div class="comp-dates">
+              <span>📅 {{ comp.startDate | date:'short' }}</span>
+              <span>→</span>
+              <span>{{ comp.endDate | date:'short' }}</span>
+            </div>
+            <div class="comp-actions">
+              <a [routerLink]="['/competitions', comp.competitionId]" class="btn-view-comp">Voir détails</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="filteredCompetitions.length === 0 && (filter.searchTerm || showFilters)" class="no-results">
+        <p>Aucun résultat trouvé</p>
+      </div>
+    </div>
+
+  </div>
+</div>

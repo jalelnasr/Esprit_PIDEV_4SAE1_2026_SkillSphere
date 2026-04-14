@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="3c54739f-786e-48fe-aa73-22ec9f3807c7" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/../PI_4eme-Template/PI_4eme-Template/Platforme/Platforme/GUIDE_PARTICIPATION_GROUPES.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../PI_4eme-Template/PI_4eme-Template/Platforme/Platforme/GUIDE_TEST_FRONTEND_COMPLET.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../PI_4eme-Template/PI_4eme-Template/Platforme/Platforme/POSTMAN_GUIDE_COMPLET.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../PI_4eme-Template/PI_4eme-Template/Platforme/Platforme/SOLUTION_SIMPLE_COMPETITIONS.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../PI_4eme-Template/PI_4eme-Template/Platforme/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/../PI_4eme-Template/PI_4eme-Template/Platforme/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../PI_4eme-Template/PI_4eme-Template/Platforme/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/../PI_4eme-Template/PI_4eme-Template/Platforme/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../PI_4eme-Template/PI_4eme-Template/Platforme/src/app/features/competitions/competitions.routes.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../PI_4eme-Template/PI_4eme-Template/Platforme/src/app/features/competitions/competitions.routes.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../PI_4eme-Template/PI_4eme-Template/Platforme/src/app/features/competitions/pages/competition-detail/competition-detail.component.css" beforeDir="false" afterPath="$PROJECT_DIR$/../PI_4eme-Template/PI_4eme-Template/Platforme/src/app/features/competitions/pages/competition-detail/competition-detail.component.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../PI_4eme-Template/PI_4eme-Template/Platforme/src/app/features/competitions/pages/competition-leaderboard/competition-leaderboard.component.css" beforeDir="false" afterPath="$PROJECT_DIR$/../PI_4eme-Template/PI_4eme-Template/Platforme/src/app/features/competitions/pages/competition-leaderboard/competition-leaderboard.component.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../PI_4eme-Template/PI_4eme-Template/Platforme/src/app/features/competitions/pages/competition-leaderboard/competition-leaderboard.component.html" beforeDir="false" afterPath="$PROJECT_DIR$/../PI_4eme-Template/PI_4eme-Template/Platforme/src/app/features/competitions/pages/competition-leaderboard/competition-leaderboard.component.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../PI_4eme-Template/PI_4eme-Template/Platforme/src/app/features/competitions/pages/competition-list/competition-list.component.css" beforeDir="false" afterPath="$PROJECT_DIR$/../PI_4eme-Template/PI_4eme-Template/Platforme/src/app/features/competitions/pages/competition-list/competition-list.component.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../PI_4eme-Template/PI_4eme-Template/Platforme/src/app/features/competitions/pages/competition-list/competition-list.component.html" beforeDir="false" afterPath="$PROJECT_DIR$/../PI_4eme-Template/PI_4eme-Template/Platforme/src/app/features/competitions/pages/competition-list/competition-list.component.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../PI_4eme-Template/PI_4eme-Template/Platforme/src/app/features/home/home.component.html" beforeDir="false" afterPath="$PROJECT_DIR$/../PI_4eme-Template/PI_4eme-Template/Platforme/src/app/features/home/home.component.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../PI_4eme-Template/PI_4eme-Template/Platforme/src/app/features/home/home.component.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../PI_4eme-Template/PI_4eme-Template/Platforme/src/app/features/home/home.component.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../PI_4eme-Template/PI_4eme-Template/Platforme/src/app/shared/components/language-selector/language-selector.component.css" beforeDir="false" afterPath="$PROJECT_DIR$/../PI_4eme-Template/PI_4eme-Template/Platforme/src/app/shared/components/language-selector/language-selector.component.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../PI_4eme-Template/PI_4eme-Template/Platforme/src/app/shared/components/language-selector/language-selector.component.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../PI_4eme-Template/PI_4eme-Template/Platforme/src/app/shared/components/language-selector/language-selector.component.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../PI_4eme-Template/PI_4eme-Template/Platforme/src/styles.css" beforeDir="false" afterPath="$PROJECT_DIR$/../PI_4eme-Template/PI_4eme-Template/Platforme/src/styles.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/PlatformeBack.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/PlatformeBack.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="CopilotPersistence">
+    <persistenceIdMap>
+      <entry key="_C:/Users/DELL/Desktop/wetransfer_pi_4eme-template-rar_2026-02-23_2049/New folder/PlatformeBack" value="3A5dNBZ5SWhqV5jzjve2ed1ks2K" />
+      <entry key="_C:/Users/DELL/Desktop/wetransfer_pi_4eme-template-rar_2026-02-23_2049/PlatformeBack" value="3BlHXVGZlRZxkUwA97NxpaQq9UF" />
+    </persistenceIdMap>
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Class" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
+  </component>
+  <component name="ProblemsViewState">
+    <option name="selectedTabId" value="ProjectErrors" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 4
+}</component>
+  <component name="ProjectId" id="3A5dNBZ5SWhqV5jzjve2ed1ks2K" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Maven.PlatformeBack [clean].executor": "Run",
+    "Maven.PlatformeBack [install].executor": "Run",
+    "Maven.PlatformeBack [org.apache.maven.plugins:maven-clean-plugin:3.3.2:clean].executor": "Run",
+    "Maven.PlatformeBack [org.apache.maven.plugins:maven-install-plugin:3.1.1:install].executor": "Run",
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RequestMappingsPanelOrder0": "0",
+    "RequestMappingsPanelOrder1": "1",
+    "RequestMappingsPanelWidth0": "75",
+    "RequestMappingsPanelWidth1": "75",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "Spring Boot.PlatformeBackApplication.executor": "Run",
+    "git-widget-placeholder": "Events",
+    "ignore.virus.scanning.warn.message": "true",
+    "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "C:/Users/DELL/Desktop/wetransfer_pi_4eme-template-rar_2026-02-23_2049/New folder/PlatformeBack",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "project.structure.last.edited": "Project",
+    "project.structure.proportion": "0.0",
+    "project.structure.side.proportion": "0.2",
+    "settings.editor.selected.configurable": "configurable.group.language",
+    "vue.rearranger.settings.migration": "true"
+  }
+}]]></component>
+  <component name="ReactorSettings">
+    <option name="notificationShown" value="true" />
+  </component>
+  <component name="RunManager">
+    <configuration name="PlatformeBackApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
+      <module name="PlatformeBack" />
+      <option name="SPRING_BOOT_MAIN_CLASS" value="org.example.platformeback.PlatformeBackApplication" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-jdk-9823dce3aa75-bf35d07a577b-intellij.indexing.shared.core-IU-252.28238.7" />
+        <option value="bundled-js-predefined-d6986cc7102b-a71380e98a7c-JavaScript-IU-252.28238.7" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="3c54739f-786e-48fe-aa73-22ec9f3807c7" name="Changes" comment="" />
+      <created>1771886322710</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1771886322710</updated>
+      <workItem from="1771886324093" duration="292000" />
+      <workItem from="1772055508646" duration="10695000" />
+      <workItem from="1775056778796" duration="31000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="XSLT-Support.FileAssociations.UIState">
+    <expand />
+    <select />
+  </component>
+  <component name="github-copilot-workspace">
+    <instructionFileLocations>
+      <option value=".github/instructions" />
+    </instructionFileLocations>
+    <promptFileLocations>
+      <option value=".github/prompts" />
+    </promptFileLocations>
+  </component>
+</project>
