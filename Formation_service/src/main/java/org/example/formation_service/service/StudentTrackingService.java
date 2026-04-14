@@ -11,6 +11,8 @@ import org.example.formation_service.repository.LessonProgressRepository;
 import org.example.formation_service.feign.UserServiceClient;
 import org.example.formation_service.feign.dto.UserDto;
 import org.example.formation_service.web.dto.StudentProgressResponse;
+import org.example.formation_service.feign.exception.UserNotFoundException;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +29,9 @@ public class StudentTrackingService {
     private final EnrollmentRepository enrollmentRepository;
     private final LessonProgressRepository lessonProgressRepository;
     private final UserServiceClient userServiceClient;
+
+    @Value("${service.api.key}")
+    private String serviceApiKey;
     
     @Transactional(readOnly = true)
     public List<StudentProgressResponse> getInstructorStudents(Long instructorId) {
@@ -75,10 +80,24 @@ public class StudentTrackingService {
     private StudentProgressResponse buildStudentProgressResponse(Enrollment enrollment) {
         Course course = enrollment.getCourse();
         
-        // Fetch real user data from User Service via Feign (with fallback)
-        UserDto user = userServiceClient.getUserById(enrollment.getUserId());
-        String userName = user.getPrenom() + " " + user.getNom();
-        String userEmail = user.getEmail();
+        // Fetch real user data from User Service via Feign (with fallback on error)
+        String userName;
+        String userEmail;
+        try {
+            UserDto user = userServiceClient.getUserById(enrollment.getUserId(), serviceApiKey);
+            userName = user.getPrenom() + " " + user.getNom();
+            userEmail = user.getEmail();
+        } catch (UserNotFoundException e) {
+            // User was deleted or doesn't exist in User Service DB — use placeholder
+            log.warn("👤 User {} not found in User Service — using placeholder", enrollment.getUserId());
+            userName = "Utilisateur #" + enrollment.getUserId();
+            userEmail = "user" + enrollment.getUserId() + "@skillsphere.com";
+        } catch (Exception e) {
+            // Network error, timeout, etc.
+            log.warn("⚠️ Could not fetch user {} from User Service: {}", enrollment.getUserId(), e.getMessage());
+            userName = "Utilisateur #" + enrollment.getUserId();
+            userEmail = "user" + enrollment.getUserId() + "@skillsphere.com";
+        }
         // Get all lessons for this course
         int totalLessons = course.getLessons() != null ? course.getLessons().size() : 0;
         

@@ -41,8 +41,10 @@ public class SecurityConfig {
                         // Public endpoints
                         .requestMatchers("/api/formation/courses/public/**").permitAll()
                         .requestMatchers("/api/formation/subscription-plans").permitAll()
+                        .requestMatchers("/api/subscription-plans").permitAll()
+                        .requestMatchers("/api/subscription-plans/**").permitAll()
                         .requestMatchers("/actuator/**").permitAll()
-                        .requestMatchers("/api-docs/**", "/swagger-ui/**").permitAll()
+                        .requestMatchers("/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         // Admin only
                         .requestMatchers("/api/formation/admin/**").hasRole("ADMIN")
                         // Instructor endpoints

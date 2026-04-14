@@ -1,6 +1,7 @@
 package org.example.formation_service.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.example.formation_service.domain.entity.Course;
 import org.example.formation_service.domain.entity.Enrollment;
 import org.example.formation_service.domain.entity.Lesson;
@@ -9,9 +10,11 @@ import org.example.formation_service.domain.enums.CourseStatus;
 import org.example.formation_service.domain.enums.EnrollmentStatus;
 import org.example.formation_service.exception.BusinessException;
 import org.example.formation_service.feign.UserServiceClient;
+import org.example.formation_service.feign.exception.UserNotFoundException;
 import org.example.formation_service.repository.EnrollmentRepository;
 import org.example.formation_service.repository.LessonProgressRepository;
 import org.example.formation_service.repository.LessonRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +22,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class EnrollmentService {
     
     private final EnrollmentRepository enrollmentRepository;
@@ -27,6 +31,9 @@ public class EnrollmentService {
     private final CourseService courseService;
     private final UserServiceClient userServiceClient;
     private final AccessControlService accessControlService;
+
+    @Value("${service.api.key}")
+    private String serviceApiKey;
     
     @Transactional
     public Enrollment enroll(Long userId, Long courseId) {
@@ -34,9 +41,18 @@ public class EnrollmentService {
         accessControlService.checkCanEnroll(userId, courseId);
         
         // Vérifier que l'utilisateur existe via Feign (User Service)
-        Boolean userExists = userServiceClient.userExists(userId);
-        if (!userExists) {
+        try {
+            Boolean exists = userServiceClient.userExists(userId, serviceApiKey);
+            if (Boolean.FALSE.equals(exists)) {
+                throw new BusinessException("USER_NOT_FOUND", "Utilisateur introuvable");
+            }
+        } catch (UserNotFoundException e) {
             throw new BusinessException("USER_NOT_FOUND", "Utilisateur introuvable");
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            log.warn("⚠️ Could not verify user {} via User Service: {}", userId, e.getMessage());
+            // Fail-open: continue enrollment if User Service is unreachable
         }
         
         // Vérifier que le cours existe

@@ -69,9 +69,18 @@ public class PaymentController {
     }
     
     private SubscriptionPaymentResponse toResponse(SubscriptionPayment payment) {
+        String planName = null;
+        try {
+            planName = payment.getSubscription() != null && payment.getSubscription().getPlan() != null
+                ? payment.getSubscription().getPlan().getName()
+                : "N/A";
+        } catch (Exception e) {
+            planName = "N/A";
+        }
+
         return SubscriptionPaymentResponse.builder()
             .id(payment.getId())
-            .subscriptionId(payment.getSubscription().getId())
+            .subscriptionId(payment.getSubscription() != null ? payment.getSubscription().getId() : null)
             .userId(payment.getUserId())
             .amount(payment.getAmount())
             .currency(payment.getCurrency())
@@ -80,7 +89,7 @@ public class PaymentController {
             .transactionId(payment.getTransactionId())
             .paidAt(payment.getPaidAt())
             .createdAt(payment.getCreatedAt())
-            .planName(payment.getSubscription().getPlan().getName())
+            .planName(planName)
             .customerEmail(payment.getCustomerEmail())
             .maskedCard(payment.getMaskedCard())
             .cardBrand(payment.getCardBrand())

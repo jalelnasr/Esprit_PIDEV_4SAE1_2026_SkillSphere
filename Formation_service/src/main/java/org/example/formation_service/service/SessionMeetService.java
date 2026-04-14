@@ -37,8 +37,9 @@ public class SessionMeetService {
         Session session = sessionRepository.findById(sessionId)
             .orElseThrow(() -> new RuntimeException("Session not found: " + sessionId));
 
-        String token = UUID.randomUUID().toString().replace("-", "").substring(0, 12);
-        String meetLink = "https://meet.jit.si/skillsphere-" + token;
+        // Generate clean alphanumeric token only — no special chars that break Jitsi URLs
+        String token = UUID.randomUUID().toString().replace("-", "").substring(0, 20);
+        String meetLink = "https://meet.jit.si/" + token;
 
         SessionMeet meet = SessionMeet.builder()
             .session(session)
@@ -81,7 +82,12 @@ public class SessionMeetService {
     // ─── FORMATEUR: Delete meet ───────────────────────────────────────────────
     @Transactional
     public void deleteMeet(Long meetId) {
-        meetRepository.deleteById(meetId);
+        try {
+            meetJoinRepository.deleteByMeetIdNative(meetId);
+        } catch (Exception e) {
+            System.err.println("Warning deleting joins: " + e.getMessage());
+        }
+        meetRepository.deleteByIdNative(meetId);
     }
 
     // ─── APPRENANT: Record join ───────────────────────────────────────────────

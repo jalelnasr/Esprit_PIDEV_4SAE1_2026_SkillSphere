@@ -47,9 +47,14 @@ public class SessionMeetController {
 
     // ── FORMATEUR: Delete meet ────────────────────────────────────────────────
     @DeleteMapping("/meets/{meetId}")
-    public ResponseEntity<Void> deleteMeet(@PathVariable Long meetId) {
-        meetService.deleteMeet(meetId);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<?> deleteMeet(@PathVariable Long meetId) {
+        try {
+            meetService.deleteMeet(meetId);
+            return ResponseEntity.noContent().build();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body("Delete failed: " + e.getMessage());
+        }
     }
 
     // ── APPRENANT: Record join ────────────────────────────────────────────────
