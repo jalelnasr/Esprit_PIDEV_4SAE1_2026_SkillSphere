@@ -7,7 +7,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.security.Key;
-import java.util.Base64;
 
 @Component
 public class JwtUtil {
@@ -16,8 +15,7 @@ public class JwtUtil {
     private String secret;
 
     private Key getKey() {
-        byte[] keyBytes = Base64.getEncoder().encode(secret.getBytes());
-        return Keys.hmacShaKeyFor(keyBytes);
+        return Keys.hmacShaKeyFor(secret.getBytes());
     }
 
     public Claims extractClaims(String token) {
