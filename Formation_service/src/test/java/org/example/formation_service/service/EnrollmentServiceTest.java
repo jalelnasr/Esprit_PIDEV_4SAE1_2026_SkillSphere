@@ -1,10 +1,10 @@
 package org.example.formation_service.service;
 
-import org.example.formation_service.client.UserServiceValidator;
 import org.example.formation_service.domain.entity.*;
 import org.example.formation_service.domain.enums.CourseStatus;
 import org.example.formation_service.domain.enums.EnrollmentStatus;
 import org.example.formation_service.exception.BusinessException;
+import org.example.formation_service.feign.UserServiceClient;
 import org.example.formation_service.repository.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -12,6 +12,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
 import java.util.Optional;
@@ -27,7 +28,7 @@ class EnrollmentServiceTest {
     @Mock private LessonRepository lessonRepository;
     @Mock private LessonProgressRepository lessonProgressRepository;
     @Mock private CourseService courseService;
-    @Mock private UserServiceValidator userServiceValidator;
+    @Mock private UserServiceClient userServiceClient;
     @Mock private AccessControlService accessControlService;
 
     @InjectMocks private EnrollmentService enrollmentService;
@@ -37,6 +38,9 @@ class EnrollmentServiceTest {
 
     @BeforeEach
     void setUp() {
+        // Inject the @Value field since Mockito doesn't inject @Value
+        ReflectionTestUtils.setField(enrollmentService, "serviceApiKey", "test-api-key");
+
         course = new Course();
         course.setId(1L);
         course.setTitle("Java Course");
@@ -48,6 +52,10 @@ class EnrollmentServiceTest {
         enrollment.setCourse(course);
         enrollment.setStatus(EnrollmentStatus.ACTIVE);
         enrollment.setCompletionPercent(0);
+
+        // Default: user exists — use lenient to avoid UnnecessaryStubbingException
+        // in tests that don't call enroll()
+        lenient().when(userServiceClient.userExists(anyLong(), anyString())).thenReturn(true);
     }
 
     // ── enroll ────────────────────────────────────────────────────────────────
@@ -56,7 +64,6 @@ class EnrollmentServiceTest {
     void enroll_shouldThrow_whenCourseIsDraft() {
         course.setStatus(CourseStatus.DRAFT);
         doNothing().when(accessControlService).checkCanEnroll(anyLong(), anyLong());
-        doNothing().when(userServiceValidator).validateUserExists(anyLong());
         when(courseService.getCourseById(1L)).thenReturn(course);
 
         assertThatThrownBy(() -> enrollmentService.enroll(1L, 1L))
@@ -67,7 +74,6 @@ class EnrollmentServiceTest {
     @Test
     void enroll_shouldThrow_whenAlreadyEnrolled() {
         doNothing().when(accessControlService).checkCanEnroll(anyLong(), anyLong());
-        doNothing().when(userServiceValidator).validateUserExists(anyLong());
         when(courseService.getCourseById(1L)).thenReturn(course);
         when(enrollmentRepository.existsByUserIdAndCourseId(1L, 1L)).thenReturn(true);
 
@@ -82,7 +88,6 @@ class EnrollmentServiceTest {
         lesson.setId(1L);
 
         doNothing().when(accessControlService).checkCanEnroll(anyLong(), anyLong());
-        doNothing().when(userServiceValidator).validateUserExists(anyLong());
         when(courseService.getCourseById(1L)).thenReturn(course);
         when(enrollmentRepository.existsByUserIdAndCourseId(1L, 1L)).thenReturn(false);
         when(enrollmentRepository.save(any(Enrollment.class))).thenReturn(enrollment);
@@ -94,6 +99,16 @@ class EnrollmentServiceTest {
         assertThat(result).isNotNull();
         assertThat(result.getStatus()).isEqualTo(EnrollmentStatus.ACTIVE);
         verify(lessonProgressRepository, times(1)).save(any(LessonProgress.class));
+    }
+
+    @Test
+    void enroll_shouldThrow_whenUserNotFound() {
+        doNothing().when(accessControlService).checkCanEnroll(anyLong(), anyLong());
+        when(userServiceClient.userExists(anyLong(), anyString())).thenReturn(false);
+
+        assertThatThrownBy(() -> enrollmentService.enroll(1L, 1L))
+            .isInstanceOf(BusinessException.class)
+            .hasMessageContaining("introuvable");
     }
 
     // ── cancelEnrollment ──────────────────────────────────────────────────────
