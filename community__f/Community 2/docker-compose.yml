@@ -1,0 +1,124 @@
+services:
+
+  # ─── DATABASES ────────────────────────────────────────────────
+
+  mysql-platforme:
+    image: mysql:8
+    container_name: mysql-platforme
+    environment:
+      MYSQL_ROOT_PASSWORD: ""
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+      MYSQL_DATABASE: platforme
+    ports:
+      - "3306:3306"
+    volumes:
+      - platforme-mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "--silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  mysql-community:
+    image: mysql:8
+    container_name: mysql-community
+    environment:
+      MYSQL_ROOT_PASSWORD: ""
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+      MYSQL_DATABASE: communitydbb
+    ports:
+      - "3307:3306"
+    volumes:
+      - community-mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "--silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # ─── EUREKA ───────────────────────────────────────────────────
+
+  eureka-server:
+    build:
+      context: ./eureka2
+    container_name: eureka-server
+    ports:
+      - "8761:8761"
+    environment:
+      EUREKA_INSTANCE_HOSTNAME: eureka-server
+      EUREKA_CLIENT_REGISTER_WITH_EUREKA: "false"
+      EUREKA_CLIENT_FETCH_REGISTRY: "false"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8761/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 30s
+
+  # ─── PLATFORMEBACK (User Service) ─────────────────────────────
+
+  platformeback:
+    build:
+      context: ./PlatformeBack/PlatformeBack
+    container_name: platformeback
+    ports:
+      - "8086:8086"
+    depends_on:
+      mysql-platforme:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-platforme:3306/platforme?useSSL=false&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: ""
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      EUREKA_INSTANCE_HOSTNAME: platformeback
+      APP_JWT_SECRET: THIS_IS_A_VERY_LONG_SECRET_KEY_CHANGE_ME_1234567890_ABCDEFG
+      APP_JWT_EXPIRATION_MS: "86400000"
+
+  # ─── API GATEWAY ──────────────────────────────────────────────
+
+  api-gateway:
+    build:
+      context: ./apiGateway2
+    container_name: api-gateway
+    ports:
+      - "8081:8081"
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      EUREKA_INSTANCE_HOSTNAME: api-gateway
+      SPRING_CLOUD_GATEWAY_ROUTES[1]_URI: http://community-service:8082
+      SPRING_CLOUD_GATEWAY_ROUTES[5]_URI: http://community-service:8082
+      SPRING_CLOUD_GATEWAY_ROUTES[7]_URI: http://community-service:8082
+
+  # ─── COMMUNITY SERVICE ────────────────────────────────────────
+
+  community-service:
+    build:
+      context: ./Community 2
+    container_name: community-service
+    ports:
+      - "8082:8082"
+    depends_on:
+      mysql-community:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-community:3306/communitydbb?useSSL=false&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: ""
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      EUREKA_INSTANCE_HOSTNAME: community-service
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "false"
+      USER_SERVICE_URL: http://platformeback:8086
+
+volumes:
+  platforme-mysql-data:
+  community-mysql-data:

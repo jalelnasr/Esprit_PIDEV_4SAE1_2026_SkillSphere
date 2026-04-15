@@ -1,0 +1,7 @@
+.git
+.idea
+.settings
+*.log
+src/test
+target/*.original
+target/surefire-reports
