@@ -16,27 +16,60 @@
         <p>Join SkillSphere and start learning today</p>
       </div>
 
+      <!-- Server Error Alert -->
+      <div *ngIf="serverError" class="error-alert" style="margin-bottom: 16px;">
+        <p style="margin: 0; color: #d32f2f;">{{ serverError }}</p>
+      </div>
+
+      <!-- Debug Mode Toggle (visible in bottom right) -->
+      <button 
+        type="button" 
+        *ngIf="debugMode"
+        (click)="toggleDebugMode()" 
+        class="debug-toggle"
+        title="Toggle debug mode">
+        🔍 Debug
+      </button>
+
       <form [formGroup]="registerForm" (ngSubmit)="onRegister()" class="auth-form">
         <!-- Name Fields -->
         <div class="form-row">
           <div class="form-group">
             <label class="form-label">FIRST NAME</label>
-            <input type="text" class="form-input" formControlName="firstName" placeholder="John" />
+            <input 
+              type="text" 
+              class="form-input" 
+              formControlName="firstName" 
+              placeholder="John"
+              [class.input-error]="registerForm.get('firstName')?.invalid && registerForm.get('firstName')?.touched"
+            />
+            <small class="error-text" *ngIf="getFieldError('firstName')">{{ getFieldError('firstName') }}</small>
           </div>
           <div class="form-group">
             <label class="form-label">LAST NAME</label>
-            <input type="text" class="form-input" formControlName="lastName" placeholder="Doe" />
+            <input 
+              type="text" 
+              class="form-input" 
+              formControlName="lastName" 
+              placeholder="Doe"
+              [class.input-error]="registerForm.get('lastName')?.invalid && registerForm.get('lastName')?.touched"
+            />
+            <small class="error-text" *ngIf="getFieldError('lastName')">{{ getFieldError('lastName') }}</small>
           </div>
         </div>
 
         <!-- Email -->
         <div class="form-group">
           <label class="form-label">Email Address</label>
-          <input type="email" class="form-input" formControlName="email" placeholder="you@example.com" />
+          <input 
+            type="email" 
+            class="form-input" 
+            formControlName="email" 
+            placeholder="you@example.com"
+            [class.input-error]="registerForm.get('email')?.invalid && registerForm.get('email')?.touched"
+          />
+          <small class="error-text" *ngIf="getFieldError('email')">{{ getFieldError('email') }}</small>
         </div>
-
-        <!-- Role Selection -->
-        
 
         <!-- Password -->
         <div class="form-group">
@@ -46,8 +79,10 @@
             class="form-input" 
             formControlName="password" 
             placeholder="••••••••"
+            [class.input-error]="registerForm.get('password')?.invalid && registerForm.get('password')?.touched"
           />
           <small class="password-hint">At least 8 characters</small>
+          <small class="error-text" *ngIf="getFieldError('password')">{{ getFieldError('password') }}</small>
         </div>
 
         <!-- Confirm Password -->
@@ -58,7 +93,9 @@
             class="form-input" 
             formControlName="confirmPassword" 
             placeholder="••••••••"
+            [class.input-error]="registerForm.get('confirmPassword')?.invalid && registerForm.get('confirmPassword')?.touched"
           />
+          <small class="error-text" *ngIf="getFieldError('confirmPassword')">{{ getFieldError('confirmPassword') }}</small>
         </div>
 
         <!-- Terms -->
@@ -66,6 +103,7 @@
           <input type="checkbox" formControlName="terms" />
           <span>I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a></span>
         </label>
+        <small class="error-text" *ngIf="getFieldError('terms')">{{ getFieldError('terms') }}</small>
 
         <!-- Submit -->
         <button 
@@ -80,6 +118,66 @@
       <!-- Login Link -->
       <div class="auth-footer">
         <p>Already have an account? <a href="/auth/login" class="signup-link">Sign in here</a></p>
+      </div>
+    </div>
+
+    <!-- Debug Panel (visible when debug mode is ON) -->
+    <div *ngIf="debugMode" class="debug-panel">
+      <div class="debug-header">
+        <h3>🔍 DEBUG INFORMATION</h3>
+        <button type="button" (click)="toggleDebugMode()" class="close-debug">✕</button>
+      </div>
+      
+      <div class="debug-section">
+        <h4>📋 Request Details</h4>
+        <pre>{{ requestDetails | json }}</pre>
+        <button 
+          type="button" 
+          class="copy-btn"
+          (click)="copyRequestDetails()"
+          *ngIf="requestDetails">
+          📋 Copy to Clipboard
+        </button>
+      </div>
+
+      <div class="debug-section">
+        <h4>📝 Form State</h4>
+        <pre>{{ registerForm.value | json }}</pre>
+      </div>
+
+      <div class="debug-section">
+        <h4>✅ Form Validity</h4>
+        <pre>{{ { valid: registerForm.valid, touched: registerForm.touched, dirty: registerForm.dirty } | json }}</pre>
+      </div>
+
+      <div class="debug-section">
+        <h4>🔌 API Endpoint</h4>
+        <pre>POST http://localhost:8086/api/auth/register</pre>
+      </div>
+
+      <div class="debug-section">
+        <h4>📡 Expected Headers</h4>
+        <pre>{{
+          {
+            'Content-Type': 'application/json',
+            'Authorization': 'None (public endpoint)',
+            'Accept': 'application/json'
+          } | json
+        }}</pre>
+      </div>
+
+      <div class="debug-section">
+        <h4>💡 Testing with Postman</h4>
+        <pre>
+curl -X POST http://localhost:8086/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '&lcub;
+    "email": "test&#64;example.com",
+    "nom": "Doe",
+    "prenom": "John",
+    "password": "your_password_here"
+  &rcub;'
+        </pre>
       </div>
     </div>
   </div>

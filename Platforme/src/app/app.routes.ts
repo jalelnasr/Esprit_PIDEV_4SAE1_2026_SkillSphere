@@ -7,6 +7,8 @@ import {EvaluationListComponent} from '@features/formateur/evaluation-list/evalu
 import {EvaluationCreateComponent} from '@features/formateur/evaluation-create/evaluation-create.component';
 import {EvaluationManageComponent} from '@features/formateur/evaluation-manage/evaluation-manage.component';
 import {QuizComponent} from '@features/formateur/quiz/quiz.component';
+import {QuizPlayComponent} from '@features/formateur/quiz-play/quiz-play.component';
+import {EvaluationQuizDetailComponent} from '@features/formateur/evaluation-quiz-detail/evaluation-quiz-detail.component';
 
 export const routes: Routes = [
   { path: 'home', loadComponent: () => import('./features/home/home.component').then(m => m.HomeComponent) },
@@ -88,24 +90,47 @@ export const routes: Routes = [
         path: 'user',
         canActivate: [authGuard],
         loadChildren: () => import('./features/user/user.routes').then(m => m.USER_ROUTES)
+      },
+      {
+        path: 'formateur/evaluations/create',
+        component: EvaluationCreateComponent
+      },
+      {
+        path: 'formateur/evaluations/quizzes',
+        canActivate: [authGuard, RoleGuard],
+        data: { roles: ['FORMATEUR'] },
+        component: EvaluationQuizDetailComponent
+      },
+      {
+        path: 'apprenant/evaluations/quizzes',
+        canActivate: [authGuard, RoleGuard],
+        data: { roles: ['APPRENANT'] },
+        component: EvaluationQuizDetailComponent
+      },
+      {
+        path: 'formateur/evaluations',
+        component: EvaluationListComponent,
+        pathMatch: 'full'
+      },
+      {
+        path: 'formateur/evaluations/:id/quiz',
+        component: QuizComponent
+      },
+      {
+        path: 'formateur/evaluations/:id/quiz-play/:quizId',
+        component: QuizPlayComponent
+      },
+      {
+        path: 'formateur/evaluations/:id/manage',
+        component: EvaluationManageComponent
+      },
+      {
+        path: 'apprenant/evaluations/:id/quiz-play/:quizId',
+        canActivate: [authGuard, RoleGuard],
+        data: { roles: ['APPRENANT'] },
+        component: QuizPlayComponent
       }
     ]
-  },
-  {
-    path: 'formateur/evaluations/create',
-    component: EvaluationCreateComponent
-  },
-  {
-    path: 'formateur/evaluations',
-    component: EvaluationListComponent
-  },
-  {
-    path: 'formateur/evaluations/:id/quiz',
-    component: QuizComponent
-  },
-  {
-    path: 'formateur/evaluations/:id/manage',
-    component: EvaluationManageComponent
   },
   { path: '', redirectTo: 'home', pathMatch: 'full' },
   { path: '**', redirectTo: 'home' }

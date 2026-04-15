@@ -5,7 +5,7 @@ import { Router } from '@angular/router';
 import { ThemeService } from 'src/app/services/theme.service';
 import { AuthService } from 'src/app/core/services/auth.service';
 import { UiRole } from '../../models/auth.model';
-import { AuthResponse } from 'src/app/core/models/auth.model';
+import { AuthResponse, RegisterRequest } from 'src/app/core/models/auth.model';
 import { HttpClient } from '@angular/common/http';
 import { environment } from 'src/environments/environment';
 
@@ -83,8 +83,6 @@ export class AuthModalComponent implements OnInit {
       prenom: ['', Validators.required],
       nom: ['', Validators.required],
       email: ['', [Validators.required, Validators.email]],
-      phone: [''],
-      adresse: [''],
       password: ['', [Validators.required, Validators.minLength(8)]],
       confirmPassword: ['', Validators.required],
       terms: [false, Validators.requiredTrue]
@@ -144,8 +142,6 @@ export class AuthModalComponent implements OnInit {
       prenom: string;
       nom: string;
       email: string;
-      phone?: string | null;
-      adresse?: string | null;
       password: string;
       confirmPassword: string;
     };
@@ -159,39 +155,46 @@ export class AuthModalComponent implements OnInit {
     }
 
     // ✅ Register always creates learner (backend enforces role)
-    this.authService
-      .register({
-        prenom: v.prenom,
-        nom: v.nom,
-        email: v.email,
-        password: v.password,
-        phone: v.phone || null,
-        adresse: v.adresse || null
-      })
-      .subscribe({
-        next: (_res: AuthResponse) => {
-          this.isLoading = false;
-          this.errorMessage = null;
+    const payload = {
+      prenom: v.prenom,
+      nom: v.nom,
+      email: v.email,
+      password: v.password
+    } as RegisterRequest;
 
-          const backendRole = this.authService.getUserRole();
-          const finalRole: UiRole = this.mapBackendRoleToUiRole(backendRole) ?? 'learner';
+    console.log('📝 Register payload:', payload);
 
-          if (finalRole === 'admin') {
-            this.router.navigate(['/admin/dashboard']);
-            this.closeModal.emit();
-            return;
-          }
+    this.authService.register(payload).subscribe({
+      next: (_res: AuthResponse) => {
+        this.isLoading = false;
+        this.errorMessage = null;
 
-          this.userRole = finalRole;
-          this.showModules = true;
-        },
-        error: (err: any) => {
-          console.error(err);
-          this.isLoading = false;
-          if (err?.error?.message) this.errorMessage = err.error.message;
-          else this.errorMessage = 'Registration failed. Please try again.';
+        const backendRole = this.authService.getUserRole();
+        const finalRole: UiRole = this.mapBackendRoleToUiRole(backendRole) ?? 'learner';
+
+        if (finalRole === 'admin') {
+          this.router.navigate(['/admin/dashboard']);
+          this.closeModal.emit();
+          return;
         }
-      });
+
+        this.userRole = finalRole;
+        this.showModules = true;
+      },
+      error: (err: any) => {
+        console.error('❌ Register error in modal:', err);
+        this.isLoading = false;
+        if (err?.error?.message) {
+          this.errorMessage = err.error.message;
+        } else if (err?.message) {
+          this.errorMessage = err.message;
+        } else if (err?.status === 0) {
+          this.errorMessage = 'Cannot connect to server. Is the backend running?';
+        } else {
+          this.errorMessage = 'Registration failed. Please try again.';
+        }
+      }
+    });
   }
 
   // =========================

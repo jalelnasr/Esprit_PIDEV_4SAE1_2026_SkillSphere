@@ -1,13 +1,14 @@
 import { ApplicationConfig, provideZoneChangeDetection, APP_INITIALIZER } from '@angular/core';
 import { provideRouter } from '@angular/router';
-import { provideHttpClient, withInterceptorsFromDi, withFetch } from '@angular/common/http';
+import { provideHttpClient, withInterceptors, withFetch } from '@angular/common/http';
 import { provideAnimations } from '@angular/platform-browser/animations';
 import { provideClientHydration } from '@angular/platform-browser';
 import { firstValueFrom } from 'rxjs';
 
 import { routes } from './app.routes';
 import { AuthService } from './core/services/auth.service';
-import { JwtInterceptor } from './core/interceptors/jwt.interceptor';
+import { authInterceptor } from './interceptors/auth.interceptor';
+import { ErrorInterceptor } from './core/interceptors/error.interceptor';
 import { HTTP_INTERCEPTORS } from '@angular/common/http';
 
 // ⭐ THIS RUNS BEFORE ANGULAR STARTS
@@ -23,10 +24,10 @@ export const appConfig: ApplicationConfig = {
     provideAnimations(),
 
     // ✅ add withFetch() to remove NG02801 warning
-    provideHttpClient(withInterceptorsFromDi(), withFetch()),
+    provideHttpClient(withInterceptors([authInterceptor]), withFetch()),
 
-    // JWT interceptor
-    { provide: HTTP_INTERCEPTORS, useClass: JwtInterceptor, multi: true },
+    // Error interceptor (logs and formats errors)
+    { provide: HTTP_INTERCEPTORS, useClass: ErrorInterceptor, multi: true },
 
     // ⭐ AUTO LOGIN ON REFRESH
     {

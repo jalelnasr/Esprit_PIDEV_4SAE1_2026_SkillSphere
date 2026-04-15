@@ -18,6 +18,7 @@ interface MenuItem {
 interface SubItem {
   label: string;
   route: string;
+  roles?: BackendRole[];
 }
 
 @Component({
@@ -52,6 +53,17 @@ export class SidebarComponent implements OnInit {
         { label: 'Wishlist', route: '/learning/wishlist' }
       ]
     },
+    {
+      icon: '📝',
+      label: 'Evaluations',
+      route: '/formateur/evaluations',
+      roles: ['FORMATEUR', 'APPRENANT'],
+      subItems: [
+        { label: 'Browse Evaluations', route: '/apprenant/evaluations/quizzes', roles: ['APPRENANT'] },
+        { label: 'List Evaluations', route: '/formateur/evaluations', roles: ['FORMATEUR'] },
+        { label: 'Add Evaluation', route: '/formateur/evaluations/create', roles: ['FORMATEUR'] }
+      ]
+    },
 
     {
       icon: '🎓',
@@ -59,8 +71,9 @@ export class SidebarComponent implements OnInit {
       route: '/certification',
       roles: ['APPRENANT', 'FORMATEUR'],
       subItems: [
-        { label: 'Exams', route: '/certification/exams' },
-        { label: 'My Certificates', route: '/certification/certificates' }
+        { label: 'Exams', route: '/certification/exams', roles: ['APPRENANT', 'FORMATEUR'] },
+        { label: 'My Certificates', route: '/certification/certificates', roles: ['APPRENANT'] },
+        { label: 'Certificate Requests', route: '/certification/requests', roles: ['FORMATEUR'] }
       ]
     },
 
@@ -136,9 +149,14 @@ export class SidebarComponent implements OnInit {
 
   updateMenuItems(): void {
     if (this.userRole) {
-      this.menuItems = this.allMenuItems.filter(item =>
-        item.roles.includes(this.userRole!)
-      );
+      this.menuItems = this.allMenuItems
+        .filter(item => item.roles.includes(this.userRole!))
+        .map(item => ({
+          ...item,
+          subItems: item.subItems?.filter(subItem =>
+            !subItem.roles || subItem.roles.includes(this.userRole!)
+          )
+        }));
     } else {
       this.menuItems = [];
     }

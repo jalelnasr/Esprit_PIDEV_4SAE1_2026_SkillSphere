@@ -20,6 +20,7 @@ export class QuizComponent  implements OnInit{
 
   constructor(
     private route: ActivatedRoute,
+    private router: Router,
     private fb: FormBuilder,
     private quizService: QuizApiService
   ) {}
@@ -73,6 +74,15 @@ export class QuizComponent  implements OnInit{
   saveQuestions() {
     if (!this.quiz) return;
 
+    let questionsProcessed = 0;
+    const totalQuestions = this.questions.length;
+    let choicesLeft = 0;
+
+    // Count total choices to know when we're done
+    this.questions.controls.forEach((qControl) => {
+      choicesLeft += qControl.value.choices.length;
+    });
+
     this.questions.controls.forEach((qControl) => {
 
       this.quizService.addQuestion(
@@ -88,13 +98,25 @@ export class QuizComponent  implements OnInit{
             questionRes.id,
             c.label,
             c.isCorrect
-          ).subscribe();
+          ).subscribe(() => {
+            choicesLeft--;
+            // When all choices are saved, redirect to quiz play
+            if (choicesLeft === 0) {
+              alert('Questions Saved! Redirecting to quiz preview...');
+              // Redirect to quiz-play component
+              this.router.navigate([`/formateur/evaluations/${this.evaluationId}/quiz-play/${this.quiz.id}`]);
+            }
+          });
         });
 
       });
 
     });
 
-    alert('Questions Saved');
+    // If no choices, redirect immediately
+    if (choicesLeft === 0) {
+      alert('Questions Saved! Redirecting to quiz preview...');
+      this.router.navigate([`/formateur/evaluations/${this.evaluationId}/quiz-play/${this.quiz.id}`]);
+    }
   }
 }

@@ -4,6 +4,17 @@
     <a class="btn" routerLink="/formateur/evaluations/create">+ New Evaluation</a>
   </div>
 
+  <div class="search-bar">
+    <input
+      [(ngModel)]="searchTerm"
+      type="text"
+      placeholder="Search evaluations by title"
+      class="search-input"
+    />
+    <button class="btn" (click)="onSearch()">Search</button>
+    <button class="btn-secondary" (click)="clearSearch()">Clear</button>
+  </div>
+
   <div class="grid">
     <div class="card" *ngFor="let e of evaluations">
       <div class="top">

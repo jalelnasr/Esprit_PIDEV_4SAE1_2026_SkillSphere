@@ -52,6 +52,7 @@ export class LoginComponent implements OnInit {
     this.authService.login(email, password).subscribe({
       next: (res) => {
         this.isLoading = false;
+        console.log('✅ Login response:', res);
         this.toastService.success('Login successful!');
 
         // ✅ redirect by BACKEND role

@@ -16,6 +16,16 @@
 
   <div class="evaluation-card">
 
+    <!-- Error Message -->
+    <div *ngIf="errorMessage" style="color: #d32f2f; background: #ffebee; padding: 16px; border-radius: 4px; margin-bottom: 16px;">
+      <strong>❌ Error:</strong> {{ errorMessage }}
+    </div>
+
+    <!-- Success Message -->
+    <div *ngIf="successMessage" style="color: #388e3c; background: #e8f5e9; padding: 16px; border-radius: 4px; margin-bottom: 16px;">
+      <strong>✅ Success:</strong> {{ successMessage }}
+    </div>
+
     <form [formGroup]="form" (ngSubmit)="submit()">
 
       <div class="form-group">
@@ -33,8 +43,9 @@
       </div>
 
       <div class="form-actions">
-        <button type="submit" class="btn-create">
-           Create Evaluation
+        <button type="submit" class="btn-create" [disabled]="isSubmitting || form.invalid">
+          <span *ngIf="!isSubmitting">Create Evaluation</span>
+          <span *ngIf="isSubmitting">⏳ Creating...</span>
         </button>
       </div>
 

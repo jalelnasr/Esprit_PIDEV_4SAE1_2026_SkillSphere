@@ -19,6 +19,100 @@
     </div>
   </section>
 
+  <!-- Formateur Section -->
+  <section class="formateur-section" *ngIf="userRole$ | async as role; let isFormateur = $implicit">
+    <div *ngIf="role === 'FORMATEUR'" class="formateur-actions">
+      <div class="section-header">
+        <h2>📋 Evaluations Management</h2>
+      </div>
+      <div class="formateur-buttons">
+        <button class="action-btn add-btn" routerLink="/formateur/evaluations/create">
+          ➕ Add New Evaluation
+        </button>
+        <a class="action-btn view-btn" routerLink="/formateur/evaluations/quizzes">
+          📊 Voir mes évaluations et quizzes
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Quiz & Evaluation List -->
+  <section class="dashboard-quizzes-section" *ngIf="userRole$ | async as role">
+    <div *ngIf="role === 'FORMATEUR'" class="quiz-list-card">
+      <div class="list-header">
+        <div>
+          <h2>📌 Mes évaluations et quizzes</h2>
+          <p class="list-subtitle">Toutes les évaluations enregistrées avec leurs quizzes, questions et réponses.</p>
+        </div>
+      </div>
+
+      <div *ngIf="evaluationLoading" class="list-loading">
+        <p>Chargement des données...</p>
+      </div>
+
+      <div *ngIf="evaluationError" class="list-error">
+        <p>{{ evaluationError }}</p>
+      </div>
+
+      <div *ngIf="!evaluationLoading && (userRole$ | async) !== 'FORMATEUR'" class="list-empty">
+        <p>Seuls les formateurs peuvent voir leurs évaluations et quizzes ici.</p>
+      </div>
+
+      <div *ngIf="!evaluationLoading && (userRole$ | async) === 'FORMATEUR' && !evaluations.length" class="list-empty">
+        <p>Aucune évaluation trouvée pour votre compte.</p>
+      </div>
+
+      <div *ngIf="!evaluationLoading && evaluations.length" class="evaluations-grid">
+        <article *ngFor="let evaluation of evaluations" class="evaluation-summary-card">
+          <header class="evaluation-card-header" (click)="toggleEvaluation(evaluation.id)">
+            <div>
+              <h3>{{ evaluation.title }}</h3>
+              <p>{{ evaluation.description }}</p>
+            </div>
+            <div class="evaluation-header-meta">
+              <span class="status-badge" [ngClass]="'status-' + evaluation.status.toLowerCase()">
+                {{ evaluation.status }}
+              </span>
+              <span class="toggle-arrow">{{ isExpanded(evaluation.id) ? '▲' : '▼' }}</span>
+            </div>
+          </header>
+
+          <div class="evaluation-card-body" *ngIf="isExpanded(evaluation.id)">
+            <div class="evaluation-info">
+              <div><strong>Evaluation ID:</strong> {{ evaluation.id }}</div>
+              <div><strong>Quiz linked:</strong> {{ evaluation.quiz?.id || 'Aucun' }}</div>
+              <div><strong>Passing score:</strong> {{ evaluation.quizDetails?.passingScore || 'N/A' }}%</div>
+              <div><strong>Questions:</strong> {{ getTotalQuestions(evaluation) }}</div>
+              <div><strong>Total Points:</strong> {{ getTotalPoints(evaluation) }}</div>
+            </div>
+
+            <div *ngIf="evaluation.quizDetails?.questions?.length" class="questions-block">
+              <h4>Questions</h4>
+              <div *ngFor="let question of evaluation.quizDetails?.questions; let i = index" class="question-block">
+                <div class="question-title">
+                  <span>Q{{ i + 1 }}</span>
+                  <strong>{{ question.text }}</strong>
+                  <span class="points-tag">{{ question.points }} pts</span>
+                </div>
+                <div class="choices-list">
+                  <div *ngFor="let choice of question.choices" class="choice-row" [class.choice-correct]="choice.isCorrect">
+                    <span class="choice-symbol">{{ choice.isCorrect ? '✔' : '○' }}</span>
+                    <span class="choice-text">{{ choice.label }}</span>
+                    <span *ngIf="choice.isCorrect" class="choice-correct-label">Correct</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div *ngIf="!evaluation.quizDetails?.questions?.length" class="no-quiz-details">
+              <p>Aucun quiz détaillé trouvé pour cette évaluation.</p>
+            </div>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
   <!-- Stats Grid -->
   <section class="stats-section">
     <div *ngFor="let stat of stats" class="stat-card">

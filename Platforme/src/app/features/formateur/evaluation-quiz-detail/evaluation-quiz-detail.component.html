@@ -1,0 +1,200 @@
+<div class="detail-page-container">
+  <!-- Header -->
+  <div class="page-header">
+    <h1>📋 Evaluations & Quizzes Overview</h1>
+    <p class="subtitle" *ngIf="!isApprenant">View all your evaluations with their linked quizzes and detailed questions</p>
+    <p class="subtitle" *ngIf="isApprenant">Browse published evaluations and quizzes from all formateurs</p>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="errorMessage" class="error-state">
+    <p style="color: #d32f2f; background: #ffebee; padding: 16px; border-radius: 4px; margin-bottom: 16px;">
+      ❌ {{ errorMessage }}
+    </p>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Loading evaluations and quiz details...</p>
+  </div>
+
+  <!-- Empty State -->
+  <div *ngIf="!loading && evaluations.length === 0" class="empty-state">
+    <p *ngIf="!isApprenant">No evaluations found. Start by creating a new evaluation!</p>
+    <p *ngIf="isApprenant">No published evaluations available yet.</p>
+    <button *ngIf="!isApprenant" routerLink="/formateur/evaluations/create" class="create-btn">
+      + Create New Evaluation
+    </button>
+  </div>
+
+  <!-- Evaluations Search -->
+  <div *ngIf="!loading" class="search-panel">
+    <div class="search-field">
+      <input
+        [(ngModel)]="searchTerm"
+        type="text"
+        placeholder="Search evaluations by title"
+        class="search-input"
+      />
+    </div>
+    <div class="search-actions">
+      <button type="button" class="search-btn" (click)="onSearch()">Search</button>
+      <button type="button" class="clear-btn" (click)="clearSearch()">Clear</button>
+    </div>
+  </div>
+
+  <!-- Evaluations List -->
+  <div *ngIf="!loading && evaluations.length > 0" class="evaluations-container">
+    <!-- Each Evaluation -->
+    <div *ngFor="let evaluation of evaluations" class="evaluation-card">
+      <!-- Evaluation Header - Always Visible -->
+      <div class="evaluation-header" (click)="toggleExpand(evaluation.id)">
+        <div class="evaluation-title-section">
+          <h2 class="evaluation-title">{{ evaluation.title }}</h2>
+          <span class="status-badge" [ngClass]="'status-' + getStatusClass(evaluation.status)">
+            {{ evaluation.status || 'DRAFT' }}
+          </span>
+        </div>
+
+        <div class="evaluation-summary">
+          <span class="summary-item" *ngIf="evaluation.quizDetails">
+            <strong>Questions:</strong> {{ getTotalQuestions(evaluation) }}
+          </span>
+          <span class="summary-item" *ngIf="evaluation.quizDetails">
+            <strong>Total Points:</strong> {{ getTotalPoints(evaluation) }}
+          </span>
+          <span class="summary-item" *ngIf="!isApprenant && evaluation.quizDetails">
+            <strong>Passing Score:</strong> {{ evaluation.quizDetails.passingScore }}%
+          </span>
+          <span class="summary-item" *ngIf="isApprenant && evaluation.attempted">
+            <strong>Best Score:</strong> {{ evaluation.bestScore }}%
+          </span>
+          <span class="summary-item" *ngIf="isApprenant && evaluation.attempted">
+            <strong>Result:</strong> {{ evaluation.passed ? 'Passed' : 'Not passed yet' }}
+          </span>
+          <span class="summary-item" *ngIf="isApprenant && !evaluation.attempted">
+            <strong>Result:</strong> Not attempted yet
+          </span>
+          <span class="summary-item" *ngIf="isApprenant && evaluation.passed">
+            <strong>Certificate:</strong> {{ getCertificateStatusLabel(evaluation) }}
+          </span>
+          <span class="summary-item" *ngIf="!evaluation.quizDetails">
+            <em>No quiz created yet</em>
+          </span>
+        </div>
+
+        <div class="evaluation-actions">
+          <button *ngIf="!isApprenant" type="button" class="action-btn edit-btn" [routerLink]="['/formateur/evaluations', evaluation.id, 'manage']" (click)="$event.stopPropagation()">
+            ✏️ Update
+          </button>
+          <button type="button" class="action-btn publish-btn" *ngIf="!isApprenant && evaluation.status !== 'PUBLISHED'" (click)="publishEvaluation(evaluation.id); $event.stopPropagation()" [disabled]="publishingEvaluationId === evaluation.id">
+            {{ publishingEvaluationId === evaluation.id ? 'Publishing...' : '🚀 Publish' }}
+          </button>
+          <button *ngIf="!isApprenant" type="button" class="action-btn delete-btn" (click)="deleteEvaluation(evaluation.id); $event.stopPropagation()">
+            🗑️ Delete
+          </button>
+        </div>
+
+        <button class="expand-btn" [class.expanded]="isExpanded(evaluation.id)">
+          ▼
+        </button>
+      </div>
+
+      <!-- Evaluation Description -->
+      <div class="evaluation-description" *ngIf="evaluation.description">
+        <p>{{ evaluation.description }}</p>
+      </div>
+
+      <!-- Expanded Content -->
+      <div class="evaluation-details" *ngIf="isExpanded(evaluation.id)">
+        <ng-container *ngIf="evaluation.quizDetails; else noQuiz">
+          <!-- Quiz Info -->
+          <div class="quiz-info-section">
+            <h3>Quiz Details</h3>
+            <div class="quiz-meta">
+              <div class="meta-item">
+                <strong>Quiz ID:</strong> {{ evaluation.quizDetails.id }}
+              </div>
+              <div class="meta-item">
+                <ng-container *ngIf="!isApprenant">
+                  <strong>Passing Score:</strong>
+                  <span class="passing-score">{{ evaluation.quizDetails.passingScore }}%</span>
+                </ng-container>
+              </div>
+              <div class="meta-item">
+                <strong>Total Questions:</strong> {{ getTotalQuestions(evaluation) }}
+              </div>
+              <div class="meta-item">
+                <strong>Total Points:</strong> {{ getTotalPoints(evaluation) }}
+              </div>
+            </div>
+          </div>
+
+          <!-- Questions List -->
+          <div class="questions-section" *ngIf="!isApprenant && evaluation.quizDetails.questions && evaluation.quizDetails.questions.length > 0">
+            <h3>Questions</h3>
+            <div class="questions-list">
+              <div *ngFor="let question of evaluation.quizDetails.questions; let i = index" class="question-item">
+                <!-- Question Header -->
+                <div class="question-header">
+                  <span class="question-number">Q{{ i + 1 }}</span>
+                  <span class="question-text">{{ question.text }}</span>
+                  <span class="question-points">{{ question.points }} pts</span>
+                </div>
+
+                <!-- Choices -->
+                <div class="choices-list">
+                  <div *ngFor="let choice of question.choices" class="choice-item" [class.correct]="!isApprenant && choice.isCorrect">
+                    <span class="choice-indicator" [class.correct]="!isApprenant && choice.isCorrect">
+                      {{ !isApprenant && choice.isCorrect ? '✓' : '○' }}
+                    </span>
+                    <span class="choice-label">{{ choice.label }}</span>
+                    <span class="choice-tag" *ngIf="!isApprenant && choice.isCorrect">CORRECT</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="questions-section" *ngIf="isApprenant && evaluation.quizDetails.questions && evaluation.quizDetails.questions.length > 0">
+            <h3>Questions</h3>
+            <p>Questions will be shown when you click Start Quiz.</p>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="action-buttons">
+            <button [routerLink]="getQuizPlayRoute(evaluation)" class="play-quiz-btn">
+              {{ isApprenant ? '▶ Start Quiz' : '▶ Preview Quiz' }}
+            </button>
+            <button
+              *ngIf="canRequestCertificate(evaluation)"
+              type="button"
+              class="manage-btn"
+              (click)="requestCertificate(evaluation, $event)">
+              Request Certificate
+            </button>
+            <button *ngIf="!isApprenant" [routerLink]="['/formateur/evaluations', evaluation.id, 'manage']" class="manage-btn">
+              ⚙ Manage Evaluation
+            </button>
+          </div>
+        </ng-container>
+
+        <ng-template #noQuiz>
+          <div class="no-quiz-message">
+            <p *ngIf="!isApprenant">No quiz created for this evaluation yet.</p>
+            <p *ngIf="isApprenant">Quiz not published yet for this evaluation.</p>
+            <button *ngIf="!isApprenant" [routerLink]="['/formateur/evaluations', evaluation.id, 'manage']" class="create-quiz-btn">
+              Create Quiz
+            </button>
+          </div>
+        </ng-template>
+      </div>
+
+      <!-- Expand Hint -->
+      <div class="expand-hint" *ngIf="!isExpanded(evaluation.id)">
+        Click to view details
+      </div>
+    </div>
+  </div>
+</div>

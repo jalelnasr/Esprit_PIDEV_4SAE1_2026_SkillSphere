@@ -1,0 +1,180 @@
+<div class="quiz-play-container" *ngIf="!loading; else loadingTemplate">
+  <!-- Quiz Header -->
+  <div class="quiz-header">
+    <button class="back-btn" (click)="goBack()" title="Go back">
+      ← Back
+    </button>
+    <h1 *ngIf="quiz" class="quiz-title">{{ isApprenant ? 'Quiz' : 'Quiz Preview' }}</h1>
+    <div class="quiz-stats" *ngIf="quiz && !quizCompleted">
+      <span class="question-counter">
+        Question {{ currentQuestionIndex + 1 }} of {{ quiz.questions.length }}
+      </span>
+      <span class="question-counter">
+        Answered: {{ answeredCount }} / {{ quiz.questions.length }}
+      </span>
+      <span class="passing-score" *ngIf="!isApprenant">Passing Score: {{ passingScore }}%</span>
+    </div>
+  </div>
+
+  <!-- Quiz Content -->
+  <div class="quiz-content" *ngIf="quiz && !quizCompleted">
+    <!-- Question Display -->
+    <div class="question-card" *ngIf="currentQuestion">
+      <div class="question-text">
+        <span class="question-number">Q{{ currentQuestionIndex + 1 }}</span>
+        <h2>{{ currentQuestion.text }}</h2>
+        <span class="question-points">{{ currentQuestion.points }} pts</span>
+      </div>
+
+      <!-- Choices -->
+      <div class="choices-container">
+        <button
+          *ngFor="let choice of currentQuestion.choices"
+          (click)="selectAnswer(choice.id)"
+          [class.selected]="isAnswerSelected(choice.id)"
+          class="choice-btn"
+        >
+          <span class="choice-indicator">
+            <span class="radio-circle" [class.active]="isAnswerSelected(choice.id)"></span>
+          </span>
+          <span class="choice-label">{{ choice.label }}</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Navigation Buttons -->
+    <div class="navigation-container">
+      <button
+        class="nav-btn prev-btn"
+        (click)="previousQuestion()"
+        [disabled]="!canGoPrevious()"
+      >
+        ← Previous
+      </button>
+
+      <div class="progress-indicator">
+        <div class="progress-bar">
+          <div
+            class="progress-fill"
+            [style.width.%]="((currentQuestionIndex + 1) / quiz.questions.length) * 100"
+          ></div>
+        </div>
+      </div>
+
+      <button
+        *ngIf="canGoNext(); else submitBtn"
+        class="nav-btn next-btn"
+        (click)="nextQuestion()"
+      >
+        Next →
+      </button>
+
+      <ng-template #submitBtn>
+        <button
+          class="submit-btn"
+          (click)="submitQuiz()"
+          [disabled]="submitting"
+          [title]="!allQuestionsAnswered ? 'Please answer all questions' : 'Submit quiz'"
+        >
+          {{ submitting ? 'Submitting...' : 'Submit Quiz' }}
+        </button>
+      </ng-template>
+    </div>
+
+    <p *ngIf="submitError" style="color:#d32f2f; margin-top:12px; text-align:center;">
+      {{ submitError }}
+    </p>
+  </div>
+
+  <!-- Completion Results -->
+  <div class="quiz-results" *ngIf="quizCompleted && quiz && !isApprenant">
+    <div class="results-card" [class.passed]="score >= passingScore" [class.failed]="score < passingScore">
+      <h2>Quiz Completed!</h2>
+      <div class="score-display">
+        <div class="score-circle" [class.passed]="score >= passingScore">
+          <span class="score-percentage">{{ score }}%</span>
+        </div>
+        <p class="score-status">
+          {{ score >= passingScore ? '✅ Passed' : '❌ Failed' }}
+        </p>
+        <p class="passing-requirement">Passing score: {{ passingScore }}%</p>
+        <p *ngIf="resultMessage">{{ resultMessage }}</p>
+      </div>
+
+      <!-- Detailed Results -->
+      <div class="detailed-results">
+        <h3>Review Your Answers</h3>
+        <div class="questions-review">
+          <div
+            *ngFor="let question of quiz.questions"
+            class="review-item"
+            [class.correct]="isCorrect(question)"
+            [class.incorrect]="isIncorrect(question)"
+          >
+            <div class="review-question">
+              <strong>{{ question.text }}</strong>
+              <span class="answer-mark">
+                {{ isCorrect(question) ? '✅' : '❌' }}
+              </span>
+            </div>
+            <div class="review-answer">
+              <p>
+                <strong>Your answer:</strong>
+                {{ getSelectedAnswerLabel(question) }}
+              </p>
+              <p *ngIf="!isCorrect(question)">
+                <strong>Correct answer:</strong>
+                {{ getCorrectAnswerLabel(question) }}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="results-actions">
+        <button class="action-btn retry-btn" (click)="retryQuiz()">
+          🔄 Retry Quiz
+        </button>
+        <button class="action-btn back-to-eval-btn" (click)="goBack()">
+          ← Back to Evaluation
+        </button>
+        <button class="action-btn all-eval-btn" (click)="goToEvaluations()">
+          📚 All Evaluations
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="quiz-results" *ngIf="quizCompleted && quiz && isApprenant">
+    <div class="results-card" [class.passed]="score >= passingScore" [class.failed]="score < passingScore">
+      <h2>Quiz Submitted</h2>
+      <div class="score-display">
+        <div class="score-circle" [class.passed]="score >= passingScore">
+          <span class="score-percentage">{{ score }}%</span>
+        </div>
+        <p class="score-status">
+          {{ score >= passingScore ? '✅ Passed' : '❌ Failed' }}
+        </p>
+        <p class="passing-requirement">Passing score: {{ passingScore }}%</p>
+      </div>
+
+      <div class="results-actions">
+        <button class="action-btn retry-btn" (click)="retryQuiz()">
+          🔄 Retry Quiz
+        </button>
+        <button class="action-btn all-eval-btn" (click)="goToEvaluations()">
+          📚 Back to Evaluations
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Loading Template -->
+<ng-template #loadingTemplate>
+  <div class="loading-container">
+    <div class="spinner"></div>
+    <p>Loading quiz...</p>
+  </div>
+</ng-template>

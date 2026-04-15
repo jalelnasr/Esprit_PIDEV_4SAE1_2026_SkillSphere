@@ -23,6 +23,7 @@
       "ES2022",
       "dom"
     ],
+    "ignoreDeprecations": "5.0",
     "baseUrl": "./",
     "paths": {
       "@core/*": ["src/app/core/*"],

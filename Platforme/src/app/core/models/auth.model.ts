@@ -32,7 +32,9 @@ export interface RegisterRequest {
  */
 export interface AuthResponse {
   token: string;
-  idUser: number;
+  jwt?: string;
+  idUser?: number;
+  userId?: number;
   nom: string;
   prenom: string;
   email: string;
