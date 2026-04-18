@@ -1,9 +1,14 @@
 <div class="manage-container">
   <div class="header">
     <h1>⚙️ Gestion de la compétition</h1>
-    <button class="btn btn-secondary" [routerLink]="['/competitions', competition?.competitionId]">
-      ← Retour
-    </button>
+    <div class="header-actions">
+      <button *ngIf="isOnlineEvent()" class="btn btn-info" (click)="openStreamModal()">
+        🎥 Gérer le Stream
+      </button>
+      <button class="btn btn-secondary" [routerLink]="['/competitions', competition?.competitionId]">
+        ← Retour
+      </button>
+    </div>
   </div>
 
   <div *ngIf="loading" class="loading">
@@ -85,6 +90,36 @@
           <label>Max participants</label>
           <input type="number" formControlName="maxParticipants" min="1" />
         </div>
+        <div class="form-group" *ngIf="isOnlineEvent()">
+          <label>🎥 URL du Stream (optionnel)</label>
+          <input type="url" formControlName="streamUrl" placeholder="https://www.youtube.com/watch?v=..." />
+          <small class="hint-text">YouTube, Twitch, Zoom, Google Meet, etc.</small>
+        </div>
+        
+        <!-- ✅ PHYSICAL: Location fields -->
+        <div *ngIf="isPhysicalEvent()">
+          <div class="form-group">
+            <label>📌 Nom du lieu</label>
+            <input type="text" formControlName="locationName" placeholder="Ex: Salle de conférence A" />
+          </div>
+          <div class="form-group">
+            <label>🏠 Adresse</label>
+            <input type="text" formControlName="locationAddress" placeholder="Ex: 123 Rue de la République, Tunis" />
+          </div>
+          <div class="form-group">
+            <label>🗺️ Sélectionner la localisation sur la carte</label>
+            <app-map-picker
+              [initialLat]="selectedLat"
+              [initialLng]="selectedLng"
+              (locationSelected)="onLocationSelected($event)">
+            </app-map-picker>
+            <div class="coords-display" *ngIf="selectedLat && selectedLng">
+              <span>📍 Latitude: {{ selectedLat.toFixed(4) }}</span>
+              <span>📍 Longitude: {{ selectedLng.toFixed(4) }}</span>
+            </div>
+          </div>
+        </div>
+        
         <button type="submit" class="btn btn-success" [disabled]="editForm.invalid">
           ✅ Enregistrer
         </button>
@@ -178,5 +213,17 @@
         <button type="submit" class="btn btn-primary" [disabled]="scoreForm.invalid">Enregistrer</button>
       </div>
     </form>
+  </div>
+</div>
+
+
+<!-- Modal Stream Manager -->
+<div class="modal-overlay" *ngIf="showStreamModal" (click)="closeStreamModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <app-stream-manager
+      [competitionId]="competition!.competitionId"
+      (close)="closeStreamModal()"
+      (streamUpdated)="closeStreamModal()">
+    </app-stream-manager>
   </div>
 </div>

@@ -251,4 +251,50 @@ export class CompetitionApiService {
   getWinnerTeamMembers(competitionId: number): Observable<any[]> {
     return this.http.get<any[]>(`${this.baseUrl}/competitions/${competitionId}/winner-team-members`);
   }
+
+  // ========== STREAM Endpoints ==========
+
+  /**
+   * Créer ou mettre à jour un stream pour une compétition
+   * POST /api/stream/competition/{competitionId}
+   */
+  createOrUpdateStream(competitionId: number, streamUrl: string, title?: string, autoExpireHours?: number): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/stream/competition/${competitionId}`, {
+      streamUrl,
+      title,
+      autoExpireHours
+    });
+  }
+
+  /**
+   * Récupérer le stream d'une compétition
+   * GET /api/stream/competition/{competitionId}
+   */
+  getStream(competitionId: number): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/stream/competition/${competitionId}`);
+  }
+
+  /**
+   * Démarrer le stream (OFFLINE → LIVE)
+   * PUT /api/stream/competition/{competitionId}/start
+   */
+  startStream(competitionId: number): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/stream/competition/${competitionId}/start`, {});
+  }
+
+  /**
+   * Arrêter le stream (LIVE → OFFLINE)
+   * PUT /api/stream/competition/{competitionId}/stop
+   */
+  stopStream(competitionId: number): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/stream/competition/${competitionId}/stop`, {});
+  }
+
+  /**
+   * Supprimer le stream
+   * DELETE /api/stream/competition/{competitionId}
+   */
+  deleteStream(competitionId: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/stream/competition/${competitionId}`);
+  }
 }

@@ -28,6 +28,11 @@ export const COMPETITION_ROUTES: Routes = [
     data: { roles: ['FORMATEUR'] },
     loadComponent: () => import('./pages/sms-management/sms-management.component').then(m => m.SmsManagementComponent)
   },
+  // ✅ IMPORTANT: Route 'map' AVANT ':id' pour éviter confusion
+  {
+    path: 'map',
+    loadComponent: () => import('./pages/competition-map/competition-map.component').then(m => m.CompetitionMapComponent)
+  },
   {
     path: 'diagnostic/:id',
     loadComponent: () => import('../../diagnostic-detail.component').then(m => m.DiagnosticDetailComponent)

@@ -3,6 +3,9 @@
     <h1>🏆 {{ 'competitions.title' | translate }}</h1>
     <div class="header-actions">
       <app-language-selector></app-language-selector>
+      <button class="btn btn-info" routerLink="/competitions/map">
+        🗺️ Carte
+      </button>
       <button *ngIf="isFormateur" class="btn btn-success" routerLink="/competitions/sms">
         📱 SMS
       </button>

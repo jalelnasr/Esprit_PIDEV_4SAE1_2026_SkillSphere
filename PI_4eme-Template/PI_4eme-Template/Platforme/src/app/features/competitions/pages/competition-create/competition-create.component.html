@@ -173,6 +173,64 @@
       </div>
     </div>
 
+    <!-- ✅ PHYSICAL: Location fields -->
+    <div class="form-section" *ngIf="competitionForm.get('type')?.value === 'PHYSICAL'">
+      <h2>📍 Localisation de l'événement</h2>
+      <p class="hint-text">Cliquez sur la carte pour choisir la position de l'événement</p>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="locationName">Nom du lieu</label>
+          <input
+            type="text"
+            id="locationName"
+            formControlName="locationName"
+            placeholder="Ex: Esprit School, Tunis"
+          />
+        </div>
+        <div class="form-group">
+          <label for="locationAddress">Adresse complète</label>
+          <input
+            type="text"
+            id="locationAddress"
+            formControlName="locationAddress"
+            placeholder="Ex: 2 Rue de l'Esprit, Ariana"
+          />
+        </div>
+      </div>
+
+      <!-- ✅ Interactive Map Picker -->
+      <app-map-picker
+        (locationSelected)="onLocationSelected($event)">
+      </app-map-picker>
+
+      <div class="coords-display" *ngIf="selectedLat && selectedLng">
+        <span>📍 Latitude: {{ selectedLat.toFixed(4) }}</span>
+        <span>📍 Longitude: {{ selectedLng.toFixed(4) }}</span>
+      </div>
+    </div>
+
+    <!-- ✅ ONLINE: Stream URL field -->
+    <div class="form-section" *ngIf="competitionForm.get('type')?.value === 'ONLINE'">
+      <h2>🎥 Stream en direct (optionnel)</h2>
+      <p class="hint-text">Ajoutez un lien de stream YouTube, Twitch ou Zoom pour les participants inscrits</p>
+
+      <div class="form-group">
+        <label for="streamUrl">URL du stream</label>
+        <input
+          type="url"
+          id="streamUrl"
+          formControlName="streamUrl"
+          placeholder="Ex: https://www.youtube.com/watch?v=... ou https://twitch.tv/..."
+        />
+        <div class="stream-hint" *ngIf="competitionForm.get('streamUrl')?.value">
+          <span *ngIf="competitionForm.get('streamUrl')?.value?.includes('youtube')">📺 YouTube détecté</span>
+          <span *ngIf="competitionForm.get('streamUrl')?.value?.includes('twitch')">🎮 Twitch détecté</span>
+          <span *ngIf="competitionForm.get('streamUrl')?.value?.includes('zoom')">💼 Zoom détecté</span>
+        </div>
+      </div>
+    </div>
+
     <div class="form-actions">
       <button type="button" class="btn btn-secondary" (click)="cancel()" [disabled]="loading">
         Annuler

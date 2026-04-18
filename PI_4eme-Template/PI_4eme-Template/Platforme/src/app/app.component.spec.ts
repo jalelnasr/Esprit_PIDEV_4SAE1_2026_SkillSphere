@@ -1,10 +1,25 @@
 import { TestBed } from '@angular/core/testing';
 import { AppComponent } from './app.component';
+import { TranslateModule, TranslateLoader } from '@ngx-translate/core';
+import { RouterModule } from '@angular/router';
+import { HttpClientTestingModule } from '@angular/common/http/testing';
+import { of } from 'rxjs';
+
+class FakeTranslateLoader implements TranslateLoader {
+  getTranslation() { return of({}); }
+}
 
 describe('AppComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [AppComponent],
+      imports: [
+        AppComponent,
+        TranslateModule.forRoot({
+          loader: { provide: TranslateLoader, useClass: FakeTranslateLoader }
+        }),
+        RouterModule.forRoot([]),
+        HttpClientTestingModule
+      ]
     }).compileComponents();
   });
 
@@ -14,16 +29,15 @@ describe('AppComponent', () => {
     expect(app).toBeTruthy();
   });
 
-  it(`should have the 'Platforme' title`, () => {
+  it('should have the SkillSphere title', () => {
     const fixture = TestBed.createComponent(AppComponent);
     const app = fixture.componentInstance;
-    expect(app.title).toEqual('Platforme');
+    expect(app.title).toEqual('SkillSphere');
   });
 
-  it('should render title', () => {
+  it('should initialize isLoggedIn$', () => {
     const fixture = TestBed.createComponent(AppComponent);
-    fixture.detectChanges();
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('h1')?.textContent).toContain('Hello, Platforme');
+    const app = fixture.componentInstance;
+    expect(app.isLoggedIn$).toBeTruthy();
   });
 });

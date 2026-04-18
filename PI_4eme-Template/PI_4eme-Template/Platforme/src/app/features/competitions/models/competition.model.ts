@@ -21,6 +21,29 @@ export interface Competition {
   createdBy?: number;
   createdAt?: string;
   updatedAt?: string;
+  // Location fields
+  locationName?: string;
+  locationAddress?: string;
+  latitude?: number;
+  longitude?: number;
+  // Winner
+  winnerTeamId?: number;
+}
+
+export interface CompetitionStream {
+  id: number;
+  competitionId: number;
+  streamUrl: string;
+  embedUrl?: string;
+  platform: string;
+  title: string;
+  status: 'LIVE' | 'OFFLINE';
+  startedAt?: string;
+  stoppedAt?: string;
+  autoExpireHours?: number;
+  isLive: boolean;
+  canWatch?: boolean;
+  isParticipant?: boolean;
 }
 
 export interface CreateCompetitionRequest {
@@ -36,6 +59,11 @@ export interface CreateCompetitionRequest {
   participantsPerTeam?: number;
   minTeamSize?: number;
   maxTeamSize?: number;
+  // Location fields (PHYSICAL)
+  locationName?: string;
+  locationAddress?: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface Participant {

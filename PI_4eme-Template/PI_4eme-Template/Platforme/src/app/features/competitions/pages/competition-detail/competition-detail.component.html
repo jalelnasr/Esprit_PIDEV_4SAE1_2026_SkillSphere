@@ -37,6 +37,108 @@
           <p>{{ competition.description }}</p>
         </section>
 
+        <!-- ✅ STREAM PLAYER (ONLINE events) -->
+        <section class="info-section" *ngIf="isOnlineEvent()">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
+            <h2 style="margin: 0;">🎥 Stream en direct</h2>
+            <!-- ✅ FORMATEUR: Bouton de gestion du stream -->
+            <button *ngIf="isFormateur()" class="btn-stream-manage" (click)="openStreamManager()">
+              ⚙️ Gérer le Stream
+            </button>
+          </div>
+          
+          <div *ngIf="streamLoading" class="stream-loading">
+            <div class="spinner"></div>
+            <p>Chargement du stream...</p>
+          </div>
+
+          <div *ngIf="streamError" class="alert alert-danger">
+            {{ streamError }}
+          </div>
+
+          <div *ngIf="!streamLoading && !stream" class="alert alert-info">
+            <div *ngIf="isFormateur()">
+              ℹ️ Vous n'avez pas encore configuré de stream pour cet événement
+              <button class="btn-add-stream" (click)="openStreamManager()" style="margin-top: 0.5rem;">
+                ➕ Ajouter un stream
+              </button>
+            </div>
+            <div *ngIf="!isFormateur()">
+              ℹ️ Le formateur n'a pas encore configuré de stream pour cet événement
+            </div>
+          </div>
+
+          <!-- ✅ APPRENANT non inscrit: Stream verrouillé -->
+          <div *ngIf="!streamLoading && stream && !stream.canWatch && !isFormateur()" class="stream-locked">
+            <div class="lock-icon">🔒</div>
+            <p>Le stream est réservé aux participants inscrits</p>
+            <button class="btn btn-primary" (click)="registerIndividual()" *ngIf="isCompetitionOpen() && canParticipateIndividual()">
+              ✅ S'inscrire pour voir le stream
+            </button>
+            <button class="btn btn-primary" (click)="openJoinTeamModal()" *ngIf="isCompetitionOpen() && canParticipateAsTeam()">
+              👥 Rejoindre un groupe pour voir le stream
+            </button>
+          </div>
+
+          <!-- ✅ Stream visible (FORMATEUR ou APPRENANT inscrit) -->
+          <div *ngIf="canViewStream() || (isFormateur() && stream)" class="stream-container">
+            <div *ngIf="stream?.isLive" class="stream-live-badge">
+              🔴 EN DIRECT
+            </div>
+            <iframe 
+              [src]="getEmbedStreamUrl() | sanitizeUrl"
+              frameborder="0"
+              allowfullscreen
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              class="stream-player">
+            </iframe>
+            <div class="stream-info">
+              <div class="stream-details">
+                <span class="stream-platform">📺 {{ stream?.platform }}</span>
+                <span class="stream-status" [class.live]="stream?.isLive">
+                  {{ stream?.isLive ? '🔴 EN DIRECT' : '⚫ HORS LIGNE' }}
+                </span>
+              </div>
+              <a [href]="getStreamUrl()" target="_blank" class="stream-link">
+                🔗 Ouvrir dans une nouvelle fenêtre
+              </a>
+            </div>
+          </div>
+        </section>
+
+        <!-- ✅ MAP (PHYSICAL events, only if registered OR formateur) -->
+        <section class="info-section" *ngIf="isPhysicalEvent() && competition.latitude && competition.longitude">
+          <h2>📍 Localisation</h2>
+          
+          <div *ngIf="!isRegistered && !isFormateur()" class="map-locked">
+            <div class="lock-icon">🔒</div>
+            <p>La localisation est réservée aux participants inscrits</p>
+            <button class="btn btn-primary" (click)="registerIndividual()" *ngIf="isCompetitionOpen() && canParticipateIndividual()">
+              ✅ S'inscrire pour voir la localisation
+            </button>
+            <button class="btn btn-primary" (click)="openJoinTeamModal()" *ngIf="isCompetitionOpen() && canParticipateAsTeam()">
+              👥 Rejoindre un groupe pour voir la localisation
+            </button>
+          </div>
+
+          <div *ngIf="isRegistered || isFormateur()" class="location-details">
+            <div class="location-info-box">
+              <div class="location-item" *ngIf="competition.locationName">
+                <strong>📌 Lieu:</strong> {{ competition.locationName }}
+              </div>
+              <div class="location-item" *ngIf="competition.locationAddress">
+                <strong>🏠 Adresse:</strong> {{ competition.locationAddress }}
+              </div>
+              <div class="location-item">
+                <strong>🌍 Coordonnées:</strong> 
+                {{ competition.latitude!.toFixed(4) }}, {{ competition.longitude!.toFixed(4) }}
+              </div>
+            </div>
+            
+            <div [id]="mapId" class="event-map"></div>
+          </div>
+        </section>
+
         <section class="info-section">
           <h2>📅 Informations</h2>
           <div class="info-grid">
@@ -294,5 +396,17 @@
         Aucun groupe disponible
       </p>
     </div>
+  </div>
+</div>
+
+
+<!-- ✅ Modal: Gestion du Stream (FORMATEUR uniquement) -->
+<div class="modal-overlay" *ngIf="showStreamManager" (click)="closeStreamManager()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <app-stream-manager
+      [competitionId]="competition!.competitionId"
+      (close)="closeStreamManager()"
+      (streamUpdated)="closeStreamManager()">
+    </app-stream-manager>
   </div>
 </div>

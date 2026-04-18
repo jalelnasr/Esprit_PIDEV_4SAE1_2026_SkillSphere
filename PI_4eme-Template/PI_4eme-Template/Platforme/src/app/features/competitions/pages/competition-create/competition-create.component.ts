@@ -2,13 +2,15 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { CompetitionApiService } from '../../services/competition-api.service';
 import { CreateCompetitionRequest } from '../../models/competition.model';
+import { MapPickerComponent, MapLocation } from '../../../../shared/components/map-picker/map-picker.component';
 
 @Component({
   selector: 'app-competition-create',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, MapPickerComponent],
   templateUrl: './competition-create.component.html',
   styleUrls: ['./competition-create.component.css']
 })
@@ -21,6 +23,12 @@ export class CompetitionCreateComponent {
   // ✅ dates: no past
   minDate = new Date().toISOString().slice(0, 16);
   dateError: string | null = null;
+
+  // Map location
+  selectedLat: number | null = null;
+  selectedLng: number | null = null;
+  selectedAddress: string = '';
+  mapLoaded = false;
 
   // ✅ backend enums (keep only if backend supports)
   competitionTypes = [
@@ -41,7 +49,8 @@ export class CompetitionCreateComponent {
   constructor(
     private fb: FormBuilder,
     private competitionService: CompetitionApiService,
-    private router: Router
+    private router: Router,
+    private sanitizer: DomSanitizer
   ) {
     this.competitionForm = this.fb.group({
       title: ['', [Validators.required, Validators.minLength(3)]],
@@ -58,7 +67,16 @@ export class CompetitionCreateComponent {
 
       // TEAM fields
       numberOfTeams: [{ value: null, disabled: true }, []],
-      participantsPerTeam: [{ value: null, disabled: true }, []]
+      participantsPerTeam: [{ value: null, disabled: true }, []],
+
+      // PHYSICAL fields
+      locationName: [''],
+      locationAddress: [''],
+      latitude: [null],
+      longitude: [null],
+
+      // ONLINE fields
+      streamUrl: ['']
     });
 
     this.setupParticipationTypeBehavior();
@@ -206,15 +224,39 @@ export class CompetitionCreateComponent {
     if (formValue.participationType === 'TEAM') {
       request.numberOfTeams = formValue.numberOfTeams;
       request.participantsPerTeam = formValue.participantsPerTeam;
-
-      // ✅ enforce total calculation again
       request.maxParticipants = (Number(formValue.numberOfTeams) || 0) * (Number(formValue.participantsPerTeam) || 0);
+    }
+
+    // PHYSICAL location fields
+    if (formValue.type === 'PHYSICAL') {
+      request.locationName = formValue.locationName || undefined;
+      request.locationAddress = formValue.locationAddress || undefined;
+      request.latitude = formValue.latitude || undefined;
+      request.longitude = formValue.longitude || undefined;
     }
 
     this.competitionService.createCompetition(request).subscribe({
       next: (competition) => {
         this.success = true;
         this.loading = false;
+        
+        // Si ONLINE et streamUrl fourni, créer le stream
+        if (formValue.type === 'ONLINE' && formValue.streamUrl) {
+          this.competitionService.createOrUpdateStream(
+            competition.competitionId,
+            formValue.streamUrl,
+            `Stream - ${competition.title}`,
+            undefined
+          ).subscribe({
+            next: () => {
+              console.log('✅ Stream créé avec succès');
+            },
+            error: (err) => {
+              console.error('❌ Erreur création stream:', err);
+            }
+          });
+        }
+        
         setTimeout(() => {
           this.router.navigate(['/competitions', competition.competitionId]);
         }, 800);
@@ -260,5 +302,29 @@ export class CompetitionCreateComponent {
 
   cancel() {
     this.router.navigate(['/competitions']);
+  }
+
+  // ✅ Called when user clicks on map picker
+  onLocationSelected(location: MapLocation): void {
+    if (location.lat && location.lng) {
+      this.competitionForm.patchValue({
+        latitude: location.lat,
+        longitude: location.lng
+      });
+      this.selectedLat = location.lat;
+      this.selectedLng = location.lng;
+    } else {
+      this.competitionForm.patchValue({ latitude: undefined, longitude: undefined });
+      this.selectedLat = null;
+      this.selectedLng = null;
+    }
+  }
+
+  // ✅ Generate OpenStreetMap URL for preview
+  getMapUrl(): SafeResourceUrl {
+    const lat = this.competitionForm.get('latitude')?.value;
+    const lng = this.competitionForm.get('longitude')?.value;
+    const url = `https://www.openstreetmap.org/export/embed.html?bbox=${lng-0.01},${lat-0.01},${lng+0.01},${lat+0.01}&layer=mapnik&marker=${lat},${lng}`;
+    return this.sanitizer.bypassSecurityTrustResourceUrl(url);
   }
 }

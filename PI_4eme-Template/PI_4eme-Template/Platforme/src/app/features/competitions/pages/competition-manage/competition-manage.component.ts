@@ -4,11 +4,13 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CompetitionApiService } from '../../services/competition-api.service';
 import { Competition, Participant, CreateCompetitionRequest } from '../../models/competition.model';
+import { StreamManagerComponent } from '../../components/stream-manager/stream-manager.component';
+import { MapPickerComponent, MapLocation } from '../../../../shared/components/map-picker/map-picker.component';
 
 @Component({
   selector: 'app-competition-manage',
   standalone: true,
-  imports: [CommonModule, RouterModule, ReactiveFormsModule],
+  imports: [CommonModule, RouterModule, ReactiveFormsModule, StreamManagerComponent, MapPickerComponent],
   templateUrl: './competition-manage.component.html',
   styleUrls: ['./competition-manage.component.css']
 })
@@ -25,6 +27,13 @@ export class CompetitionManageComponent implements OnInit {
   selectedParticipant: Participant | null = null;
   scoreForm: FormGroup;
 
+  // Stream modal
+  showStreamModal = false;
+
+  // Map location
+  selectedLat: number | undefined = undefined;
+  selectedLng: number | undefined = undefined;
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
@@ -37,7 +46,12 @@ export class CompetitionManageComponent implements OnInit {
       status: ['', Validators.required],
       maxParticipants: [0, [Validators.required, Validators.min(1)]],
       startDate: ['', Validators.required],
-      endDate: ['', Validators.required]
+      endDate: ['', Validators.required],
+      streamUrl: [''], // Pour les événements ONLINE
+      locationName: [''], // Pour les événements PHYSICAL
+      locationAddress: [''],
+      latitude: [null],
+      longitude: [null]
     });
 
     // ✅ score + rank
@@ -68,14 +82,43 @@ export class CompetitionManageComponent implements OnInit {
           status: data.status,
           maxParticipants: data.maxParticipants,
           startDate: this.formatDateForInput(data.startDate),
-          endDate: this.formatDateForInput(data.endDate)
+          endDate: this.formatDateForInput(data.endDate),
+          locationName: data.locationName || '',
+          locationAddress: data.locationAddress || '',
+          latitude: data.latitude || null,
+          longitude: data.longitude || null
         });
+        
+        // Set selected location for map picker
+        if (data.latitude && data.longitude) {
+          this.selectedLat = data.latitude;
+          this.selectedLng = data.longitude;
+        }
+        
         this.loading = false;
+        
+        // Charger le stream si événement ONLINE
+        if (this.isOnlineEvent()) {
+          this.loadStream(id);
+        }
       },
       error: (err) => {
         this.error = 'Erreur lors du chargement';
         this.loading = false;
         console.error(err);
+      }
+    });
+  }
+
+  loadStream(competitionId: number) {
+    this.competitionService.getStream(competitionId).subscribe({
+      next: (stream) => {
+        this.editForm.patchValue({
+          streamUrl: stream.streamUrl
+        });
+      },
+      error: () => {
+        // Pas de stream configuré
       }
     });
   }
@@ -98,8 +141,18 @@ export class CompetitionManageComponent implements OnInit {
         status: this.competition.status,
         maxParticipants: this.competition.maxParticipants,
         startDate: this.formatDateForInput(this.competition.startDate),
-        endDate: this.formatDateForInput(this.competition.endDate)
+        endDate: this.formatDateForInput(this.competition.endDate),
+        locationName: this.competition.locationName || '',
+        locationAddress: this.competition.locationAddress || '',
+        latitude: this.competition.latitude || null,
+        longitude: this.competition.longitude || null
       });
+      
+      // Set selected location for map picker
+      if (this.competition.latitude && this.competition.longitude) {
+        this.selectedLat = this.competition.latitude;
+        this.selectedLng = this.competition.longitude;
+      }
     }
   }
 
@@ -128,7 +181,12 @@ export class CompetitionManageComponent implements OnInit {
       numberOfTeams: this.competition.numberOfTeams || undefined,
       participantsPerTeam: this.competition.participantsPerTeam || undefined,
       minTeamSize: this.competition.minTeamSize || undefined,
-      maxTeamSize: this.competition.maxTeamSize || undefined
+      maxTeamSize: this.competition.maxTeamSize || undefined,
+      // ✅ Location fields for PHYSICAL events
+      locationName: formValue.locationName || undefined,
+      locationAddress: formValue.locationAddress || undefined,
+      latitude: formValue.latitude || undefined,
+      longitude: formValue.longitude || undefined
     };
 
     console.log('📤 Envoi des données:', JSON.stringify(request, null, 2));
@@ -139,7 +197,26 @@ export class CompetitionManageComponent implements OnInit {
         next: (updated) => {
           this.competition = updated;
           this.editMode = false;
-          alert('✅ Modifications enregistrées');
+          
+          // Si ONLINE et streamUrl fourni, créer/mettre à jour le stream
+          if (this.isOnlineEvent() && formValue.streamUrl) {
+            this.competitionService.createOrUpdateStream(
+              this.competition.competitionId,
+              formValue.streamUrl,
+              `Stream - ${this.competition.title}`,
+              undefined
+            ).subscribe({
+              next: () => {
+                alert('✅ Modifications et stream enregistrés');
+              },
+              error: (err) => {
+                console.error('❌ Erreur stream:', err);
+                alert('✅ Modifications enregistrées (erreur stream)');
+              }
+            });
+          } else {
+            alert('✅ Modifications enregistrées');
+          }
         },
         error: (err) => {
           console.error('❌ Erreur complète:', err);
@@ -239,5 +316,36 @@ export class CompetitionManageComponent implements OnInit {
       CANCELLED: 'badge-secondary'
     };
     return classes[status] || 'badge-secondary';
+  }
+
+  openStreamModal() {
+    this.showStreamModal = true;
+  }
+
+  closeStreamModal() {
+    this.showStreamModal = false;
+  }
+
+  isOnlineEvent(): boolean {
+    return this.competition?.type === 'ONLINE';
+  }
+
+  isPhysicalEvent(): boolean {
+    return this.competition?.type === 'PHYSICAL';
+  }
+
+  onLocationSelected(location: MapLocation): void {
+    if (location.lat && location.lng) {
+      this.editForm.patchValue({
+        latitude: location.lat,
+        longitude: location.lng
+      });
+      this.selectedLat = location.lat;
+      this.selectedLng = location.lng;
+    } else {
+      this.editForm.patchValue({ latitude: undefined, longitude: undefined });
+      this.selectedLat = undefined;
+      this.selectedLng = undefined;
+    }
   }
 }
