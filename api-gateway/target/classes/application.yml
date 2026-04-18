@@ -33,7 +33,7 @@ spring:
         - id: competitions-service
           uri: lb://competitions-service
           predicates:
-            - Path=/api/competitions/**,/api/events/**,/api/participants/**,/api/teams/**,/api/sessions/**,/api/leaderboards/**,/api/awards/**
+            - Path=/api/competitions/**,/api/events/**,/api/participants/**,/api/teams/**,/api/sessions/**,/api/leaderboards/**,/api/awards/**,/api/stream/**,/api/chat/**,/api/sms/**,/api/notifications/**,/api/chatbot/**,/api/draw/**,/api/matches/**
           filters:
             - StripPrefix=0
 
