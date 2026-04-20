@@ -1,0 +1,92 @@
+version: '3.9'
+
+services:
+
+  mysqldb:
+    image: mysql:8.0
+    container_name: mysqldb
+    ports:
+      - "3306:3306"
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ""
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init-sql:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  eureka-server:
+    build: ../../microservices-eureka(formation)
+    image: skillsphere/eureka:1.0
+    container_name: eureka-server
+    ports:
+      - "8762:8762"
+    environment:
+      - SPRING_APPLICATION_NAME=eureka-server-formation
+      - SERVER_PORT=8762
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8762/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  platformeback:
+    build: ../../PlatformeBack
+    image: skillsphere/platformeback:1.0
+    container_name: platformeback
+    ports:
+      - "8085:8085"
+    depends_on:
+      mysqldb:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysqldb:3306/platforme?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8762/eureka
+      - SERVER_PORT=8085
+
+  formation-service:
+    build: ../../Formation_service
+    image: skillsphere/formation-service:1.0
+    container_name: formation-service
+    ports:
+      - "8086:8086"
+    depends_on:
+      mysqldb:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysqldb:3306/formation_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8762/eureka
+      - SERVER_PORT=8086
+
+  api-gateway:
+    build: ../../microservices-apiGeteway(formation)
+    image: skillsphere/api-gateway:1.0
+    container_name: api-gateway
+    ports:
+      - "8087:8087"
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+      platformeback:
+        condition: service_started
+      formation-service:
+        condition: service_started
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8762/eureka
+      - SERVER_PORT=8087
+
+volumes:
+  mysql_data:
