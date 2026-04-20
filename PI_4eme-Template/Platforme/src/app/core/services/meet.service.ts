@@ -42,7 +42,7 @@ export interface CalendarEvent {
 
 @Injectable({ providedIn: 'root' })
 export class MeetService {
-  private readonly BASE = 'http://localhost:8087/formation-service/api';
+  private readonly BASE = 'http://localhost:8080/formation-service/api';
 
   constructor(private http: HttpClient, private authService: AuthService) {}
 

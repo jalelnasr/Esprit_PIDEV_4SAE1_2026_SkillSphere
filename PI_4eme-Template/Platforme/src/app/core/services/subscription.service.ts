@@ -9,7 +9,7 @@ import { environment } from '../../../environments/environment';
 })
 export class SubscriptionService {
   // Use Gateway URL directly for Formation Service endpoints
-  private apiUrl = 'http://localhost:8087/formation-service/api';
+  private apiUrl = 'http://localhost:8080/formation-service/api';
 
   constructor(private http: HttpClient) {}
 
