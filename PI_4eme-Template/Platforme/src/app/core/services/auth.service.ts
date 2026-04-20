@@ -80,11 +80,18 @@ export class AuthService {
   }
 
   isLoggedIn(): boolean {
-    return !!this.getToken();
+    const token = this.getToken();
+    const hasToken = !!token;
+    console.log('🔍 [AuthService] isLoggedIn check:', { hasToken, token: token ? 'exists' : 'missing' });
+    return hasToken;
   }
 
   getUserRole(): string | null {
     return this.safeGet('role');
+  }
+
+  getCurrentUser(): BackendUser | null {
+    return this.currentUserSubject.value;
   }
 
   // --------- Backward compatibility ----------
@@ -103,7 +110,10 @@ export class AuthService {
 
   // ---------------- Internal ----------------
   private handleAuthSuccess(res: AuthResponse): void {
+    console.log('🔐 [AuthService] Handling auth success:', res);
+    
     this.safeSet(this.TOKEN_KEY, res.token);
+    console.log('✅ [AuthService] Token saved:', this.getToken() ? 'YES' : 'NO');
 
     const user: BackendUser = {
       idUser: res.idUser,
@@ -115,9 +125,11 @@ export class AuthService {
 
     this.safeSet('user', JSON.stringify(user));
     this.safeSet('role', res.role);
+    console.log('✅ [AuthService] User and role saved');
 
     this.currentUserSubject.next(user);
     this.userRoleSubject.next(res.role);
+    console.log('✅ [AuthService] Subjects updated');
   }
 
   private loadUser(): BackendUser | null {
