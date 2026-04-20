@@ -1,19 +1,26 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, of } from 'rxjs';
-import { Course, CourseDetail, Enrollment, PaginatedResponse, CourseProgress, CourseLevel } from '@shared/models';
+import { 
+  Course as OldCourse, 
+  CourseDetail as OldCourseDetail, 
+  Enrollment as OldEnrollment, 
+  CourseProgress as OldCourseProgress, 
+  CourseLevel as OldCourseLevel 
+} from '@shared/models/course-old.model';
+import { PaginatedResponse } from '@shared/models';
 
 @Injectable({
   providedIn: 'root'
 })
 export class CourseService {
-  private mockCourses: Course[] = [
+  private mockCourses: OldCourse[] = [
     {
       id: '1',
       title: 'Advanced Angular Development',
       description: 'Master Angular with modern patterns and best practices',
-      thumbnail: 'https://via.placeholder.com/300x200?text=Angular+Course',
+      thumbnail: '', // No external URL - CSS gradient fallback
       category: 'Web Development',
-      level: CourseLevel.ADVANCED,
+      level: OldCourseLevel.ADVANCED,
       duration: 40,
       price: 99.99,
       rating: 4.8,
@@ -29,9 +36,9 @@ export class CourseService {
       id: '2',
       title: 'Python for Data Science',
       description: 'Learn data analysis and machine learning with Python',
-      thumbnail: 'https://via.placeholder.com/300x200?text=Python+Course',
+      thumbnail: '', // No external URL - CSS gradient fallback
       category: 'Data Science',
-      level: CourseLevel.INTERMEDIATE,
+      level: OldCourseLevel.INTERMEDIATE,
       duration: 35,
       price: 79.99,
       rating: 4.7,
@@ -47,9 +54,9 @@ export class CourseService {
       id: '3',
       title: 'Full Stack Web Development',
       description: 'Complete guide from frontend to backend development',
-      thumbnail: 'https://via.placeholder.com/300x200?text=Full+Stack+Course',
+      thumbnail: '', // No external URL - CSS gradient fallback
       category: 'Web Development',
-      level: CourseLevel.BEGINNER,
+      level: OldCourseLevel.BEGINNER,
       duration: 60,
       price: 129.99,
       rating: 4.9,
@@ -65,7 +72,7 @@ export class CourseService {
 
   constructor() {}
 
-  getCourses(page: number = 1, pageSize: number = 12): Observable<PaginatedResponse<Course>> {
+  getCourses(page: number = 1, pageSize: number = 12): Observable<PaginatedResponse<OldCourse>> {
     const start = (page - 1) * pageSize;
     const end = start + pageSize;
     const paginatedCourses = this.mockCourses.slice(start, end);
@@ -79,13 +86,13 @@ export class CourseService {
     });
   }
 
-  getCourseById(id: string): Observable<CourseDetail> {
+  getCourseById(id: string): Observable<OldCourseDetail> {
     const course = this.mockCourses.find(c => c.id === id);
     if (!course) {
-      return of({} as CourseDetail);
+      return of({} as OldCourseDetail);
     }
 
-    const courseDetail: CourseDetail = {
+    const courseDetail: OldCourseDetail = {
       ...course,
       content: [
         {
@@ -105,8 +112,8 @@ export class CourseService {
     return of(courseDetail);
   }
 
-  enrollCourse(courseId: string, userId: string): Observable<Enrollment> {
-    const enrollment: Enrollment = {
+  enrollCourse(courseId: string, userId: string): Observable<OldEnrollment> {
+    const enrollment: OldEnrollment = {
       id: Date.now().toString(),
       userId,
       courseId,
@@ -118,7 +125,7 @@ export class CourseService {
     return of(enrollment);
   }
 
-  getCourseProgress(courseId: string, userId: string): Observable<CourseProgress> {
+  getCourseProgress(courseId: string, userId: string): Observable<OldCourseProgress> {
     return of({
       userId,
       courseId,
@@ -128,7 +135,7 @@ export class CourseService {
     });
   }
 
-  getSearchSuggestions(query: string): Observable<Course[]> {
+  getSearchSuggestions(query: string): Observable<OldCourse[]> {
     const filtered = this.mockCourses.filter(c => 
       c.title.toLowerCase().includes(query.toLowerCase()) ||
       c.category.toLowerCase().includes(query.toLowerCase())
