@@ -1,0 +1,91 @@
+{
+  "app": {
+    "title": "SkillSphere",
+    "welcome": "مرحبا"
+  },
+  "nav": {
+    "home": "الرئيسية",
+    "competitions": "المسابقات",
+    "leaderboard": "الترتيب",
+    "profile": "الملف الشخصي",
+    "logout": "تسجيل الخروج"
+  },
+  "competitions": {
+    "title": "المسابقات",
+    "create": "إنشاء مسابقة",
+    "edit": "تعديل",
+    "delete": "حذف",
+    "details": "التفاصيل",
+    "name": "الاسم",
+    "description": "الوصف",
+    "type": "النوع",
+    "startDate": "تاريخ البدء",
+    "endDate": "تاريخ الانتهاء",
+    "maxTeams": "الحد الأقصى للفرق",
+    "status": "الحالة",
+    "actions": "الإجراءات",
+    "noCompetitions": "لا توجد مسابقات متاحة",
+    "online": "عبر الإنترنت",
+    "offline": "حضوري",
+    "hybrid": "مختلط",
+    "upcoming": "قادمة",
+    "ongoing": "جارية",
+    "completed": "مكتملة",
+    "cancelled": "ملغاة"
+  },
+  "teams": {
+    "title": "الفرق",
+    "name": "اسم الفريق",
+    "members": "الأعضاء",
+    "qualified": "مؤهل",
+    "notQualified": "غير مؤهل",
+    "qualify": "تأهيل",
+    "disqualify": "إلغاء التأهيل",
+    "randomDraw": "قرعة عشوائية",
+    "noTeams": "لا توجد فرق مسجلة"
+  },
+  "matches": {
+    "title": "المباريات",
+    "team1": "الفريق 1",
+    "team2": "الفريق 2",
+    "winner": "الفائز",
+    "declareWinner": "إعلان الفائز",
+    "noMatches": "لا توجد مباريات متاحة",
+    "scheduledFor": "مجدولة لـ"
+  },
+  "leaderboard": {
+    "title": "الترتيب",
+    "rank": "المرتبة",
+    "team": "الفريق",
+    "score": "النقاط",
+    "wins": "الانتصارات",
+    "losses": "الخسائر",
+    "matchesPlayed": "المباريات الملعوبة",
+    "noData": "لا توجد بيانات متاحة"
+  },
+  "sms": {
+    "title": "إشعارات الرسائل القصيرة",
+    "sendTest": "إرسال رسالة تجريبية",
+    "phoneNumber": "رقم الهاتف",
+    "message": "الرسالة",
+    "send": "إرسال",
+    "history": "السجل",
+    "statistics": "الإحصائيات",
+    "enabled": "الإشعارات مفعلة",
+    "disabled": "الإشعارات معطلة"
+  },
+  "common": {
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "confirm": "تأكيد",
+    "close": "إغلاق",
+    "loading": "جاري التحميل...",
+    "error": "خطأ",
+    "success": "نجاح",
+    "search": "بحث",
+    "filter": "تصفية",
+    "back": "رجوع",
+    "next": "التالي",
+    "previous": "السابق"
+  }
+}

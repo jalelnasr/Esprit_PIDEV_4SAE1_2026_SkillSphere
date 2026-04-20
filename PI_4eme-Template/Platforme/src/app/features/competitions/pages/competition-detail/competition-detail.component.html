@@ -1,0 +1,412 @@
+<div class="competition-detail-container">
+  <div *ngIf="loading" class="loading">
+    <div class="spinner"></div>
+    <p>Chargement...</p>
+  </div>
+
+  <div *ngIf="error" class="alert alert-danger">
+    {{ error }}
+  </div>
+
+  <div *ngIf="competition && !loading" class="competition-content">
+    <div class="header">
+      <div>
+        <button class="btn btn-secondary" routerLink="/competitions">← Retour</button>
+        <button *ngIf="isFormateur()" class="btn btn-primary"
+                [routerLink]="['/competitions', competition.competitionId, 'manage']">
+          ⚙️ Gérer
+        </button>
+      </div>
+      <app-language-selector></app-language-selector>
+    </div>
+
+    <div class="competition-header">
+      <h1>{{ competition.title }}</h1>
+      <div class="badges">
+        <span class="badge badge-status">{{ competition.status }}</span>
+        <span class="badge badge-type">{{ competition.type }}</span>
+        <span class="badge badge-participation">{{ competition.participationType }}</span>
+      </div>
+    </div>
+
+    <div class="competition-body">
+      <div class="main-content">
+
+        <section class="info-section">
+          <h2>📋 Description</h2>
+          <p>{{ competition.description }}</p>
+        </section>
+
+        <!-- ✅ STREAM PLAYER (ONLINE events) -->
+        <section class="info-section" *ngIf="isOnlineEvent()">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
+            <h2 style="margin: 0;">🎥 Stream en direct</h2>
+            <!-- ✅ FORMATEUR: Bouton de gestion du stream -->
+            <button *ngIf="isFormateur()" class="btn-stream-manage" (click)="openStreamManager()">
+              ⚙️ Gérer le Stream
+            </button>
+          </div>
+          
+          <div *ngIf="streamLoading" class="stream-loading">
+            <div class="spinner"></div>
+            <p>Chargement du stream...</p>
+          </div>
+
+          <div *ngIf="streamError" class="alert alert-danger">
+            {{ streamError }}
+          </div>
+
+          <div *ngIf="!streamLoading && !stream" class="alert alert-info">
+            <div *ngIf="isFormateur()">
+              ℹ️ Vous n'avez pas encore configuré de stream pour cet événement
+              <button class="btn-add-stream" (click)="openStreamManager()" style="margin-top: 0.5rem;">
+                ➕ Ajouter un stream
+              </button>
+            </div>
+            <div *ngIf="!isFormateur()">
+              ℹ️ Le formateur n'a pas encore configuré de stream pour cet événement
+            </div>
+          </div>
+
+          <!-- ✅ APPRENANT non inscrit: Stream verrouillé -->
+          <div *ngIf="!streamLoading && stream && !stream.canWatch && !isFormateur()" class="stream-locked">
+            <div class="lock-icon">🔒</div>
+            <p>Le stream est réservé aux participants inscrits</p>
+            <button class="btn btn-primary" (click)="registerIndividual()" *ngIf="isCompetitionOpen() && canParticipateIndividual()">
+              ✅ S'inscrire pour voir le stream
+            </button>
+            <button class="btn btn-primary" (click)="openJoinTeamModal()" *ngIf="isCompetitionOpen() && canParticipateAsTeam()">
+              👥 Rejoindre un groupe pour voir le stream
+            </button>
+          </div>
+
+          <!-- ✅ Stream visible (FORMATEUR ou APPRENANT inscrit) -->
+          <div *ngIf="canViewStream() || (isFormateur() && stream)" class="stream-container">
+            <div *ngIf="stream?.isLive" class="stream-live-badge">
+              🔴 EN DIRECT
+            </div>
+            <iframe 
+              [src]="getEmbedStreamUrl() | sanitizeUrl"
+              frameborder="0"
+              allowfullscreen
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              class="stream-player">
+            </iframe>
+            <div class="stream-info">
+              <div class="stream-details">
+                <span class="stream-platform">📺 {{ stream?.platform }}</span>
+                <span class="stream-status" [class.live]="stream?.isLive">
+                  {{ stream?.isLive ? '🔴 EN DIRECT' : '⚫ HORS LIGNE' }}
+                </span>
+              </div>
+              <a [href]="getStreamUrl()" target="_blank" class="stream-link">
+                🔗 Ouvrir dans une nouvelle fenêtre
+              </a>
+            </div>
+          </div>
+        </section>
+
+        <!-- ✅ MAP (PHYSICAL events, only if registered OR formateur) -->
+        <section class="info-section" *ngIf="isPhysicalEvent() && competition.latitude && competition.longitude">
+          <h2>📍 Localisation</h2>
+          
+          <div *ngIf="!isRegistered && !isFormateur()" class="map-locked">
+            <div class="lock-icon">🔒</div>
+            <p>La localisation est réservée aux participants inscrits</p>
+            <button class="btn btn-primary" (click)="registerIndividual()" *ngIf="isCompetitionOpen() && canParticipateIndividual()">
+              ✅ S'inscrire pour voir la localisation
+            </button>
+            <button class="btn btn-primary" (click)="openJoinTeamModal()" *ngIf="isCompetitionOpen() && canParticipateAsTeam()">
+              👥 Rejoindre un groupe pour voir la localisation
+            </button>
+          </div>
+
+          <div *ngIf="isRegistered || isFormateur()" class="location-details">
+            <div class="location-info-box">
+              <div class="location-item" *ngIf="competition.locationName">
+                <strong>📌 Lieu:</strong> {{ competition.locationName }}
+              </div>
+              <div class="location-item" *ngIf="competition.locationAddress">
+                <strong>🏠 Adresse:</strong> {{ competition.locationAddress }}
+              </div>
+              <div class="location-item">
+                <strong>🌍 Coordonnées:</strong> 
+                {{ competition.latitude!.toFixed(4) }}, {{ competition.longitude!.toFixed(4) }}
+              </div>
+            </div>
+            
+            <div [id]="mapId" class="event-map"></div>
+          </div>
+        </section>
+
+        <section class="info-section">
+          <h2>📅 Informations</h2>
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="label">Date de début:</span>
+              <span class="value">{{ competition.startDate | date: 'dd/MM/yyyy HH:mm' }}</span>
+            </div>
+            <div class="info-item">
+              <span class="label">Date de fin:</span>
+              <span class="value">{{ competition.endDate | date: 'dd/MM/yyyy HH:mm' }}</span>
+            </div>
+            <div class="info-item">
+              <span class="label">Max participants:</span>
+              <span class="value">{{ competition.maxParticipants }}</span>
+            </div>
+            <div class="info-item">
+              <span class="label">Type:</span>
+              <span class="value">{{ competition.type }}</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- ✅ TEAMS (only non-full teams are in availableTeams) -->
+        <section class="info-section" *ngIf="canParticipateAsTeam()">
+          <h2>👥 Groupes disponibles (non complets) : {{ availableTeams.length }}</h2>
+
+          <div *ngIf="availableTeams.length === 0" class="alert alert-warning">
+            ⚠️ Tous les groupes sont complets (aucun groupe disponible).
+          </div>
+
+          <div class="teams-list" *ngIf="availableTeams.length > 0">
+            <div *ngFor="let team of availableTeams" class="team-card"
+                 [class.my-team]="myTeamMember?.teamId === team.teamId">
+
+              <div class="team-info">
+                <h4>{{ team.teamName }}</h4>
+
+                <div class="team-progress">
+                  <span class="team-meta">👤 {{ team.currentMembers }}/{{ team.maxMembers }} membres</span>
+                  <div class="progress-bar">
+                    <div class="progress-fill"
+                         [style.width.%]="(team.currentMembers / team.maxMembers) * 100"></div>
+                  </div>
+                </div>
+
+                <!-- Affichage des membres -->
+                <div class="team-members-preview" *ngIf="team.members && team.members.length > 0">
+                  <div *ngFor="let member of team.members" class="member-item-preview">
+                    <div class="member-avatar-small">
+                      {{ member.userName.charAt(0).toUpperCase() }}
+                    </div>
+                    <span class="member-name-small">{{ member.userName }}</span>
+                  </div>
+
+                  <!-- Places vides -->
+                  <div *ngFor="let i of [].constructor(team.maxMembers - team.currentMembers)" 
+                       class="member-item-preview empty-slot">
+                    <div class="member-avatar-small">?</div>
+                    <span class="member-name-small">Place disponible</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="team-card-actions">
+                <button *ngIf="canJoinTeam()"
+                        class="btn btn-sm btn-primary"
+                        (click)="joinTeam(team.teamId)">
+                  Rejoindre
+                </button>
+
+                <span *ngIf="myTeamMember?.teamId === team.teamId" class="badge badge-my-team">
+                  Mon groupe
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ✅ GESTION DES GROUPES (FORMATEUR UNIQUEMENT) -->
+        <section class="info-section" *ngIf="isFormateur() && canParticipateAsTeam()">
+          <app-team-cards-manager [competitionId]="competition.competitionId"></app-team-cards-manager>
+        </section>
+      </div>
+
+      <div class="sidebar">
+        <div class="participation-card">
+          <h3>🎯 Participation</h3>
+
+          <!-- FORMATEUR -->
+          <div *ngIf="isFormateur()" class="alert alert-info">
+            ℹ️ En tant que formateur, vous ne pouvez pas participer.
+            <br>Vous pouvez consulter les détails et gérer l'événement.
+          </div>
+
+          <!-- APPRENANT -->
+          <div *ngIf="showRegistrationSection()">
+            <div *ngIf="!isCompetitionOpen()" class="alert alert-warning">
+              ⚠️ Les inscriptions sont fermées
+            </div>
+
+            <!-- INDIVIDUAL -->
+            <div *ngIf="canParticipateIndividual() && isCompetitionOpen()">
+              <div *ngIf="!isRegistered">
+                <button class="btn btn-primary btn-block" (click)="registerIndividual()">
+                  ✅ S'inscrire (Individuel)
+                </button>
+              </div>
+
+              <div *ngIf="isRegistered" class="registered-status">
+                <p>✅ Vous êtes inscrit</p>
+                <p class="status-detail">Statut: {{ myParticipation?.status }}</p>
+                <button class="btn btn-danger btn-block" (click)="cancelRegistration()">
+                  ❌ Annuler l'inscription
+                </button>
+              </div>
+            </div>
+
+            <!-- TEAM -->
+            <div *ngIf="canParticipateAsTeam() && isCompetitionOpen()" class="team-section">
+              <div *ngIf="!myTeamMember">
+                <p class="info-text">👥 Rejoignez un groupe disponible (non complet)</p>
+
+                <button *ngIf="availableTeams.length > 0"
+                        class="btn btn-primary btn-block"
+                        (click)="openJoinTeamModal()">
+                  👥 Voir les groupes
+                </button>
+
+                <p *ngIf="availableTeams.length === 0" class="no-teams">
+                  Aucun groupe disponible (tous complets)
+                </p>
+              </div>
+
+              <div *ngIf="myTeamMember" class="my-team-info">
+                <h4>Mon groupe</h4>
+                <p class="team-name">{{ myTeamMember.teamName }}</p>
+                
+                <!-- Liste des coéquipiers -->
+                <div class="my-team-members-list">
+                  <div class="my-team-member-item" 
+                       [class.current-user]="currentUserId === myTeamMember.userId">
+                    <div class="member-avatar-small">
+                      {{ myTeamMember.userName.charAt(0).toUpperCase() }}
+                    </div>
+                    <span class="member-name-small">
+                      {{ myTeamMember.userName }}
+                      <span *ngIf="currentUserId === myTeamMember.userId"> (Vous)</span>
+                    </span>
+                  </div>
+                </div>
+
+                <button class="btn btn-danger btn-block" (click)="leaveTeam()">
+                  🚪 Quitter le groupe
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <hr />
+
+          <button class="btn btn-info btn-block" (click)="viewLeaderboard()">
+            🏆 Voir le classement
+          </button>
+        </div>
+
+        <!-- 💬 CHAT EN TEMPS RÉEL -->
+        <div class="chat-section">
+          <app-competition-chat [competitionId]="competition.competitionId"></app-competition-chat>
+        </div>
+
+        <!-- 📱 SMS TEST PANEL -->
+        <div class="sms-panel-card">
+          <div class="sms-panel-header" (click)="toggleSmsPanel()">
+            <h3>📱 Tester SMS</h3>
+            <span class="toggle-icon">{{ showSmsPanel ? '▼' : '▶' }}</span>
+          </div>
+
+          <div class="sms-panel-content" *ngIf="showSmsPanel">
+            <div class="form-group">
+              <label>Numéro de téléphone:</label>
+              <input type="tel" 
+                     [(ngModel)]="userPhone" 
+                     placeholder="+216 XX XXX XXX"
+                     class="form-control">
+              <button class="btn btn-sm btn-secondary" 
+                      (click)="saveUserPhone()"
+                      [disabled]="!userPhone">
+                💾 Enregistrer
+              </button>
+            </div>
+
+            <div class="form-group">
+              <label>Message:</label>
+              <textarea [(ngModel)]="smsMessage" 
+                        placeholder="Entrez votre message..."
+                        rows="3"
+                        class="form-control"></textarea>
+              <button class="btn btn-sm btn-primary" 
+                      (click)="sendTestSms()"
+                      [disabled]="!smsMessage || smsSending">
+                {{ smsSending ? '⏳ Envoi...' : '📤 Envoyer' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Rejoindre une équipe -->
+<div class="modal" *ngIf="showJoinTeamModal" (click)="closeJoinTeamModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>👥 Rejoindre un groupe</h3>
+      <button class="close-btn" (click)="closeJoinTeamModal()">✕</button>
+    </div>
+
+    <div class="teams-modal-list">
+      <div *ngFor="let team of availableTeams" class="team-modal-item">
+        <div class="team-modal-info">
+          <h4>{{ team.teamName }}</h4>
+          <div class="team-progress">
+            <span class="team-meta">👤 {{ team.currentMembers }}/{{ team.maxMembers }} membres</span>
+            <div class="progress-bar">
+              <div class="progress-fill"
+                   [style.width.%]="(team.currentMembers / team.maxMembers) * 100"></div>
+            </div>
+          </div>
+
+          <!-- Affichage des membres dans le modal -->
+          <div class="team-members-preview" *ngIf="team.members && team.members.length > 0">
+            <div *ngFor="let member of team.members" class="member-item-preview">
+              <div class="member-avatar-small">
+                {{ member.userName.charAt(0).toUpperCase() }}
+              </div>
+              <span class="member-name-small">{{ member.userName }}</span>
+            </div>
+
+            <!-- Places vides -->
+            <div *ngFor="let i of [].constructor(team.maxMembers - team.currentMembers)" 
+                 class="member-item-preview empty-slot">
+              <div class="member-avatar-small">?</div>
+              <span class="member-name-small">Place disponible</span>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn btn-primary" (click)="joinTeam(team.teamId)">
+          Rejoindre
+        </button>
+      </div>
+
+      <p *ngIf="availableTeams.length === 0" class="no-teams">
+        Aucun groupe disponible
+      </p>
+    </div>
+  </div>
+</div>
+
+
+<!-- ✅ Modal: Gestion du Stream (FORMATEUR uniquement) -->
+<div class="modal-overlay" *ngIf="showStreamManager" (click)="closeStreamManager()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <app-stream-manager
+      [competitionId]="competition!.competitionId"
+      (close)="closeStreamManager()"
+      (streamUpdated)="closeStreamManager()">
+    </app-stream-manager>
+  </div>
+</div>

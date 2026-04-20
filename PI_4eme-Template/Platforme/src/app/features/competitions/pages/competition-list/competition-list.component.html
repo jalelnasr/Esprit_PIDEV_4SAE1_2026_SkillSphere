@@ -1,0 +1,87 @@
+<div class="competition-list-container">
+  <div class="header">
+    <h1>🏆 {{ 'competitions.title' | translate }}</h1>
+    <div class="header-actions">
+      <app-language-selector></app-language-selector>
+      <button class="btn btn-info" routerLink="/competitions/map">
+        🗺️ Carte
+      </button>
+      <button *ngIf="isFormateur" class="btn btn-success" routerLink="/competitions/sms">
+        📱 SMS
+      </button>
+      <button *ngIf="isFormateur" class="btn btn-primary" routerLink="/competitions/create">
+        ➕ {{ 'competitions.create' | translate }}
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="loading" class="loading">
+    <div class="spinner"></div>
+    <p>{{ 'common.loading' | translate }}</p>
+  </div>
+
+  <div *ngIf="error" class="alert alert-danger">
+    {{ error }}
+  </div>
+
+  <div *ngIf="!loading && competitions.length === 0" class="empty-state">
+    <p>{{ 'competitions.noCompetitions' | translate }}</p>
+  </div>
+
+  <div class="competitions-grid" *ngIf="!loading && competitions.length > 0">
+    <div *ngFor="let competition of competitions" class="competition-card">
+      <div class="card-header">
+        <h3>{{ competition.title }}</h3>
+        <div class="badges">
+          <span class="badge" [ngClass]="getStatusBadgeClass(competition.status)">
+            {{ competition.status }}
+          </span>
+          <span class="badge" [ngClass]="getTypeBadgeClass(competition.type)">
+            {{ competition.type }}
+          </span>
+        </div>
+      </div>
+
+      <div class="card-body">
+        <p class="description">{{ competition.description }}</p>
+        
+        <div class="info-row">
+          <span class="info-label">📅 Début:</span>
+          <span>{{ competition.startDate | date: 'dd/MM/yyyy HH:mm' }}</span>
+        </div>
+        
+        <div class="info-row">
+          <span class="info-label">📅 Fin:</span>
+          <span>{{ competition.endDate | date: 'dd/MM/yyyy HH:mm' }}</span>
+        </div>
+        
+        <div class="info-row">
+          <span class="info-label">👥 Max participants:</span>
+          <span>{{ competition.maxParticipants }}</span>
+        </div>
+
+        <div class="info-row" *ngIf="competition.participationType">
+          <span class="info-label">🎯 Type:</span>
+          <span>{{ competition.participationType }}</span>
+        </div>
+
+        <div class="status-indicator" *ngIf="isActive(competition)">
+          <span class="pulse"></span> En cours
+        </div>
+        <div class="status-indicator upcoming" *ngIf="isUpcoming(competition)">
+          ⏰ À venir
+        </div>
+      </div>
+
+      <div class="card-footer">
+        <button class="btn btn-outline" [routerLink]="['/competitions', competition.competitionId]">
+          {{ 'competitions.details' | translate }}
+        </button>
+        <button *ngIf="isFormateur" class="btn btn-secondary" 
+                [routerLink]="['/competitions', competition.competitionId, 'manage']">
+          ⚙️ {{ 'competitions.edit' | translate }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

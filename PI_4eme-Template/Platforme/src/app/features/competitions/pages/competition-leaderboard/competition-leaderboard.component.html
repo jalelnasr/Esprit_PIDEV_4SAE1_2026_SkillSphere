@@ -1,0 +1,97 @@
+<div class="leaderboard-container">
+  <div class="header">
+    <h1>🏆 Classement</h1>
+    <button class="btn btn-secondary" [routerLink]="['/competitions', competition?.competitionId]">
+      ← Retour
+    </button>
+  </div>
+
+  <div *ngIf="competition" class="competition-info">
+    <h2>{{ competition.title }}</h2>
+    <p>{{ competition.description }}</p>
+  </div>
+
+  <div *ngIf="loading" class="loading">
+    <div class="spinner"></div>
+    <p>Chargement du classement...</p>
+  </div>
+
+  <div *ngIf="error" class="alert alert-danger">
+    {{ error }}
+  </div>
+
+  <div *ngIf="!loading && leaderboard.length === 0" class="empty-state">
+    <p>Aucun classement disponible pour le moment.</p>
+  </div>
+
+  <div *ngIf="!loading && leaderboard.length > 0" class="leaderboard-content">
+    <!-- Top 3 Podium -->
+    <div class="podium" *ngIf="leaderboard.length >= 3">
+      <div class="podium-item second" *ngIf="leaderboard[1]">
+        <div class="medal">🥈</div>
+        <div class="rank-number">2</div>
+        <div class="participant-name">{{ leaderboard[1].participantName || 'Participant ' + leaderboard[1].userId }}</div>
+        <div class="score">{{ leaderboard[1].score }} pts</div>
+        <div class="podium-members" *ngIf="leaderboard[1].teamMembers && leaderboard[1].teamMembers.length > 0">
+          <small *ngFor="let member of leaderboard[1].teamMembers">{{ member }}</small>
+        </div>
+      </div>
+
+      <div class="podium-item first" *ngIf="leaderboard[0]">
+        <div class="medal">🥇</div>
+        <div class="rank-number">1</div>
+        <div class="participant-name">{{ leaderboard[0].participantName || 'Participant ' + leaderboard[0].userId }}</div>
+        <div class="score">{{ leaderboard[0].score }} pts</div>
+        <div class="podium-members" *ngIf="leaderboard[0].teamMembers && leaderboard[0].teamMembers.length > 0">
+          <small *ngFor="let member of leaderboard[0].teamMembers">{{ member }}</small>
+        </div>
+      </div>
+
+      <div class="podium-item third" *ngIf="leaderboard[2]">
+        <div class="medal">🥉</div>
+        <div class="rank-number">3</div>
+        <div class="participant-name">{{ leaderboard[2].participantName || 'Participant ' + leaderboard[2].userId }}</div>
+        <div class="score">{{ leaderboard[2].score }} pts</div>
+        <div class="podium-members" *ngIf="leaderboard[2].teamMembers && leaderboard[2].teamMembers.length > 0">
+          <small *ngFor="let member of leaderboard[2].teamMembers">{{ member }}</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Full Leaderboard Table -->
+    <div class="leaderboard-table-container">
+      <table class="leaderboard-table">
+        <thead>
+          <tr>
+            <th>Rang</th>
+            <th>Participant</th>
+            <th>Score</th>
+            <th>Dernière mise à jour</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let entry of leaderboard" [ngClass]="getRankClass(entry.rank)">
+            <td class="rank-cell">
+              <span class="medal-icon">{{ getMedalIcon(entry.rank) }}</span>
+              <span class="rank-number">{{ entry.rank }}</span>
+            </td>
+            <td class="participant-cell">
+              <strong>{{ entry.participantName || 'Participant ' + (entry.userId || entry.teamId) }}</strong>
+              <span class="participant-type" *ngIf="entry.teamId">👥 Équipe</span>
+              <span class="participant-type" *ngIf="entry.userId && !entry.teamId">👤 Individuel</span>
+              <div class="team-members" *ngIf="entry.teamMembers && entry.teamMembers.length > 0">
+                <span class="member-badge" *ngFor="let member of entry.teamMembers">{{ member }}</span>
+              </div>
+            </td>
+            <td class="score-cell">
+              <span class="score-badge">{{ entry.score }} pts</span>
+            </td>
+            <td class="date-cell">
+              {{ entry.lastUpdated | date: 'dd/MM/yyyy HH:mm' }}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
