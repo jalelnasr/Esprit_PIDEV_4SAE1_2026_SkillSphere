@@ -1,13 +1,12 @@
 export const environment = {
   production: false,
+
   
-  // API Gateway - Point d'entrée unique pour tous les microservices
-  apiUrl: 'http://localhost:8080/api',
-  wsUrl: 'ws://localhost:8086',
-  
-  // Backend Professional Events (port 8087)
-  competitionsApiUrl: 'http://localhost:8087/api',
-  
+  apiUrl: 'http://localhost:8087/user-service/api',
+
+  formationApi: 'http://localhost:8087/formation-service/api',
+
+  wsUrl: 'ws://localhost:8087',
   appName: 'SkillSphere',
   version: '1.0.0',
 

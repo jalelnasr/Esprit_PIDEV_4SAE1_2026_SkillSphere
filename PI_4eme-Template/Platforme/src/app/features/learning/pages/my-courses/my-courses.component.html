@@ -1,54 +1,74 @@
 <div class="my-courses-container">
-  <!-- Back Button -->
-  <button class="back-btn" (click)="goBack()" title="Go back">
-    <span class="back-icon">←</span>
-  </button>
+  <button class="back-btn" (click)="goBack()">← Retour</button>
 
-  <h1>My Courses</h1>
+  <h1>Mes Formations</h1>
 
-  <!-- In Progress Courses -->
-  <section class="courses-section">
-    <h2>Courses in Progress</h2>
-    <div class="courses-list">
-      <div *ngFor="let course of enrolledCourses" class="course-item">
-        <div class="course-thumbnail">
-          <img [src]="course.thumbnail" [alt]="course.title" />
-          <div class="progress-badge">{{ course.progress }}%</div>
-        </div>
-        <div class="course-info">
-          <h3>{{ course.title }}</h3>
-          <div class="course-meta">
-            <span>📚 {{ course.completedLessons }}/{{ course.totalLessons }} lessons</span>
-            <span>⏱️ {{ course.duration }}h total</span>
-            <span>🕐 Last accessed {{ course.lastAccessed }}</span>
-          </div>
-          <div class="progress-bar">
-            <div class="progress-fill" [style.width.%]="course.progress"></div>
-          </div>
-        </div>
-        <button class="continue-btn" (click)="continueLearning(course.id)">
-          Continue Learning
+  <!-- Tabs -->
+  <div class="tabs">
+    <button 
+      [class.active]="activeTab === 'active'" 
+      (click)="activeTab = 'active'">
+      En cours ({{ activeEnrollments.length }})
+    </button>
+    <button 
+      [class.active]="activeTab === 'completed'" 
+      (click)="activeTab = 'completed'">
+      Terminées ({{ completedEnrollments.length }})
+    </button>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="loading" class="loading">Chargement...</div>
+
+  <!-- Active Enrollments -->
+  <div *ngIf="!loading && activeTab === 'active'" class="enrollments-grid">
+    <div *ngIf="activeEnrollments.length === 0" class="no-enrollments">
+      Vous n'avez aucune formation en cours
+    </div>
+
+    <div *ngFor="let enrollment of activeEnrollments" class="enrollment-card">
+      <div class="enrollment-header">
+        <h3>{{ enrollment.courseTitle }}</h3>
+        <span class="enrollment-status">{{ enrollment.status }}</span>
+      </div>
+      
+      <div class="progress-bar">
+        <div class="progress-fill" [style.width.%]="enrollment.completionPercent"></div>
+      </div>
+      <p class="progress-text">{{ enrollment.completionPercent }}% complété</p>
+      
+      <p class="enrollment-date">Inscrit le {{ enrollment.inscriptionDate | date:'dd/MM/yyyy' }}</p>
+      
+      <div class="enrollment-actions">
+        <button class="btn-continue" (click)="continueLearning(enrollment.courseId)">
+          Continuer
+        </button>
+        <button class="btn-cancel" (click)="cancelEnrollment(enrollment.id)">
+          Annuler
         </button>
       </div>
     </div>
-  </section>
+  </div>
 
-  <!-- Completed Courses -->
-  <section class="courses-section">
-    <h2>Completed Courses</h2>
-    <div class="courses-grid">
-      <div *ngFor="let course of completedCourses" class="completed-card">
-        <img [src]="course.thumbnail" [alt]="course.title" class="completed-thumbnail" />
-        <div class="completed-info">
-          <h3>{{ course.title }}</h3>
-          <div class="completed-badges">
-            <span class="badge certificate" *ngIf="course.certificate">
-              🏆 Certificate
-            </span>
-            <span class="badge rating">⭐ {{ course.rating }}</span>
-          </div>
-        </div>
+  <!-- Completed Enrollments -->
+  <div *ngIf="!loading && activeTab === 'completed'" class="enrollments-grid">
+    <div *ngIf="completedEnrollments.length === 0" class="no-enrollments">
+      Vous n'avez aucune formation terminée
+    </div>
+
+    <div *ngFor="let enrollment of completedEnrollments" class="enrollment-card completed">
+      <div class="enrollment-header">
+        <h3>{{ enrollment.courseTitle }}</h3>
+        <span class="badge-completed">✓ Terminée</span>
+      </div>
+      
+      <p class="completion-date">Terminée le {{ enrollment.completedAt | date:'dd/MM/yyyy' }}</p>
+      
+      <div class="enrollment-actions">
+        <button class="btn-view" [routerLink]="['/learning/course', enrollment.courseId]">
+          Voir la formation
+        </button>
       </div>
     </div>
-  </section>
+  </div>
 </div>

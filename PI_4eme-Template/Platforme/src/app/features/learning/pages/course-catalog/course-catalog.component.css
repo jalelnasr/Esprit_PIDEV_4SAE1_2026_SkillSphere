@@ -1,8 +1,15 @@
+/* ============================================
+   COURSE CATALOG — Modern Professional Design
+   ============================================ */
+
 .catalog-container {
-  padding: 2rem 0;
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  min-height: 100vh;
 }
 
-/* Back Button */
+/* ── Back Button ─────────────────────────────── */
 .back-btn {
   position: fixed;
   top: 80px;
@@ -11,225 +18,507 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  border: 2px solid #0891b2;
+  border: 1.5px solid var(--border-color);
   background: var(--bg-primary);
-  color: #0891b2;
+  color: var(--text-secondary);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  font-size: 1.1rem;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
-
 .back-btn:hover {
-  background: #0891b2;
-  color: white;
-  box-shadow: 0 4px 12px rgba(8, 145, 178, 0.3);
-  transform: translateX(-4px);
+  border-color: #0F9B8E;
+  color: #0F9B8E;
+  transform: translateX(-3px);
 }
 
-.back-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
+/* ── Header ─────────────────────────────────── */
 .catalog-header {
-  margin-bottom: 3rem;
+  margin-bottom: 2rem;
 }
 
 .catalog-header h1 {
-  margin: 0;
-  font-size: 32px;
+  font-size: 2rem;
+  font-weight: 800;
   color: var(--text-primary);
+  margin: 0 0 0.4rem 0;
+  letter-spacing: -0.03em;
 }
 
 .catalog-header p {
-  margin: 0.5rem 0 0 0;
   color: var(--text-secondary);
-  font-size: 15px;
+  font-size: 0.95rem;
+  margin: 0;
 }
 
+/* ── Layout ──────────────────────────────────── */
 .catalog-layout {
   display: grid;
-  grid-template-columns: 280px 1fr;
+  grid-template-columns: 220px 1fr;
   gap: 2rem;
+  align-items: start;
 }
 
+/* ── Sidebar ─────────────────────────────────── */
 .catalog-sidebar {
-  background: var(--bg-secondary);
-  border-radius: 12px;
-  padding: 1.5rem;
-  height: fit-content;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  position: sticky;
+  top: 80px;
+  background: var(--bg-primary);
+  border-radius: 14px;
+  border: 1.5px solid var(--border-color);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
-.filter-group {
-  margin-bottom: 2rem;
-  padding-bottom: 2rem;
-  border-bottom: 1px solid var(--border-color);
-
-  &:last-child {
-    border-bottom: none;
-  }
-
-  h3 {
-    margin: 0 0 1rem 0;
-    font-size: 14px;
-    font-weight: 600;
-    text-transform: uppercase;
-    color: var(--text-primary);
-    letter-spacing: 0.5px;
-  }
+.filter-group h3 {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: 0 0 0.75rem 0;
 }
 
 .search-input {
   width: 100%;
-  padding: 0.75rem;
-  border: 2px solid var(--border-color);
+  padding: 0.6rem 0.9rem;
+  border: 1.5px solid var(--border-color);
   border-radius: 8px;
-  font-size: 13px;
-  background: var(--bg-primary);
+  font-size: 0.875rem;
+  background: var(--bg-secondary);
   color: var(--text-primary);
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
 
-  &:focus {
-    outline: none;
-    border-color: #0891b2;
-  }
+.search-input:focus {
+  outline: none;
+  border-color: #0F9B8E;
+  background: var(--bg-primary);
 }
 
 .filter-options {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.5rem;
 }
 
 .filter-option {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.6rem;
   cursor: pointer;
-  font-size: 13px;
-
-  input {
-    cursor: pointer;
-    accent-color: #0891b2;
-  }
-
-  &:hover {
-    color: #0891b2;
-  }
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  padding: 0.35rem 0.5rem;
+  border-radius: 6px;
+  transition: all 0.15s;
 }
 
-.price-range {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-
-  label {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 13px;
-
-    input {
-      width: 80px;
-      padding: 0.5rem;
-      border: 1px solid #e0e0e0;
-      border-radius: 4px;
-      font-size: 12px;
-    }
-  }
+.filter-option:hover {
+  background: rgba(15, 155, 142, 0.06);
+  color: var(--text-primary);
 }
 
-.courses-section {
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
+.filter-option input[type="radio"] {
+  accent-color: #0F9B8E;
+  cursor: pointer;
 }
+
+/* ── Courses Section ─────────────────────────── */
+.courses-section { min-width: 0; }
 
 .courses-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+  padding: 0.75rem 1rem;
   background: var(--bg-secondary);
-  padding: 1.5rem;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
 }
 
 .results-count {
-  font-size: 13px;
-  color: var(--text-primary);
-  font-weight: 500;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-secondary);
 }
 
-.sort-select {
-  padding: 0.5rem 1rem;
-  border: 2px solid var(--border-color);
-  border-radius: 6px;
-  font-size: 13px;
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  cursor: pointer;
-
-  &:focus {
-    outline: none;
-    border-color: #0891b2;
-  }
+.loading {
+  text-align: center;
+  padding: 4rem;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
 }
 
+/* ── Courses Grid ────────────────────────────── */
 .courses-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1.25rem;
 }
 
-.pagination {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 0.75rem;
-  margin-top: 2rem;
-}
-
-.page-btn {
-  padding: 0.5rem 1rem;
-  border: 2px solid #e0e0e0;
-  background: white;
-  border-radius: 6px;
+/* ── Course Card ─────────────────────────────── */
+.course-card {
+  background: var(--bg-primary);
+  border-radius: 16px;
+  border: 1.5px solid var(--border-color);
+  overflow: hidden;
   cursor: pointer;
-  font-size: 13px;
-  font-weight: 500;
-  transition: all 0.3s ease;
-
-  &:hover:not(:disabled) {
-    border-color: #0891b2;
-    color: #0891b2;
-  }
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
+  transition: all 0.25s ease;
+  position: relative;
+  display: flex;
+  flex-direction: column;
 }
 
-.page-info {
-  font-size: 13px;
-  color: #666;
-  min-width: 120px;
+.course-card:hover {
+  transform: translateY(-6px);
+  border-color: rgba(15, 155, 142, 0.4);
+  box-shadow: 0 16px 40px rgba(15, 155, 142, 0.12);
+}
+
+/* ── Badges ──────────────────────────────────── */
+.course-badges {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  right: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 2;
+}
+
+.access-badge {
+  padding: 0.25rem 0.65rem;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  backdrop-filter: blur(8px);
+}
+
+.badge-basic {
+  background: rgba(15, 155, 142, 0.9);
+  color: white;
+}
+
+.badge-plus {
+  background: rgba(59, 130, 246, 0.9);
+  color: white;
+}
+
+.badge-premium {
+  background: rgba(139, 92, 246, 0.9);
+  color: white;
+}
+
+.badge-free {
+  background: rgba(16, 185, 129, 0.9);
+  color: white;
+}
+
+.lock-badge {
+  font-size: 1rem;
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.3));
+}
+
+/* ── Thumbnail ───────────────────────────────── */
+.course-thumbnail {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  display: block;
+}
+
+.course-thumbnail-placeholder {
+  width: 100%;
+  height: 160px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+}
+
+/* ── Card Content ────────────────────────────── */
+.course-content {
+  padding: 1rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.course-level {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  width: fit-content;
+}
+
+.level-beginner {
+  background: rgba(16, 185, 129, 0.12);
+  color: #10b981;
+}
+
+.level-intermediate {
+  background: rgba(245, 158, 11, 0.12);
+  color: #f59e0b;
+}
+
+.level-advanced {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+}
+
+.course-content h3 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.course-description {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.5;
+}
+
+/* ── Rating ──────────────────────────────────── */
+.rating-widget {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.stars {
+  color: #f59e0b;
+  font-size: 0.85rem;
+  letter-spacing: 1px;
+}
+
+.stars-empty {
+  color: var(--border-color);
+  font-size: 0.85rem;
+  letter-spacing: 1px;
+}
+
+.rating-text {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.btn-view-reviews {
+  font-size: 0.72rem;
+  color: #0F9B8E;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* ── Meta ────────────────────────────────────── */
+.course-meta {
+  display: flex;
+  gap: 0.75rem;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin-top: auto;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border-color);
+}
+
+/* ── Access Button ───────────────────────────── */
+.course-access {
+  margin-top: 0.5rem;
+}
+
+.btn-upgrade {
+  width: 100%;
+  padding: 0.55rem;
+  background: linear-gradient(135deg, #0F9B8E, #0d8a7e);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 3px 10px rgba(15, 155, 142, 0.25);
+}
+
+.btn-upgrade:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 16px rgba(15, 155, 142, 0.35);
+}
+
+/* ── No Results ──────────────────────────────── */
+.no-results {
   text-align: center;
+  padding: 4rem 2rem;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  background: var(--bg-secondary);
+  border-radius: 14px;
+  border: 2px dashed var(--border-color);
 }
 
-@media (max-width: 768px) {
+/* ── Modal ───────────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.modal-content {
+  background: var(--bg-primary);
+  border-radius: 16px;
+  width: 90%;
+  max-width: 560px;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--border-color);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+  position: sticky;
+  top: 0;
+  background: var(--bg-primary);
+  z-index: 1;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--text-secondary);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.close-btn:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.modal-body { padding: 1.25rem 1.5rem; }
+
+.loading-reviews,
+.no-reviews-message {
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.reviews-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.review-card {
+  padding: 1rem;
+  background: var(--bg-secondary);
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+}
+
+.review-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.review-stars .star {
+  color: #f59e0b;
+  font-size: 0.9rem;
+}
+
+.review-date {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.review-comment {
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.review-no-comment {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  font-style: italic;
+  margin: 0;
+}
+
+/* ── Responsive ──────────────────────────────── */
+@media (max-width: 900px) {
   .catalog-layout {
     grid-template-columns: 1fr;
   }
-
-  .courses-grid {
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  .catalog-sidebar {
+    position: static;
+    flex-direction: row;
+    flex-wrap: wrap;
   }
 }
 
+@media (max-width: 600px) {
+  .catalog-container { padding: 1rem; }
+  .courses-grid { grid-template-columns: 1fr; }
+}

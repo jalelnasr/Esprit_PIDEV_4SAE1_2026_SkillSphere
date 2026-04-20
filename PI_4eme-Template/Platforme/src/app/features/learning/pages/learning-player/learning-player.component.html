@@ -5,12 +5,18 @@
   </button>
 
   <div class="player-layout">
+    <!-- Loading State -->
+    <div class="loading-state" *ngIf="loading">
+      <i class="fas fa-spinner fa-spin"></i>
+      <p>Chargement de la formation...</p>
+    </div>
+
     <!-- Main Player -->
-    <main class="player-main">
+    <main class="player-main" *ngIf="!loading && lessons.length > 0">
       <div class="video-player">
         <div class="placeholder-video">
           <span class="play-icon">▶</span>
-          <p>Video Player</p>
+          <p>Lecteur de Contenu</p>
           <p class="subtitle">{{ currentLesson.title }}</p>
         </div>
         <div class="player-controls">
@@ -18,7 +24,7 @@
             {{ isPlaying ? '⏸' : '▶' }}
           </button>
           <input type="range" class="progress-slider" min="0" max="100" />
-          <span class="duration">{{ currentLesson.duration }}:00</span>
+          <span class="duration">{{ currentLesson.durationMinutes || 0 }}:00</span>
           <button class="control-btn">⛶</button>
         </div>
       </div>
@@ -26,23 +32,34 @@
       <div class="lesson-details">
         <h1>{{ currentLesson.title }}</h1>
         <div class="lesson-meta">
-          <span>📝 {{ currentLesson.type }}</span>
-          <span>⏱️ {{ currentLesson.duration }} min</span>
+          <span>📝 Chapitre {{ currentLessonIndex + 1 }}</span>
+          <span>⏱️ {{ currentLesson.durationMinutes || 0 }} min</span>
+          <span *ngIf="currentLesson.resources && currentLesson.resources.length > 0">
+            📎 {{ currentLesson.resources.length }} ressource(s)
+          </span>
         </div>
-        <p>This is the lesson description. In a real application, this would contain rich content about the lesson.</p>
+        <p *ngIf="currentLesson.description">{{ currentLesson.description }}</p>
+        <p *ngIf="!currentLesson.description" class="no-description">Aucune description disponible pour ce chapitre.</p>
         
         <div class="lesson-actions">
-          <button class="primary-btn" (click)="completeLesson()">Mark as Complete</button>
-          <button class="secondary-btn">💬 Ask Question</button>
-          <button class="secondary-btn">⭐ Save for Later</button>
+          <button class="primary-btn" (click)="completeLesson()">Marquer comme terminé</button>
+          <button class="secondary-btn" *ngIf="course">📚 {{ course.title }}</button>
         </div>
       </div>
     </main>
 
+    <!-- Empty State -->
+    <div class="empty-state" *ngIf="!loading && lessons.length === 0">
+      <i class="fas fa-inbox"></i>
+      <h2>Aucun chapitre disponible</h2>
+      <p>Cette formation ne contient pas encore de chapitres.</p>
+      <button class="secondary-btn" (click)="goBack()">← Retour</button>
+    </div>
+
     <!-- Sidebar -->
-    <aside class="player-sidebar">
+    <aside class="player-sidebar" *ngIf="!loading && lessons.length > 0">
       <div class="sidebar-header">
-        <h2>Course Content</h2>
+        <h2>Contenu du Cours</h2>
         <span class="progress">{{ currentLessonIndex + 1 }}/{{ lessons.length }}</span>
       </div>
 
@@ -54,13 +71,11 @@
           (click)="selectLesson(i)"
         >
           <span class="lesson-icon">
-            <span *ngIf="lesson.type === 'VIDEO'">🎥</span>
-            <span *ngIf="lesson.type === 'ASSIGNMENT'">📝</span>
-            <span *ngIf="lesson.type === 'QUIZ'">❓</span>
+            <span>📖</span>
           </span>
           <div class="lesson-info">
             <span class="lesson-title">{{ lesson.title }}</span>
-            <span class="lesson-duration">{{ lesson.duration }} min</span>
+            <span class="lesson-duration">{{ lesson.durationMinutes || 0 }} min</span>
           </div>
           <span class="completed-check" *ngIf="i < currentLessonIndex">✓</span>
         </button>

@@ -1,219 +1,169 @@
 .my-courses-container {
-  padding: 2rem 0;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
 }
 
-/* Back Button */
 .back-btn {
-  position: fixed;
-  top: 80px;
-  left: 20px;
-  z-index: 100;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  border: 2px solid #0891b2;
-  background: var(--bg-primary);
-  color: #0891b2;
+  background: none;
+  border: none;
+  font-size: 16px;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.back-btn:hover {
-  background: #0891b2;
-  color: white;
-  box-shadow: 0 4px 12px rgba(8, 145, 178, 0.3);
-  transform: translateX(-4px);
-}
-
-.back-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  color: var(--primary-color, #007bff);
+  margin-bottom: 20px;
 }
 
 h1 {
-  margin: 0 0 2rem 0;
-  font-size: 28px;
-  color: var(--text-primary);
+  font-size: 32px;
+  margin-bottom: 24px;
 }
 
-.courses-section {
-  margin-bottom: 3rem;
-}
-
-.courses-section h2 {
-  margin: 0 0 1.5rem 0;
-  font-size: 18px;
-  color: var(--text-primary);
-  border-bottom: 2px solid var(--border-color);
-  padding-bottom: 1rem;
-}
-
-.courses-list {
+/* Tabs */
+.tabs {
   display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
+  gap: 8px;
+  border-bottom: 2px solid #e0e0e0;
+  margin-bottom: 30px;
 }
 
-.course-item {
+.tabs button {
+  padding: 12px 24px;
+  background: none;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  color: var(--text-secondary, #666);
+  border-bottom: 3px solid transparent;
+  transition: all 0.2s;
+}
+
+.tabs button.active {
+  color: var(--primary-color, #007bff);
+  border-bottom-color: var(--primary-color, #007bff);
+  font-weight: 600;
+}
+
+/* Enrollments Grid */
+.enrollments-grid {
   display: grid;
-  grid-template-columns: 200px 1fr auto;
-  gap: 1.5rem;
-  background: var(--bg-secondary);
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 24px;
+}
+
+.enrollment-card {
+  background: var(--card-bg, #fff);
+  border: 1px solid #e0e0e0;
   border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  align-items: center;
+  padding: 24px;
+  transition: box-shadow 0.2s;
 }
 
-.course-thumbnail {
-  position: relative;
-  width: 200px;
-  height: 120px;
-  border-radius: 8px;
-  overflow: hidden;
-
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
+.enrollment-card:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
-.progress-badge {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  background: rgba(102, 126, 234, 0.9);
-  color: white;
-  padding: 0.5rem 0.75rem;
-  border-radius: 6px;
+.enrollment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  margin-bottom: 16px;
+}
+
+.enrollment-header h3 {
+  margin: 0;
+  font-size: 20px;
+  flex: 1;
+}
+
+.enrollment-status {
+  padding: 4px 12px;
+  background: #e3f2fd;
+  color: #1976d2;
+  border-radius: 12px;
   font-size: 12px;
   font-weight: 600;
 }
 
-.course-info h3 {
-  margin: 0 0 0.75rem 0;
-  font-size: 16px;
-  color: var(--text-primary);
-}
-
-.course-meta {
-  display: flex;
-  gap: 1.5rem;
+.badge-completed {
+  padding: 4px 12px;
+  background: #e8f5e9;
+  color: #2e7d32;
+  border-radius: 12px;
   font-size: 12px;
-  color: var(--text-secondary);
-  margin-bottom: 1rem;
+  font-weight: 600;
 }
 
+/* Progress Bar */
 .progress-bar {
   width: 100%;
-  height: 6px;
+  height: 8px;
   background: #e0e0e0;
-  border-radius: 3px;
+  border-radius: 4px;
   overflow: hidden;
+  margin: 12px 0;
 }
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #0891b2 0%, #06b6d4 100%);
-  transition: width 0.3s ease;
+  background: var(--primary-color, #007bff);
+  transition: width 0.3s;
 }
 
-.continue-btn {
-  padding: 0.75rem 1.5rem;
-  background: linear-gradient(135deg, #0891b2 0%, #06b6d4 100%);
+.progress-text {
+  font-size: 14px;
+  color: var(--text-secondary, #666);
+  margin: 4px 0 12px 0;
+}
+
+.enrollment-date, .completion-date {
+  font-size: 14px;
+  color: var(--text-secondary, #666);
+  margin: 12px 0;
+}
+
+/* Actions */
+.enrollment-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.btn-continue, .btn-view {
+  flex: 1;
+  padding: 10px 20px;
+  background: var(--primary-color, #007bff);
   color: white;
   border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 600;
-  white-space: nowrap;
-  transition: all 0.3s ease;
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-  }
-}
-
-.courses-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 1.5rem;
-}
-
-.completed-card {
-  background: white;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  transition: all 0.3s ease;
-
-  &:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-  }
-}
-
-.completed-thumbnail {
-  width: 100%;
-  height: 160px;
-  object-fit: cover;
-}
-
-.completed-info {
-  padding: 1rem;
-}
-
-.completed-info h3 {
-  margin: 0 0 0.75rem 0;
+  border-radius: 8px;
   font-size: 14px;
-  color: #333;
-}
-
-.completed-badges {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.badge {
-  display: inline-block;
-  padding: 0.3rem 0.75rem;
-  border-radius: 12px;
-  font-size: 11px;
   font-weight: 600;
-
-  &.certificate {
-    background: #f0d662;
-    color: #333;
-  }
-
-  &.rating {
-    background: rgba(102, 126, 234, 0.1);
-    color: #0891b2;
-  }
+  cursor: pointer;
+  transition: background 0.2s;
 }
 
-@media (max-width: 768px) {
-  .course-item {
-    grid-template-columns: 1fr;
-  }
-
-  .course-thumbnail {
-    width: 100%;
-    height: 200px;
-  }
-
-  .continue-btn {
-    width: 100%;
-  }
+.btn-continue:hover, .btn-view:hover {
+  background: var(--primary-dark, #0056b3);
 }
 
+.btn-cancel {
+  padding: 10px 20px;
+  background: transparent;
+  color: #d32f2f;
+  border: 1px solid #d32f2f;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-cancel:hover {
+  background: #d32f2f;
+  color: white;
+}
+
+.no-enrollments, .loading {
+  text-align: center;
+  padding: 60px;
+  color: var(--text-secondary, #666);
+  font-size: 16px;
+}

@@ -1,0 +1,22 @@
+<div class="paths-container">
+  <h1>Parcours d'apprentissage</h1>
+  <p class="subtitle">Suivez un parcours structuré pour développer vos compétences</p>
+
+  <div *ngIf="loading" class="loading">Chargement...</div>
+
+  <div class="paths-grid" *ngIf="!loading">
+    <div *ngFor="let path of learningPaths" class="path-card" [routerLink]="['/learning/path', path.id]">
+      <div class="path-icon">🎯</div>
+      <h3>{{ path.title }}</h3>
+      <p>{{ path.description }}</p>
+      <div class="path-meta">
+        <span>📚 {{ path.items?.length || 0 }} formations</span>
+      </div>
+      <button class="btn-view">Voir le parcours</button>
+    </div>
+  </div>
+
+  <div *ngIf="!loading && learningPaths.length === 0" class="no-paths">
+    Aucun parcours disponible pour le moment
+  </div>
+</div>

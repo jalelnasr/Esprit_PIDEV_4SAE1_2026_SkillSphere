@@ -1,174 +1,137 @@
-<div class="course-detail-container" *ngIf="course$ | async as course">
-  <!-- Back Button -->
-  <button class="back-btn" (click)="goBack()" title="Go back">
-    <span class="back-icon">←</span>
-  </button>
+<div class="course-detail-container" *ngIf="!loading && course">
+  <button class="back-btn" (click)="goBack()">← Retour</button>
 
-  <!-- Hero Section -->
-  <div class="hero-section" [style.backgroundImage]="'url(' + course.thumbnail + ')'">
-    <div class="hero-overlay"></div>
-    <div class="hero-content">
-      <span class="breadcrumb">Learning > {{ course.category }}</span>
+  <!-- Header -->
+  <div class="course-header">
+    <img 
+      *ngIf="course.thumbnailUrl" 
+      [src]="course.thumbnailUrl" 
+      [alt]="course.title" 
+      class="course-banner"
+      (error)="onImageError($event)"
+    >
+    <div 
+      *ngIf="!course.thumbnailUrl"
+      class="course-banner course-banner-placeholder">
+      <span>📚 Formation</span>
+    </div>
+    <div class="course-header-content">
+      <span class="course-level" [class]="'level-' + course.level.toLowerCase()">{{ course.level }}</span>
       <h1>{{ course.title }}</h1>
-      <p>{{ course.description }}</p>
-      <div class="hero-stats">
-        <span>⭐ {{ course.rating }} ({{ course.reviewCount }} reviews)</span>
-        <span>👥 {{ course.enrolledCount }} students</span>
-        <span>⏱️ {{ course.duration }} hours</span>
+      <p class="course-description">{{ course.description }}</p>
+      <div class="course-meta">
+        <span>⏱️ {{ course.durationMinutes }} minutes</span>
+        <span>🌐 {{ course.language }}</span>
+        <span>📚 {{ lessons.length }} modules</span>
+      </div>
+      
+      <!-- Subscription Access Badge -->
+      <div class="access-info" *ngIf="subscription && subscription.status === 'ACTIVE' && canAccessCourse()">
+        <span class="access-badge success">✓ Inclus dans votre abonnement {{ subscription.plan.name }}</span>
+      </div>
+      <div class="access-info" *ngIf="!canAccessCourse()">
+        <div class="access-warning">
+          <span class="warning-icon">🔒</span>
+          <div>
+            <strong>{{ getAccessMessage() }}</strong>
+            <button class="btn-upgrade-inline" (click)="goToPricing()">
+              Voir les plans
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 
-  <div class="detail-layout">
-    <!-- Main Content -->
-    <main class="detail-main">
-      <!-- Tabs -->
-      <div class="tabs">
-        <button 
-          class="tab" 
-          [class.active]="activeTab === 'overview'"
-          (click)="activeTab = 'overview'"
-        >
-          Overview
-        </button>
-        <button 
-          class="tab" 
-          [class.active]="activeTab === 'curriculum'"
-          (click)="activeTab = 'curriculum'"
-        >
-          Curriculum
-        </button>
-        <button 
-          class="tab" 
-          [class.active]="activeTab === 'reviews'"
-          (click)="activeTab = 'reviews'"
-        >
-          Reviews
-        </button>
-      </div>
-
-      <!-- Tab Content -->
-      <div class="tab-content">
-        <!-- Overview Tab -->
-        <div *ngIf="activeTab === 'overview'" class="tab-pane">
-          <section class="section">
-            <h2>What you'll learn</h2>
-            <ul class="learning-outcomes">
-              <li *ngFor="let outcome of course.learningOutcomes">
-                ✓ {{ outcome }}
-              </li>
-            </ul>
-          </section>
-
-          <section class="section">
-            <h2>Requirements</h2>
-            <ul class="requirements">
-              <li *ngFor="let prereq of (course.prerequisites || [])">
-                • {{ prereq }}
-              </li>
-            </ul>
-          </section>
-
-          <section class="section">
-            <h2>Course Description</h2>
-            <p>{{ course.description }}</p>
-          </section>
-        </div>
-
-        <!-- Curriculum Tab -->
-        <div *ngIf="activeTab === 'curriculum'" class="tab-pane">
-          <div class="curriculum">
-            <div *ngFor="let section of course.content" class="section-item">
-              <div class="section-header">
-                <h3>{{ section.title }}</h3>
-                <span class="lesson-count">{{ section.lessons.length }} lessons</span>
-              </div>
-              <div class="lessons-list">
-                <div *ngFor="let lesson of section.lessons" class="lesson-item">
-                  <span class="lesson-icon">
-                    <span *ngIf="lesson.type === 'VIDEO'">🎥</span>
-                    <span *ngIf="lesson.type === 'DOCUMENT'">📄</span>
-                    <span *ngIf="lesson.type === 'QUIZ'">❓</span>
-                    <span *ngIf="lesson.type === 'ASSIGNMENT'">📝</span>
-                  </span>
-                  <div class="lesson-info">
-                    <p class="lesson-title">{{ lesson.title }}</p>
-                    <span class="lesson-duration">{{ lesson.duration }} min</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Reviews Tab -->
-        <div *ngIf="activeTab === 'reviews'" class="tab-pane">
-          <div class="reviews-list">
-            <div *ngFor="let review of course.reviews" class="review-item">
-              <div class="review-header">
-                <div class="reviewer-info">
-                  <span class="reviewer-avatar">{{ review.userName.charAt(0) }}</span>
-                  <div>
-                    <p class="reviewer-name">{{ review.userName }}</p>
-                    <span class="review-rating">⭐ {{ review.rating }}/5</span>
-                  </div>
-                </div>
-              </div>
-              <p class="review-comment">{{ review.comment }}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </main>
-
-    <!-- Sidebar -->
-    <aside class="detail-sidebar">
-      <div class="price-card">
-        <span class="price">${{ course.price }}</span>
-        <button 
-          class="enroll-btn" 
-          *ngIf="!isEnrolled"
-          (click)="enroll()"
-        >
-          Enroll Now
-        </button>
-        <button 
-          class="start-btn" 
-          *ngIf="isEnrolled"
-          (click)="startLearning()"
-        >
-          Start Learning
-        </button>
-      </div>
-
-      <div class="info-card">
-        <h3>Course Info</h3>
-        <div class="info-item">
-          <span class="label">Instructor</span>
-          <span class="value">{{ course.instructorName }}</span>
-        </div>
-        <div class="info-item">
-          <span class="label">Level</span>
-          <span class="value">{{ course.level }}</span>
-        </div>
-        <div class="info-item">
-          <span class="label">Duration</span>
-          <span class="value">{{ course.duration }} hours</span>
-        </div>
-        <div class="info-item">
-          <span class="label">Category</span>
-          <span class="value">{{ course.category }}</span>
-        </div>
-      </div>
-
-      <div class="share-card">
-        <h3>Share Course</h3>
-        <div class="share-buttons">
-          <button class="share-btn">Facebook</button>
-          <button class="share-btn">Twitter</button>
-          <button class="share-btn">LinkedIn</button>
-        </div>
-      </div>
-    </aside>
+  <!-- Tabs -->
+  <div class="tabs">
+    <button 
+      [class.active]="activeTab === 'overview'" 
+      (click)="activeTab = 'overview'">
+      Vue d'ensemble
+    </button>
+    <button 
+      [class.active]="activeTab === 'sessions'" 
+      (click)="activeTab = 'sessions'">
+      Sessions disponibles
+    </button>
+    <button 
+      [class.active]="activeTab === 'curriculum'" 
+      (click)="activeTab = 'curriculum'">
+      Programme
+    </button>
   </div>
+
+  <!-- Tab Content -->
+  <div class="tab-content">
+    <!-- Overview Tab -->
+    <div *ngIf="activeTab === 'overview'" class="overview-tab">
+      <h2>À propos de cette formation</h2>
+      <p>{{ course.description }}</p>
+      
+      <h3>Informations</h3>
+      <ul>
+        <li><strong>Niveau :</strong> {{ course.level }}</li>
+        <li><strong>Durée :</strong> {{ course.durationMinutes }} minutes</li>
+        <li><strong>Langue :</strong> {{ course.language }}</li>
+        <li><strong>Modules :</strong> {{ lessons.length }}</li>
+      </ul>
+    </div>
+
+    <!-- Sessions Tab -->
+    <div *ngIf="activeTab === 'sessions'" class="sessions-tab">
+      <h2>Sessions planifiées</h2>
+      
+      <div *ngIf="sessions.length === 0" class="no-sessions">
+        Aucune session planifiée pour le moment
+      </div>
+
+      <div class="sessions-list">
+        <div *ngFor="let session of sessions" class="session-card">
+          <div class="session-info">
+            <h3>Session du {{ session.startAt | date:'dd/MM/yyyy' }}</h3>
+            <p>📅 Du {{ session.startAt | date:'dd/MM/yyyy HH:mm' }} au {{ session.endAt | date:'dd/MM/yyyy HH:mm' }}</p>
+            <p>👥 {{ session.enrolledCount }} / {{ session.capacity }} inscrits</p>
+            <p>🌍 {{ session.timezone }}</p>
+            <span class="session-status" [class]="'status-' + session.status.toLowerCase()">
+              {{ session.status }}
+            </span>
+          </div>
+          <div class="session-actions">
+            <button 
+              class="btn-enroll" 
+              [class.btn-enrolled]="isEnrolledInSession(session.id)"
+              (click)="enrollInSession(session.id)"
+              [disabled]="isEnrolledInSession(session.id) || session.enrolledCount >= session.capacity || session.status !== 'OPEN'">
+              <span *ngIf="!isEnrolledInSession(session.id)">
+                {{ session.enrolledCount >= session.capacity ? 'Complet' : 'S\'inscrire' }}
+              </span>
+              <span *ngIf="isEnrolledInSession(session.id)">
+                ✓ Inscrit
+              </span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Curriculum Tab -->
+    <div *ngIf="activeTab === 'curriculum'" class="curriculum-tab">
+      <h2>Programme de la formation</h2>
+      
+      <div class="lessons-list">
+        <div *ngFor="let lesson of lessons" class="lesson-item">
+          <div class="lesson-number">{{ lesson.orderIndex }}</div>
+          <div class="lesson-info">
+            <h4>{{ lesson.title }}</h4>
+            <span class="lesson-duration">⏱️ {{ lesson.durationMinutes }} min</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div *ngIf="loading" class="loading">
+  Chargement...
 </div>
