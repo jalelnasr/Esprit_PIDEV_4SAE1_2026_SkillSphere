@@ -1,0 +1,195 @@
+<div class="admin-sessions">
+  <div class="header">
+    <h1>Gestion des Sessions</h1>
+    <button class="btn-primary" (click)="openCreateModal()" [disabled]="!selectedCourseId">
+      + Nouvelle Session
+    </button>
+  </div>
+
+  <!-- Course Selection -->
+  <div class="course-selector">
+    <label>Filtrer par formation:</label>
+    <select (change)="onCourseSelect(+$any($event.target).value)" class="course-select">
+      <option value="">-- Toutes les formations --</option>
+      <option *ngFor="let course of courses" [value]="course.id">
+        {{ course.title }}
+      </option>
+    </select>
+  </div>
+
+  <div *ngIf="loading" class="loading">Chargement...</div>
+
+  <!-- Sessions Table -->
+  <div class="sessions-table" *ngIf="!loading">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Formation</th>
+          <th>Début</th>
+          <th>Fin</th>
+          <th>Capacité</th>
+          <th>Inscrits</th>
+          <th>Statut</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let session of sessions">
+          <td>{{ session.id }}</td>
+          <td>
+            <span class="course-name">{{ getCourseName(session.courseId) }}</span>
+          </td>
+          <td>{{ session.startAt | date:'dd/MM/yyyy HH:mm' }}</td>
+          <td>{{ session.endAt | date:'dd/MM/yyyy HH:mm' }}</td>
+          <td>{{ session.capacity }}</td>
+          <td>{{ session.enrolledCount }}</td>
+          <td>
+            <span class="badge" [class]="'status-' + session.status.toLowerCase()">
+              {{ session.status }}
+            </span>
+          </td>
+          <td class="actions">
+            <button class="btn-icon info" (click)="viewParticipants(session)" title="Voir les participants">
+              👥
+            </button>
+            <button 
+              class="btn-toggle-status"
+              [class.status-planned]="session.status === SessionStatus.PLANNED"
+              [class.status-open]="session.status === SessionStatus.OPEN"
+              [class.status-closed]="session.status === SessionStatus.CLOSED"
+              (click)="toggleSessionStatus(session)"
+              [disabled]="session.status === SessionStatus.CANCELED">
+              <span *ngIf="session.status === SessionStatus.PLANNED">🔓 Ouvrir</span>
+              <span *ngIf="session.status === SessionStatus.OPEN">🔒 Fermer</span>
+              <span *ngIf="session.status === SessionStatus.CLOSED">🔓 Réouvrir</span>
+              <span *ngIf="session.status === SessionStatus.CANCELED">❌ Annulée</span>
+            </button>
+            <button class="btn-icon danger" (click)="deleteSession(session)" title="Supprimer">🗑️</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div *ngIf="sessions.length === 0" class="no-data">
+      Aucune session pour cette formation
+    </div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" *ngIf="showModal" (click)="closeModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>📅 Créer une Session</h2>
+      <button type="button" class="close-btn" (click)="closeModal()">✕</button>
+    </div>
+    
+    <form [formGroup]="sessionForm" (ngSubmit)="saveSession()">
+      <!-- Période de la Session -->
+      <div class="section-title">📆 Période de la session</div>
+      <div class="date-picker-container">
+        <div class="date-field">
+          <label>Date de début</label>
+          <div class="date-input-wrapper">
+            <span class="date-icon">📅</span>
+            <input 
+              type="date" 
+              formControlName="startDate"
+              [min]="minDate"
+              [class.error]="sessionForm.get('startDate')?.invalid && sessionForm.get('startDate')?.touched">
+          </div>
+          <span class="form-error" *ngIf="sessionForm.get('startDate')?.invalid && sessionForm.get('startDate')?.touched">
+            {{ getFieldError('startDate') }}
+          </span>
+        </div>
+
+        <div class="date-separator">→</div>
+
+        <div class="date-field">
+          <label>Date de fin</label>
+          <div class="date-input-wrapper">
+            <span class="date-icon">📅</span>
+            <input 
+              type="date" 
+              formControlName="endDate"
+              [min]="minDate"
+              [class.error]="sessionForm.get('endDate')?.invalid && sessionForm.get('endDate')?.touched">
+          </div>
+          <span class="form-error" *ngIf="sessionForm.get('endDate')?.invalid && sessionForm.get('endDate')?.touched">
+            {{ getFieldError('endDate') }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Jours de la Semaine -->
+      <div class="section-title">📋 Jours de formation</div>
+      <div class="days-selector" formGroupName="daysOfWeek">
+        <label class="day-checkbox">
+          <input type="checkbox" formControlName="monday">
+          <span class="day-label">Lun</span>
+        </label>
+        <label class="day-checkbox">
+          <input type="checkbox" formControlName="tuesday">
+          <span class="day-label">Mar</span>
+        </label>
+        <label class="day-checkbox">
+          <input type="checkbox" formControlName="wednesday">
+          <span class="day-label">Mer</span>
+        </label>
+        <label class="day-checkbox">
+          <input type="checkbox" formControlName="thursday">
+          <span class="day-label">Jeu</span>
+        </label>
+        <label class="day-checkbox">
+          <input type="checkbox" formControlName="friday">
+          <span class="day-label">Ven</span>
+        </label>
+        <label class="day-checkbox">
+          <input type="checkbox" formControlName="saturday">
+          <span class="day-label">Sam</span>
+        </label>
+      </div>
+      <p class="hint-text">Sélectionnez les jours où la formation aura lieu</p>
+
+      <!-- Configuration -->
+      <div class="section-title">⚙️ Configuration</div>
+      <div class="form-group">
+        <label>👥 Capacité maximale</label>
+        <input 
+          type="number" 
+          formControlName="capacity"
+          placeholder="30"
+          [class.error]="sessionForm.get('capacity')?.invalid && sessionForm.get('capacity')?.touched">
+        <span class="form-error" *ngIf="sessionForm.get('capacity')?.invalid && sessionForm.get('capacity')?.touched">
+          {{ getFieldError('capacity') }}
+        </span>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" (click)="closeModal()">Annuler</button>
+        <button type="submit" class="btn-save" [disabled]="sessionForm.invalid">
+          ✨ Créer la Session
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Confirm Dialog -->
+<app-confirm-dialog
+  *ngIf="showConfirmDialog"
+  [title]="confirmDialogTitle"
+  [message]="confirmDialogMessage"
+  confirmText="Supprimer"
+  cancelText="Annuler"
+  (confirmed)="onConfirmDelete()"
+  (cancelled)="onCancelDelete()">
+</app-confirm-dialog>
+
+<!-- Participants Modal -->
+<app-session-participants-modal
+  *ngIf="showParticipantsModal && selectedSessionId"
+  [sessionId]="selectedSessionId"
+  (closeModal)="closeParticipantsModal()">
+</app-session-participants-modal>
