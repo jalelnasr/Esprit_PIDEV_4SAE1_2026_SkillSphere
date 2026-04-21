@@ -5,6 +5,10 @@ import { ChangePasswordComponent } from './pages/change-password/change-password
 export const USER_ROUTES: Routes = [
   { path: 'profile', component: ProfileComponent },
   { path: 'change-password', component: ChangePasswordComponent },
+  { 
+    path: 'subscription', 
+    loadComponent: () => import('../account/subscription-management/subscription-management.component').then(m => m.SubscriptionManagementComponent) 
+  },
 
   // optional: /user redirects to /user/profile
   { path: '', redirectTo: 'profile', pathMatch: 'full' }

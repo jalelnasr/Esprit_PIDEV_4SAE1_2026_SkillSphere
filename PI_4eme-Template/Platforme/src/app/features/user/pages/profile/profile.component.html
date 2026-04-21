@@ -9,7 +9,10 @@
     
     <div class="profile-info">
       <div class="avatar-section">
-        <img [src]="user.avatar" alt="User Avatar" class="avatar">
+        <div class="avatar" *ngIf="!user.avatar.startsWith('data:')">
+          <span class="avatar-initials">{{ user.avatar || 'U' }}</span>
+        </div>
+        <img *ngIf="user.avatar.startsWith('data:')" [src]="user.avatar" alt="User Avatar" class="avatar">
         <label class="avatar-upload">
           <input type="file" (change)="onAvatarChange($event)" accept="image/*" hidden>
           <span class="upload-icon">📷</span>
@@ -51,39 +54,57 @@
       <h2>Edit Profile</h2>
       <form [formGroup]="profileForm" (ngSubmit)="onSubmit()">
         <div class="form-group">
-          <label>Full Name</label>
-          <input type="text" formControlName="name" class="form-input" placeholder="Enter your full name">
+          <label>Nom complet *</label>
+          <input 
+            type="text" 
+            formControlName="name" 
+            class="form-input" 
+            placeholder="Entrez votre nom complet"
+            [class.error]="profileForm.get('name')?.invalid && profileForm.get('name')?.touched">
           <span class="error" *ngIf="profileForm.get('name')?.invalid && profileForm.get('name')?.touched">
-            Name must be at least 3 characters
+            {{ getFieldError('name') }}
           </span>
         </div>
 
         <div class="form-group">
-          <label>Email</label>
-          <input type="email" formControlName="email" class="form-input" placeholder="Enter your email">
+          <label>Email *</label>
+          <input 
+            type="email" 
+            formControlName="email" 
+            class="form-input" 
+            placeholder="Entrez votre email"
+            [class.error]="profileForm.get('email')?.invalid && profileForm.get('email')?.touched">
           <span class="error" *ngIf="profileForm.get('email')?.invalid && profileForm.get('email')?.touched">
-            Please enter a valid email
+            {{ getFieldError('email') }}
           </span>
         </div>
 
         <div class="form-row">
           <div class="form-group">
-            <label>Phone</label>
-            <input type="tel" formControlName="phone" class="form-input" placeholder="Enter your phone number">
+            <label>Téléphone</label>
+            <input type="tel" formControlName="phone" class="form-input" placeholder="Entrez votre numéro">
           </div>
           <div class="form-group">
-            <label>Location</label>
-            <input type="text" formControlName="location" class="form-input" placeholder="City, Country">
+            <label>Localisation</label>
+            <input type="text" formControlName="location" class="form-input" placeholder="Ville, Pays">
           </div>
         </div>
 
         <div class="form-group">
           <label>Bio</label>
-          <textarea formControlName="bio" class="form-textarea" placeholder="Tell us about yourself" rows="4"></textarea>
+          <textarea 
+            formControlName="bio" 
+            class="form-textarea" 
+            placeholder="Parlez-nous de vous" 
+            rows="4"
+            [class.error]="profileForm.get('bio')?.invalid && profileForm.get('bio')?.touched"></textarea>
           <span class="char-count">{{ profileForm.get('bio')?.value?.length || 0 }}/500</span>
+          <span class="error" *ngIf="profileForm.get('bio')?.invalid && profileForm.get('bio')?.touched">
+            {{ getFieldError('bio') }}
+          </span>
         </div>
 
-        <button type="submit" class="btn btn-primary">Save Changes</button>
+        <button type="submit" class="btn btn-primary" [disabled]="profileForm.invalid">Enregistrer</button>
       </form>
     </div>
 

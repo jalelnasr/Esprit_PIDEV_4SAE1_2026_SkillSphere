@@ -32,8 +32,10 @@ export class ForgotPasswordComponent {
 
   submit(): void {
     if (this.form.invalid) {
-      this.toast.error('Please enter a valid email');
-      this.form.markAllAsTouched();
+      Object.keys(this.form.controls).forEach(key => {
+        this.form.get(key)?.markAsTouched();
+      });
+      this.toast.error('Veuillez entrer un email valide');
       return;
     }
 
@@ -45,12 +47,12 @@ export class ForgotPasswordComponent {
     this.http.post(`${environment.apiUrl}/auth/forgot-password`, { email }).subscribe({
       next: () => {
         this.loading = false;
-        this.toast.success('If this email exists, a reset link has been sent.');
+        this.toast.success('Si cet email existe, un lien de réinitialisation a été envoyé.');
         this.router.navigateByUrl('/auth/login');
       },
       error: (e) => {
         this.loading = false;
-        this.toast.error(e?.error?.message ?? 'Failed to send reset email');
+        this.toast.error(e?.error?.message ?? 'Échec de l\'envoi de l\'email');
       }
     });
   }
@@ -62,8 +64,8 @@ export class ForgotPasswordComponent {
   get emailError(): string {
     const f = this.form.get('email');
     if (!f || !f.touched) return '';
-    if (f.hasError('required')) return 'Email is required';
-    if (f.hasError('email')) return 'Please enter a valid email';
+    if (f.hasError('required')) return 'Ce champ est obligatoire';
+    if (f.hasError('email')) return 'Email invalide';
     return '';
   }
 }

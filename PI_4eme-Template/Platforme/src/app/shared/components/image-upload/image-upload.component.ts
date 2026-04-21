@@ -75,12 +75,12 @@ export class ImageUploadComponent {
     formData.append('file', file);
 
     // Utiliser le bon endpoint (/api/uploads)
-    const uploadUrl = 'http://localhost:8087/formation-service/api/uploads/image';
+    const uploadUrl = 'http://localhost:8080/formation-service/api/uploads/image';
     
     this.http.post<{ url: string }>(uploadUrl, formData).subscribe({
       next: (response) => {
         this.uploading = false;
-        const fullUrl = `http://localhost:8087/formation-service${response.url}`;
+        const fullUrl = `http://localhost:8080/formation-service${response.url}`;
         this.imageUploaded.emit(fullUrl);
         console.log('✅ Image uploaded:', fullUrl);
       },

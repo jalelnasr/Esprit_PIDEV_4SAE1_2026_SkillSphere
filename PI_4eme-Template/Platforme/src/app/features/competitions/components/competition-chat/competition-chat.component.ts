@@ -5,6 +5,7 @@ import { TranslateModule } from '@ngx-translate/core';
 import { WebSocketService, ChatMessage } from '../../services/websocket.service';
 import { AuthService } from '../../../../core/services/auth.service';
 import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../../../environments/environment';
 
 @Component({
   selector: 'app-competition-chat',
@@ -103,7 +104,7 @@ export class CompetitionChatComponent implements OnInit, OnDestroy {
 
   loadChatHistory(): void {
     // Both formateur and participants load ALL their messages
-    const url = `http://localhost:8087/api/chat/competition/${this.competitionId}/history/filtered?userId=${this.currentUserId}&userRole=${this.currentUserRole}&teamId=${this.currentTeamId || ''}`;
+    const url = `${environment.competitionsApiUrl}/chat/competition/${this.competitionId}/history/filtered?userId=${this.currentUserId}&userRole=${this.currentUserRole}&teamId=${this.currentTeamId || ''}`;
     
     this.http.get<ChatMessage[]>(url)
       .subscribe({
@@ -126,7 +127,7 @@ export class CompetitionChatComponent implements OnInit, OnDestroy {
 
   getUserTeam(): void {
     // Get user's team from team_members table
-    this.http.get<any>(`http://localhost:8087/api/competitions/${this.competitionId}/my-team`)
+    this.http.get<any>(`${environment.competitionsApiUrl}/competitions/${this.competitionId}/my-team`)
       .subscribe({
         next: (teamMember) => {
           this.currentTeamId = teamMember?.teamId || null;
@@ -142,7 +143,7 @@ export class CompetitionChatComponent implements OnInit, OnDestroy {
 
   getFormateurIdFromBackend(): void {
     // Get competition details to find formateur ID
-    this.http.get<any>(`http://localhost:8087/api/competitions/${this.competitionId}`)
+    this.http.get<any>(`${environment.competitionsApiUrl}/competitions/${this.competitionId}`)
       .subscribe({
         next: (competition) => {
           console.log('🔍 Competition data received:', JSON.stringify(competition, null, 2));
@@ -166,7 +167,7 @@ export class CompetitionChatComponent implements OnInit, OnDestroy {
   }
 
   loadParticipantsAndFindFormateur(): void {
-    this.http.get<any[]>(`http://localhost:8087/api/competitions/${this.competitionId}/participants`)
+    this.http.get<any[]>(`${environment.competitionsApiUrl}/competitions/${this.competitionId}/participants`)
       .subscribe({
         next: (participants) => {
           console.log('🔍 Participants loaded:', participants);

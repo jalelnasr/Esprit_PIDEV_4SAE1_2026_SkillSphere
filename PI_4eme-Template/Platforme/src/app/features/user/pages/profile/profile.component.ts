@@ -39,7 +39,7 @@ export class ProfileComponent implements OnInit {
     phone: '',
     location: '',
     bio: 'Passionate about learning and professional development',
-    avatar: 'https://via.placeholder.com/120?text=U',
+    avatar: '', // Will be set dynamically with initials
     joinDate: '',
     courses: 0,
     certificates: 0,
@@ -87,9 +87,9 @@ export class ProfileComponent implements OnInit {
         this.user.phone = u.phone ?? '';
         this.user.location = u.adresse ?? '';
 
-        // initial avatar letters
+        // initial avatar letters (no external URL)
         const initials = this.getInitials(u.prenom, u.nom);
-        this.user.avatar = `https://via.placeholder.com/120?text=${encodeURIComponent(initials)}`;
+        this.user.avatar = initials; // Store initials only, CSS will handle display
 
         // joinDate from createdAt
         this.user.joinDate = u.createdAt ? u.createdAt.slice(0, 10) : '';
@@ -115,7 +115,10 @@ export class ProfileComponent implements OnInit {
   // ✅ PUT /users/me (only nom/prenom/phone/adresse)
   onSubmit() {
     if (this.profileForm.invalid) {
-      this.toast.error('Please fix the form errors');
+      Object.keys(this.profileForm.controls).forEach(key => {
+        this.profileForm.get(key)?.markAsTouched();
+      });
+      this.toast.error('Veuillez corriger les erreurs du formulaire');
       return;
     }
 
@@ -139,8 +142,8 @@ export class ProfileComponent implements OnInit {
 
         const initials = this.getInitials(u.prenom, u.nom);
         // keep uploaded avatar if user changed it manually
-        if (this.user.avatar.includes('via.placeholder.com')) {
-          this.user.avatar = `https://via.placeholder.com/120?text=${encodeURIComponent(initials)}`;
+        if (!this.user.avatar.startsWith('data:')) {
+          this.user.avatar = initials; // Store initials only
         }
 
         this.toast.success('Profile updated successfully!');
@@ -188,5 +191,22 @@ export class ProfileComponent implements OnInit {
     const a = p ? p.charAt(0).toUpperCase() : 'U';
     const b = n ? n.charAt(0).toUpperCase() : '';
     return (a + b).trim();
+  }
+
+  getFieldError(fieldName: string): string {
+    const field = this.profileForm.get(fieldName);
+    if (!field?.touched) return '';
+    
+    if (field.hasError('required')) return 'Ce champ est obligatoire';
+    if (field.hasError('email')) return 'Email invalide';
+    if (field.hasError('minlength')) {
+      const minLength = field.getError('minlength')?.requiredLength ?? 0;
+      return `Minimum ${minLength} caractères requis`;
+    }
+    if (field.hasError('maxlength')) {
+      const maxLength = field.getError('maxlength')?.requiredLength ?? 0;
+      return `Maximum ${maxLength} caractères autorisés`;
+    }
+    return '';
   }
 }

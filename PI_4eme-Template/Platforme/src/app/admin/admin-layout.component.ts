@@ -22,7 +22,9 @@ export class AdminLayoutComponent implements OnInit {
   menuItems = [
     { icon: '📊', label: 'Dashboard', path: '/admin/dashboard' },
     { icon: '👥', label: 'Users', path: '/admin/users' },
-    { icon: '📚', label: 'Courses', path: '/admin/courses' },
+    { icon: '📚', label: 'Formations', path: '/admin/formations' },
+    { icon: '📅', label: 'Sessions', path: '/admin/sessions' },
+    { icon: '💳', label: 'Payments', path: '/admin/payments' },
     { icon: '📈', label: 'Analytics', path: '/admin/analytics' },
     { icon: '💼', label: 'B2B Corporate', path: '/admin/corporate' },
     { icon: '🎓', label: 'Certifications', path: '/admin/certifications' },

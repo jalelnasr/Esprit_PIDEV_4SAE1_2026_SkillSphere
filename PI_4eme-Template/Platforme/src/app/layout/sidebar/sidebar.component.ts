@@ -46,12 +46,10 @@ export class SidebarComponent implements OnInit {
       label: 'Learning',
       route: '/learning',
       roles: ['APPRENANT', 'FORMATEUR'],
-      subItems: [
-        { label: 'Browse Courses', route: '/learning/browse' },
-        { label: 'My Courses', route: '/learning/my-courses' },
-        { label: 'Wishlist', route: '/learning/wishlist' }
-      ]
+      subItems: [] // Will be populated dynamically based on role
     },
+
+    { icon: '💳', label: 'Subscription', route: '/pricing', badge: null, roles: ['APPRENANT'] },
 
     {
       icon: '🎓',
@@ -98,13 +96,16 @@ export class SidebarComponent implements OnInit {
       ]
     },
 
-
-  {
-  icon: '🎪',
-  label: 'Professional Events',
-  route: '/competitions',
-  roles: ['APPRENANT', 'FORMATEUR']
-}
+    {
+      icon: '🎪',
+      label: 'Events',
+      route: '/events',
+      roles: ['APPRENANT', 'FORMATEUR', 'RH_ENTREPRISE'],
+      subItems: [
+        { label: 'Browse Events', route: '/events/browse' },
+        { label: 'My Events', route: '/events/my-events' }
+      ]
+    }
   ];
 
   menuItems: MenuItem[] = [];
@@ -136,33 +137,37 @@ export class SidebarComponent implements OnInit {
       this.menuItems = this.allMenuItems
         .filter(item => item.roles.includes(this.userRole!))
         .map(item => {
-          // Adapter le menu Competitions selon le rôle
-          if (item.label === 'Professional Events') {
-            if (this.userRole === 'APPRENANT') {
-              return {
-                ...item,
-              subItems: [
- 
-  { label: 'Browse Events', route: '/competitions' },
-  { label: 'My Participations', route: '/competitions/my-participations' }
-]
-              };
-            } else if (this.userRole === 'FORMATEUR') {
-              return {
-                ...item,
-               subItems: [
-  
-  { label: 'Browse Events', route: '/competitions' },
-  { label: 'Create Event', route: '/competitions/create' },
-  { label: 'Manage Events', route: '/competitions/manage' }
-]
-              };
-            }
+          // Dynamically set Learning submenu based on role
+          if (item.label === 'Learning') {
+            return {
+              ...item,
+              subItems: this.getLearningSubItems(this.userRole!)
+            };
           }
           return item;
         });
     } else {
       this.menuItems = [];
+    }
+  }
+
+  getLearningSubItems(role: BackendRole): SubItem[] {
+    if (role === 'FORMATEUR' || role === 'ADMIN') {
+      return [
+        { label: 'Dashboard', route: '/learning/instructor/dashboard' },
+        { label: 'My Formations', route: '/learning/instructor/formations' },
+        { label: 'My Sessions', route: '/learning/instructor/sessions' },
+        { label: 'My Students', route: '/learning/instructor/students' },
+        { label: '📅 My Calendar', route: '/learning/calendar' }
+      ];
+    } else {
+      return [
+        { label: 'Browse Courses', route: '/learning/browse' },
+        { label: 'My Courses', route: '/learning/my-courses' },
+        { label: 'My Progress', route: '/learning/progress' },
+        { label: 'Wishlist', route: '/learning/wishlist' },
+        { label: '📅 My Calendar', route: '/learning/calendar' }
+      ];
     }
   }
 

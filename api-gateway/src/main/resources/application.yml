@@ -41,17 +41,9 @@ spring:
         - id: formation-service
           uri: lb://FORMATION-SERVICE
           predicates:
-            - Path=/api/formations/**,/formation-service/**
+            - Path=/formation-service/**
           filters:
-            - StripPrefix=0
-
-        # Route pour Formation Service - uploads
-        - id: formation-uploads
-          uri: lb://FORMATION-SERVICE
-          predicates:
-            - Path=/formation-service/uploads/**
-          filters:
-            - StripPrefix=0
+            - StripPrefix=1
 
       # Configuration CORS globale
       globalcors:

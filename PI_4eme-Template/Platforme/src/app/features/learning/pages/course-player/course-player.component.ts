@@ -215,12 +215,12 @@ export class CoursePlayerComponent implements OnInit {
     
     // If it starts with /uploads, it's a relative path from the Formation Service
     if (url.startsWith('/uploads')) {
-      return `http://localhost:8087/formation-service${url}`;
+      return `http://localhost:8080/formation-service${url}`;
     }
     
     // Otherwise, assume it's a relative path and prepend the base URL
     const cleanUrl = url.startsWith('/') ? url : `/${url}`;
-    return `http://localhost:8087/formation-service${cleanUrl}`;
+    return `http://localhost:8080/formation-service${cleanUrl}`;
   }
 
   formatFileSize(bytes: number): string {

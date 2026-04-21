@@ -39,12 +39,17 @@ export class RegisterComponent implements OnInit {
   }
 
   onRegister(): void {
-    if (!this.registerForm.valid) return;
+    if (!this.registerForm.valid) {
+      Object.keys(this.registerForm.controls).forEach(key => {
+        this.registerForm.get(key)?.markAsTouched();
+      });
+      return;
+    }
 
     const { password, confirmPassword, firstName, lastName, email } = this.registerForm.value;
 
     if (password !== confirmPassword) {
-      this.toastService.error('Passwords do not match');
+      this.toastService.error('Les mots de passe ne correspondent pas');
       return;
     }
 
@@ -71,6 +76,21 @@ export class RegisterComponent implements OnInit {
 
   togglePasswordVisibility(): void {
     this.showPassword = !this.showPassword;
+  }
+
+  getFieldError(fieldName: string): string {
+    const field = this.registerForm.get(fieldName);
+    if (!field?.touched) return '';
+    
+    if (field.hasError('required')) return 'Ce champ est obligatoire';
+    if (field.hasError('email')) return 'Email invalide';
+    if (field.hasError('minlength')) {
+      const minLength = field.getError('minlength')?.requiredLength ?? 0;
+      return `Minimum ${minLength} caractères requis`;
+    }
+    if (field.hasError('requiredTrue')) return 'Vous devez accepter les conditions';
+    
+    return '';
   }
 
   goBack(): void {

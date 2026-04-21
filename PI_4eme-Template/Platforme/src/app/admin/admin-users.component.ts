@@ -1,6 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormBuilder, FormGroup, ReactiveFormsModule, FormsModule, Validators } from '@angular/forms';
+import { ToastService } from '@core/services/toast.service';
+import { ConfirmDialogComponent } from '@shared/components/confirm-dialog/confirm-dialog.component';
 import {
   AdminUsersApiService,
   UserResponse,
@@ -14,7 +16,7 @@ type StatusFilter = 'all' | 'active' | 'inactive';
 @Component({
   selector: 'app-admin-users',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, ConfirmDialogComponent],
   templateUrl: './admin-users.component.html',
   styleUrls: ['./admin-users.component.css']
 })
@@ -36,37 +38,57 @@ export class AdminUsersComponent implements OnInit {
   showEditModal = false;
   showResetPasswordModal = false;
 
-  // forms (simple)
-  createForm: AdminCreateUserRequest = {
-    nom: '',
-    prenom: '',
-    email: '',
-    password: '',
-    role: 'APPRENANT',
-    phone: '',
-    adresse: '',
-    isActive: true
-  };
+  // forms
+  createForm!: FormGroup;
+  editForm!: FormGroup;
+  resetPasswordForm!: FormGroup;
 
   editTarget: UserResponse | null = null;
-  editForm: AdminUpdateUserRequest = {
-    nom: '',
-    prenom: '',
-    email: '',
-    phone: '',
-    adresse: ''
-  };
-
   resetTarget: UserResponse | null = null;
-  resetPassword = '';
-  resetPassword2 = '';
 
   roles: BackendRole[] = ['ADMIN', 'FORMATEUR', 'APPRENANT', 'RH_ENTREPRISE'];
 
-  constructor(private api: AdminUsersApiService) {}
+  // Confirm dialog
+  showConfirmDialog = false;
+  confirmDialogTitle = '';
+  confirmDialogMessage = '';
+  pendingDeleteUser?: UserResponse;
+
+  constructor(
+    private fb: FormBuilder,
+    private api: AdminUsersApiService,
+    private toastService: ToastService
+  ) {}
 
   ngOnInit() {
+    this.initForms();
     this.loadUsers();
+  }
+
+  initForms(): void {
+    this.createForm = this.fb.group({
+      nom: ['', [Validators.required, Validators.minLength(2)]],
+      prenom: ['', [Validators.required, Validators.minLength(2)]],
+      email: ['', [Validators.required, Validators.email]],
+      password: ['', [Validators.required, Validators.minLength(8)]],
+      role: ['APPRENANT', Validators.required],
+      phone: ['', [Validators.pattern(/^[0-9]{8,15}$/)]],
+      adresse: [''],
+      isActive: [true]
+    });
+
+    this.editForm = this.fb.group({
+      nom: ['', [Validators.required, Validators.minLength(2)]],
+      prenom: ['', [Validators.required, Validators.minLength(2)]],
+      email: ['', [Validators.required, Validators.email]],
+      phone: ['', [Validators.pattern(/^[0-9]{8,15}$/)]],
+      adresse: ['']
+    });
+
+    this.resetPasswordForm = this.fb.group({
+      newPassword: ['', [Validators.required, Validators.minLength(8)]],
+      confirmPassword: ['', Validators.required]
+    });
   }
 
   loadUsers() {
@@ -140,34 +162,35 @@ export class AdminUsersComponent implements OnInit {
 
   // ---------- Create ----------
   openCreate() {
-    this.createForm = {
-      nom: '',
-      prenom: '',
-      email: '',
-      password: '',
+    this.createForm.reset({
       role: 'APPRENANT',
-      phone: '',
-      adresse: '',
       isActive: true
-    };
+    });
     this.showCreateModal = true;
   }
 
   closeCreate() { this.showCreateModal = false; }
 
   submitCreate() {
-    if (!this.createForm.nom || !this.createForm.prenom || !this.createForm.email || !this.createForm.password) {
-      alert('Please fill: nom, prenom, email, password');
+    // Marquer tous les champs comme touchés pour afficher les erreurs
+    Object.keys(this.createForm.controls).forEach(key => {
+      this.createForm.get(key)?.markAsTouched();
+    });
+
+    if (this.createForm.invalid) {
       return;
     }
 
-    this.api.create(this.createForm).subscribe({
+    const request: AdminCreateUserRequest = this.createForm.value;
+
+    this.api.create(request).subscribe({
       next: () => {
+        this.toastService.success('Utilisateur créé avec succès');
         this.showCreateModal = false;
         this.loadUsers();
       },
       error: (e) => {
-        alert(e?.error?.message ?? 'Create failed');
+        this.toastService.error(e?.error?.message ?? 'Échec de la création');
       }
     });
   }
@@ -175,28 +198,43 @@ export class AdminUsersComponent implements OnInit {
   // ---------- Edit ----------
   editUser(u: UserResponse) {
     this.editTarget = u;
-    this.editForm = {
+    this.editForm.patchValue({
       nom: u.nom ?? '',
       prenom: u.prenom ?? '',
       email: u.email ?? '',
       phone: u.phone ?? '',
       adresse: u.adresse ?? ''
-    };
+    });
     this.showEditModal = true;
   }
 
-  closeEdit() { this.showEditModal = false; this.editTarget = null; }
+  closeEdit() { 
+    this.showEditModal = false; 
+    this.editTarget = null; 
+  }
 
   submitEdit() {
     if (!this.editTarget) return;
 
-    this.api.update(this.editTarget.idUser, this.editForm).subscribe({
+    // Marquer tous les champs comme touchés pour afficher les erreurs
+    Object.keys(this.editForm.controls).forEach(key => {
+      this.editForm.get(key)?.markAsTouched();
+    });
+
+    if (this.editForm.invalid) {
+      return;
+    }
+
+    const request: AdminUpdateUserRequest = this.editForm.value;
+
+    this.api.update(this.editTarget.idUser, request).subscribe({
       next: () => {
+        this.toastService.success('Utilisateur mis à jour avec succès');
         this.showEditModal = false;
         this.editTarget = null;
         this.loadUsers();
       },
-      error: (e) => alert(e?.error?.message ?? 'Update failed')
+      error: (e) => this.toastService.error(e?.error?.message ?? 'Échec de la mise à jour')
     });
   }
 
@@ -204,24 +242,29 @@ export class AdminUsersComponent implements OnInit {
   changeRole(u: UserResponse, role: BackendRole) {
     if (u.role === role) return;
     this.api.setRole(u.idUser, role).subscribe({
-      next: () => this.loadUsers(),
-      error: (e) => alert(e?.error?.message ?? 'Role update failed')
+      next: () => {
+        this.toastService.success('Rôle modifié avec succès');
+        this.loadUsers();
+      },
+      error: (e) => this.toastService.error(e?.error?.message ?? 'Échec de la modification du rôle')
     });
   }
 
   toggleActive(u: UserResponse) {
     const next = !u.isActive;
     this.api.setActive(u.idUser, next).subscribe({
-      next: () => this.loadUsers(),
-      error: (e) => alert(e?.error?.message ?? 'Active update failed')
+      next: () => {
+        this.toastService.success(`Utilisateur ${next ? 'activé' : 'désactivé'} avec succès`);
+        this.loadUsers();
+      },
+      error: (e) => this.toastService.error(e?.error?.message ?? 'Échec de la modification du statut')
     });
   }
 
   // ---------- Reset password ----------
   openResetPassword(u: UserResponse) {
     this.resetTarget = u;
-    this.resetPassword = '';
-    this.resetPassword2 = '';
+    this.resetPasswordForm.reset();
     this.showResetPasswordModal = true;
   }
 
@@ -232,33 +275,79 @@ export class AdminUsersComponent implements OnInit {
 
   submitResetPassword() {
     if (!this.resetTarget) return;
-    if (!this.resetPassword || this.resetPassword.length < 8) {
-      alert('Password must be at least 8 characters');
-      return;
-    }
-    if (this.resetPassword !== this.resetPassword2) {
-      alert('Passwords do not match');
+
+    // Marquer tous les champs comme touchés pour afficher les erreurs
+    Object.keys(this.resetPasswordForm.controls).forEach(key => {
+      this.resetPasswordForm.get(key)?.markAsTouched();
+    });
+
+    if (this.resetPasswordForm.invalid) {
       return;
     }
 
-    this.api.resetPassword(this.resetTarget.idUser, { newPassword: this.resetPassword }).subscribe({
+    const { newPassword, confirmPassword } = this.resetPasswordForm.value;
+
+    if (newPassword !== confirmPassword) {
+      this.toastService.error('Les mots de passe ne correspondent pas');
+      return;
+    }
+
+    this.api.resetPassword(this.resetTarget.idUser, { newPassword }).subscribe({
       next: () => {
+        this.toastService.success('Mot de passe réinitialisé avec succès');
         this.showResetPasswordModal = false;
         this.resetTarget = null;
-        alert('Password reset successfully');
       },
-      error: (e) => alert(e?.error?.message ?? 'Reset password failed')
+      error: (e) => this.toastService.error(e?.error?.message ?? 'Échec de la réinitialisation')
     });
   }
 
   // ---------- Delete ----------
   deleteUser(u: UserResponse) {
     const name = `${u.prenom ?? ''} ${u.nom ?? ''}`.trim() || u.email;
-    if (!confirm(`Delete user: ${name} ?`)) return;
+    this.pendingDeleteUser = u;
+    this.confirmDialogTitle = 'Supprimer l\'utilisateur';
+    this.confirmDialogMessage = `Êtes-vous sûr de vouloir supprimer l'utilisateur "${name}" ? Cette action est irréversible.`;
+    this.showConfirmDialog = true;
+  }
 
-    this.api.delete(u.idUser).subscribe({
-      next: () => this.loadUsers(),
-      error: (e) => alert(e?.error?.message ?? 'Delete failed')
+  onConfirmDelete(): void {
+    if (!this.pendingDeleteUser) return;
+
+    this.api.delete(this.pendingDeleteUser.idUser).subscribe({
+      next: () => {
+        this.toastService.success('Utilisateur supprimé avec succès');
+        this.loadUsers();
+        this.showConfirmDialog = false;
+        this.pendingDeleteUser = undefined;
+      },
+      error: (e) => {
+        this.toastService.error('Erreur lors de la suppression');
+        this.showConfirmDialog = false;
+        this.pendingDeleteUser = undefined;
+      }
     });
+  }
+
+  onCancelDelete(): void {
+    this.showConfirmDialog = false;
+    this.pendingDeleteUser = undefined;
+  }
+
+  getFieldError(form: FormGroup, fieldName: string): string {
+    const field = form.get(fieldName);
+    if (!field?.touched) return '';
+    
+    if (field.hasError('required')) return 'Ce champ est obligatoire';
+    if (field.hasError('email')) return 'Email invalide';
+    if (field.hasError('pattern')) {
+      if (fieldName === 'phone') return 'Numéro de téléphone invalide (8-15 chiffres)';
+      return 'Format invalide';
+    }
+    if (field.hasError('minlength')) {
+      const minLength = field.getError('minlength')?.requiredLength ?? 0;
+      return `Minimum ${minLength} caractères requis`;
+    }
+    return '';
   }
 }

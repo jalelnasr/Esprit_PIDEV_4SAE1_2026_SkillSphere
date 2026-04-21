@@ -2,6 +2,9 @@ import { Injectable } from '@angular/core';
 import { HttpInterceptor, HttpRequest, HttpHandler, HttpEvent } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
+// Routes that must NOT have a JWT token attached
+const AUTH_URLS = ['/auth/login', '/auth/register', '/auth/forgot-password'];
+
 @Injectable()
 export class JwtInterceptor implements HttpInterceptor {
   private hasStorage(): boolean {
@@ -9,31 +12,17 @@ export class JwtInterceptor implements HttpInterceptor {
   }
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
-    const token = this.hasStorage() ? localStorage.getItem('token') : null;
-
-    // ✅ ne jamais ajouter le token pour auth endpoints
-    const isAuthRequest =
-      req.url.includes('/api/auth/login') ||
-      req.url.includes('/api/auth/register') ||
-      req.url.includes('/api/auth/forgot-password') ||
-      req.url.includes('/api/auth/reset-password');
-
-    // ✅ ajouter le token uniquement vers le gateway (ou localhost backend si tu appelles direct)
-    const isGatewayOrBackend =
-      req.url.startsWith('http://localhost:8080') ||
-      req.url.startsWith('http://localhost:8086') ||
-      req.url.startsWith('http://localhost:8087');
-
-    if (!token || isAuthRequest || !isGatewayOrBackend) {
+    // Skip auth endpoints — they don't need a token and an old/expired token causes 401
+    const isAuthUrl = AUTH_URLS.some(url => req.url.includes(url));
+    if (isAuthUrl) {
       return next.handle(req);
     }
 
-    const clonedReq = req.clone({
-      setHeaders: {
-        Authorization: `Bearer ${token}`
-      }
-    });
+    const token = this.hasStorage() ? localStorage.getItem('token') : null;
 
-    return next.handle(clonedReq);
+    if (!token) return next.handle(req);
+
+    const cloned = req.clone({ setHeaders: { Authorization: `Bearer ${token}` } });
+    return next.handle(cloned);
   }
 }

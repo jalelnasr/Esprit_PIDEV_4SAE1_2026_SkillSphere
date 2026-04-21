@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../../environments/environment';
 
 interface ChatMessage {
   text: string;
@@ -23,7 +24,7 @@ export class ChatbotWidgetComponent implements OnInit {
   userInput = '';
   isTyping = false;
 
-  private apiUrl = 'http://localhost:8087/api/chatbot';
+  private apiUrl = `${environment.competitionsApiUrl}/chatbot`;
 
   constructor(private http: HttpClient) {}
 

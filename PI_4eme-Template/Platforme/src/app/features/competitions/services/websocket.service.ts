@@ -45,7 +45,7 @@ export class WebSocketService {
     }
 
     this.client = new Client({
-      webSocketFactory: () => new SockJS('http://localhost:8087/ws-chat'),
+      webSocketFactory: () => new SockJS('http://localhost:8080/ws-chat'),
       reconnectDelay: 5000,
       heartbeatIncoming: 4000,
       heartbeatOutgoing: 4000,

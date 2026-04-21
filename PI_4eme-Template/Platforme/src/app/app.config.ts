@@ -4,8 +4,6 @@ import { provideHttpClient, withInterceptorsFromDi, withFetch } from '@angular/c
 import { provideAnimations } from '@angular/platform-browser/animations';
 import { provideClientHydration } from '@angular/platform-browser';
 import { firstValueFrom } from 'rxjs';
-import { provideTranslateService } from '@ngx-translate/core';
-import { provideTranslateHttpLoader } from '@ngx-translate/http-loader';
 
 import { routes } from './app.routes';
 import { AuthService } from './core/services/auth.service';
@@ -29,15 +27,6 @@ export const appConfig: ApplicationConfig = {
 
     // JWT interceptor
     { provide: HTTP_INTERCEPTORS, useClass: JwtInterceptor, multi: true },
-
-    // Translation service (ngx-translate v17)
-    provideTranslateService({
-      fallbackLang: 'fr',
-      loader: provideTranslateHttpLoader({
-        prefix: '/assets/i18n/',
-        suffix: '.json'
-      })
-    }),
 
     // ⭐ AUTO LOGIN ON REFRESH
     {

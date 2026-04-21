@@ -44,7 +44,12 @@ export class LoginComponent implements OnInit {
   }
 
   onLogin(): void {
-    if (!this.loginForm.valid) return;
+    if (!this.loginForm.valid) {
+      Object.keys(this.loginForm.controls).forEach(key => {
+        this.loginForm.get(key)?.markAsTouched();
+      });
+      return;
+    }
 
     this.isLoading = true;
     const { email, password } = this.loginForm.value;
@@ -73,15 +78,14 @@ export class LoginComponent implements OnInit {
 
   getFieldError(fieldName: string): string {
     const field = this.loginForm.get(fieldName);
-    if (field?.hasError('required')) return 'This field is required';
-    if (field?.hasError('email')) return 'Please enter a valid email';
-
-    // ✅ Angular uses 'minlength'
-    if (field?.hasError('minlength')) {
+    if (!field?.touched) return '';
+    
+    if (field.hasError('required')) return 'Ce champ est obligatoire';
+    if (field.hasError('email')) return 'Email invalide';
+    if (field.hasError('minlength')) {
       const minLength = field.getError('minlength')?.requiredLength ?? 0;
-      return `Minimum ${minLength} characters required`;
+      return `Minimum ${minLength} caractères requis`;
     }
-
     return '';
   }
 

@@ -1,6 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { FormationService } from '@core/services/formation.service';
+import { Session } from '@shared/models/formation.model';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -10,6 +12,9 @@ import { RouterLink } from '@angular/router';
   styleUrls: ['./admin-dashboard.component.css']
 })
 export class AdminDashboardComponent implements OnInit {
+  recentSessions: Session[] = [];
+  loading = false;
+
   stats = [
     {
       icon: '👥',
@@ -57,8 +62,24 @@ export class AdminDashboardComponent implements OnInit {
     { name: 'AI & Machine Learning Pro', students: 1203, rating: 4.8 }
   ];
 
+  constructor(private formationService: FormationService) {}
+
   ngOnInit() {
-    // Load dashboard data
+    this.loadRecentSessions();
+  }
+
+  loadRecentSessions(): void {
+    this.loading = true;
+    this.formationService.getRecentSessions(5).subscribe({
+      next: (sessions) => {
+        this.recentSessions = sessions;
+        this.loading = false;
+      },
+      error: (err) => {
+        console.error('Error loading recent sessions:', err);
+        this.loading = false;
+      }
+    });
   }
 
   getStatColor(colorClass: string): string {
