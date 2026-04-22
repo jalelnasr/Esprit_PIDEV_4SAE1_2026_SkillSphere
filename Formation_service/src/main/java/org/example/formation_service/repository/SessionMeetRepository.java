@@ -73,4 +73,12 @@ public interface SessionMeetRepository extends JpaRepository<SessionMeet, Long> 
         @Param("formateurId") Long formateurId,
         @Param("now") LocalDateTime now
     );
+
+    @org.springframework.data.jpa.repository.Modifying
+    @Query(value = "DELETE FROM session_meets WHERE id = :meetId", nativeQuery = true)
+    void deleteByIdNative(@Param("meetId") Long meetId);
+
+    @org.springframework.data.jpa.repository.Modifying
+    @Query(value = "DELETE FROM session_meets WHERE session_id = :sessionId", nativeQuery = true)
+    void deleteBySessionId(@Param("sessionId") Long sessionId);
 }

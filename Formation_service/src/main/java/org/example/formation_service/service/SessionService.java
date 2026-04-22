@@ -10,6 +10,8 @@ import org.example.formation_service.domain.enums.SessionStatus;
 import org.example.formation_service.exception.BusinessException;
 import org.example.formation_service.repository.SessionRepository;
 import org.example.formation_service.repository.SessionEnrollmentRepository;
+import org.example.formation_service.repository.SessionMeetRepository;
+import org.example.formation_service.repository.MeetJoinRepository;
 import org.example.formation_service.web.dto.SessionRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +22,8 @@ public class SessionService {
     
     private final SessionRepository sessionRepository;
     private final SessionEnrollmentRepository sessionEnrollmentRepository;
+    private final SessionMeetRepository sessionMeetRepository;
+    private final MeetJoinRepository meetJoinRepository;
     private final CourseService courseService;
     private final EnrollmentService enrollmentService;
     
@@ -146,7 +150,14 @@ public class SessionService {
             throw new BusinessException("SESSION_NOT_FOUND", "Session not found");
         }
         
-        // Direct delete
+        // 1. Delete meet_joins for all meets in this session (FK constraint)
+        meetJoinRepository.deleteBySessionId(sessionId);
+        // 2. Delete session_meets (FK constraint on sessions)
+        sessionMeetRepository.deleteBySessionId(sessionId);
+        // 3. Delete session enrollments (FK constraint on sessions)
+        sessionEnrollmentRepository.deleteBySessionId(sessionId);
+        
+        // 4. Finally delete the session
         sessionRepository.deleteById(sessionId);
     }
     

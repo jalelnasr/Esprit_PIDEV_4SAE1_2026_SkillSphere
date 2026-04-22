@@ -1,5 +1,7 @@
 package org.example.formation_service.service;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
 import org.example.formation_service.domain.entity.Course;
 import org.example.formation_service.domain.enums.CourseStatus;
@@ -16,6 +18,9 @@ import java.util.List;
 public class CourseService {
     
     private final CourseRepository courseRepository;
+
+    @PersistenceContext
+    private EntityManager entityManager;
     
     @Transactional
     public Course createCourse(CourseRequest request) {
@@ -90,13 +95,33 @@ public class CourseService {
             throw new BusinessException("COURSE_NOT_FOUND", "Course not found with ID: " + id);
         }
         
-        // Delete related entities in correct order (most dependent first)
-        courseRepository.deleteLearningPathItemsByCourseId(id);
-        courseRepository.deleteEnrollmentsByCourseId(id);
+        // Delete in correct FK order (most dependent first)
+        // 1. meet_joins → session_meets → session_enrollments → sessions
+        try { courseRepository.deleteMeetJoinsByCourseId(id); } catch (Exception ignored) {}
+        try { courseRepository.deleteSessionMeetsByCourseId(id); } catch (Exception ignored) {}
+        try { courseRepository.deleteSessionEnrollmentsByCourseId(id); } catch (Exception ignored) {}
         courseRepository.deleteSessionsByCourseId(id);
+        
+        // 2. answer_options → questions → quiz_attempts → quizzes
+        try { courseRepository.deleteAnswerOptionsByCourseId(id); } catch (Exception ignored) {}
+        try { courseRepository.deleteQuestionsByCourseId(id); } catch (Exception ignored) {}
+        try { courseRepository.deleteQuizAttemptsByCourseId(id); } catch (Exception ignored) {}
+        try { courseRepository.deleteQuizzesByCourseId(id); } catch (Exception ignored) {}
+        
+        // 3. lesson_resources → lesson_progress → lessons
+        try { courseRepository.deleteLessonResourcesByCourseId(id); } catch (Exception ignored) {}
+        try { courseRepository.deleteLessonProgressByCourseId(id); } catch (Exception ignored) {}
         courseRepository.deleteLessonsByCourseId(id);
         
-        // Finally delete the course
-        courseRepository.deleteById(id);
+        // 4. enrollments, reviews, learning path items
+        courseRepository.deleteEnrollmentsByCourseId(id);
+        try { courseRepository.deleteCourseReviewsByCourseId(id); } catch (Exception ignored) {}
+        try { courseRepository.deleteLearningPathItemsByCourseId(id); } catch (Exception ignored) {}
+        
+        // 5. Finally delete the course itself using native SQL to bypass JPA cascade
+        entityManager.flush();
+        entityManager.createNativeQuery("DELETE FROM courses WHERE id = :id")
+            .setParameter("id", id)
+            .executeUpdate();
     }
 }

@@ -39,16 +39,23 @@ public class SecurityConfig {
                         // Allow preflight
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         // Public endpoints
-                        .requestMatchers("/api/formation/courses/public/**").permitAll()
-                        .requestMatchers("/api/formation/subscription-plans").permitAll()
+                        .requestMatchers("/api/courses/public/**").permitAll()
+                        .requestMatchers("/api/subscription-plans").permitAll()
+                        .requestMatchers("/api/subscription-plans/**").permitAll()
                         .requestMatchers("/actuator/**").permitAll()
-                        .requestMatchers("/api-docs/**", "/swagger-ui/**").permitAll()
+                        .requestMatchers("/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+                        // Static uploaded files - publicly accessible
+                        .requestMatchers("/uploads/**").permitAll()
                         // Admin only
-                        .requestMatchers("/api/formation/admin/**").hasRole("ADMIN")
-                        // Instructor endpoints
-                        .requestMatchers(HttpMethod.POST, "/api/formation/courses").hasAnyRole("INSTRUCTOR", "ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/formation/courses/**").hasAnyRole("INSTRUCTOR", "ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/formation/courses/**").hasAnyRole("INSTRUCTOR", "ADMIN")
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        // Instructor endpoints (FORMATEUR = INSTRUCTOR)
+                        .requestMatchers(HttpMethod.POST, "/api/courses").hasAnyRole("FORMATEUR", "INSTRUCTOR", "ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/courses/**").hasAnyRole("FORMATEUR", "INSTRUCTOR", "ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/courses/**").hasAnyRole("FORMATEUR", "INSTRUCTOR", "ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/courses/*/publish").hasAnyRole("FORMATEUR", "INSTRUCTOR", "ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/courses/*/unpublish").hasAnyRole("FORMATEUR", "INSTRUCTOR", "ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/courses/*/lessons").hasAnyRole("FORMATEUR", "INSTRUCTOR", "ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/courses/*/sessions").hasAnyRole("FORMATEUR", "INSTRUCTOR", "ADMIN")
                         // Everything else requires authentication
                         .anyRequest().authenticated()
                 )
