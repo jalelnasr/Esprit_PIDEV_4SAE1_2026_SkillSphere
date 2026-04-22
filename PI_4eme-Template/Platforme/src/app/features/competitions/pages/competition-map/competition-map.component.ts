@@ -277,47 +277,34 @@ export class CompetitionMapComponent implements OnInit, AfterViewInit, OnDestroy
 
       const marker = L.marker([lat, lng] as L.LatLngTuple, { icon }).addTo(this.map);
 
-      // ✅ Seuls les événements inscrits sont cliquables
-      if (isRegistered) {
-        const popupContent = `
-          <div style="min-width:200px; font-family:sans-serif;">
-            <h3 style="margin:0 0 8px; color:#333; font-size:1rem;">${competition.title}</h3>
-            <p style="margin:0 0 4px; color:#666; font-size:0.85rem;">
-              📅 ${new Date(competition.startDate).toLocaleDateString('fr-FR')}
-            </p>
-            ${competition.locationName ? `<p style="margin:0 0 4px; color:#666; font-size:0.85rem;">📍 ${competition.locationName}</p>` : ''}
-            <p style="margin:0 0 8px;">
-              <span style="padding:2px 8px; border-radius:12px; font-size:0.75rem; background:${competition.status === 'OPEN' ? '#d4edda' : '#f8d7da'}; color:${competition.status === 'OPEN' ? '#155724' : '#721c24'}">
-                ${competition.status}
-              </span>
-              <span style="padding:2px 8px; border-radius:12px; font-size:0.75rem; background:#d1ecf1; color:#0c5460; margin-left:4px;">✅ Inscrit</span>
-            </p>
-            <button onclick="window.location.href='/competitions/${competition.competitionId}'"
-              style="width:100%; padding:8px; background:#667eea; color:white; border:none; border-radius:6px; cursor:pointer; font-size:0.85rem;">
-              Voir les détails →
-            </button>
-          </div>
-        `;
-        marker.bindPopup(popupContent, { maxWidth: 250 });
-        
-        // Rendre le marker cliquable
-        marker.on('click', () => {
-          console.log('🖱️ [MAP] Click sur événement inscrit:', competition.title);
-          marker.openPopup();
-        });
-      } else {
-        // ✅ Markers non inscrits : non cliquables, juste visuels avec tooltip
-        marker.on('click', (e) => {
-          console.log('🖱️ [MAP] Click sur événement non inscrit:', competition.title);
-          L.DomEvent.stopPropagation(e);
-          // Afficher un tooltip au lieu d'un popup
-          const tooltip = L.tooltip({
-            permanent: false,
-            direction: 'top'
-          }).setContent(`🔒 ${competition.title}<br>Inscrivez-vous pour voir les détails`);
-          marker.bindTooltip(tooltip).openTooltip();
-        });
-      }
+      // ✅ All events are clickable — detail page handles access control
+      const registeredBadge = isRegistered
+        ? `<span style="padding:2px 8px; border-radius:12px; font-size:0.75rem; background:#d4edda; color:#155724; margin-left:4px;">✅ Inscrit</span>`
+        : `<span style="padding:2px 8px; border-radius:12px; font-size:0.75rem; background:#fff3cd; color:#856404; margin-left:4px;">📋 S'inscrire</span>`;
+
+      const popupContent = `
+        <div style="min-width:200px; font-family:sans-serif;">
+          <h3 style="margin:0 0 8px; color:#333; font-size:1rem;">${competition.title}</h3>
+          <p style="margin:0 0 4px; color:#666; font-size:0.85rem;">
+            📅 ${new Date(competition.startDate).toLocaleDateString('fr-FR')}
+          </p>
+          ${competition.locationName ? `<p style="margin:0 0 4px; color:#666; font-size:0.85rem;">📍 ${competition.locationName}</p>` : ''}
+          <p style="margin:0 0 8px;">
+            <span style="padding:2px 8px; border-radius:12px; font-size:0.75rem; background:${competition.status === 'OPEN' ? '#d4edda' : '#f8d7da'}; color:${competition.status === 'OPEN' ? '#155724' : '#721c24'}">
+              ${competition.status}
+            </span>
+            ${registeredBadge}
+          </p>
+          <button onclick="window.location.href='/competitions/${competition.competitionId}'"
+            style="width:100%; padding:8px; background:#667eea; color:white; border:none; border-radius:6px; cursor:pointer; font-size:0.85rem;">
+            Voir les détails →
+          </button>
+        </div>
+      `;
+      marker.bindPopup(popupContent, { maxWidth: 250 });
+      marker.on('click', () => {
+        marker.openPopup();
+      });
 
       bounds.push([lat, lng] as L.LatLngTuple);
     });

@@ -54,7 +54,7 @@ import { ToastService } from '@core/services/toast.service';
         <div class="quiz-nav">
           <button class="btn-prev" (click)="prev()" [disabled]="currentIndex === 0">← Prev</button>
           <button class="btn-next" (click)="next()" *ngIf="currentIndex < quiz.questions.length - 1"
-                  [disabled]="!selectedAnswers[currentQuestion?.id ?? 0]">
+                  [disabled]="!selectedAnswers[currentQuestion.id ?? 0]">
             Next →
           </button>
           <button class="btn-submit" (click)="submit()" *ngIf="currentIndex === quiz.questions.length - 1"

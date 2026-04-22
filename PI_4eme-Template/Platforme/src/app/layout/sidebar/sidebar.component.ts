@@ -98,13 +98,9 @@ export class SidebarComponent implements OnInit {
 
     {
       icon: '🎪',
-      label: 'Events',
-      route: '/events',
-      roles: ['APPRENANT', 'FORMATEUR', 'RH_ENTREPRISE'],
-      subItems: [
-        { label: 'Browse Events', route: '/events/browse' },
-        { label: 'My Events', route: '/events/my-events' }
-      ]
+      label: 'Professional Events',
+      route: '/competitions',
+      roles: ['APPRENANT', 'FORMATEUR']
     }
   ];
 
@@ -143,6 +139,27 @@ export class SidebarComponent implements OnInit {
               ...item,
               subItems: this.getLearningSubItems(this.userRole!)
             };
+          }
+          // Adapter le menu Events selon le rôle
+          if (item.label === 'Professional Events') {
+            if (this.userRole === 'APPRENANT') {
+              return {
+                ...item,
+                subItems: [
+                  { label: 'Browse Events', route: '/competitions' },
+                  { label: 'My Participations', route: '/competitions/my-participations' }
+                ]
+              };
+            } else if (this.userRole === 'FORMATEUR') {
+              return {
+                ...item,
+                subItems: [
+                  { label: 'Browse Events', route: '/competitions' },
+                  { label: 'Create Event', route: '/competitions/create' },
+                  { label: 'Manage Events', route: '/competitions/manage' }
+                ]
+              };
+            }
           }
           return item;
         });

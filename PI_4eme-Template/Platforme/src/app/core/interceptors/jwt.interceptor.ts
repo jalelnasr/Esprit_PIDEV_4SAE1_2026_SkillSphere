@@ -22,7 +22,23 @@ export class JwtInterceptor implements HttpInterceptor {
 
     if (!token) return next.handle(req);
 
-    const cloned = req.clone({ setHeaders: { Authorization: `Bearer ${token}` } });
+    // Get user role from localStorage to send as X-User-Role header
+    // Formation Service uses this header to determine the role
+    let userRole = 'STUDENT';
+    try {
+      const userStr = this.hasStorage() ? localStorage.getItem('user') : null;
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        userRole = user.role || 'STUDENT';
+      }
+    } catch {}
+
+    const cloned = req.clone({
+      setHeaders: {
+        Authorization: `Bearer ${token}`,
+        'X-User-Role': userRole
+      }
+    });
     return next.handle(cloned);
   }
 }

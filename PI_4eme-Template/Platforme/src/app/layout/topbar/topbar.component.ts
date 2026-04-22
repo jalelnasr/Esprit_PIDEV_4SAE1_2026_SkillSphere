@@ -5,11 +5,12 @@ import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '@core/services';
 import { ThemeService } from '../../services/theme.service';
 import { RouterLink } from '@angular/router';
+import { NotificationCenterComponent } from '../../shared/components/notification-center/notification-center.component';
 
 @Component({
   selector: 'app-topbar',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, NotificationCenterComponent],
   templateUrl: './topbar.component.html',
   styleUrls: ['./topbar.component.css']
 })
@@ -20,26 +21,21 @@ export class TopbarComponent implements OnInit {
   isDarkMode = false;
   userRole: string | null = null;
 
+  notifications = [
+    { id: 1, message: 'New course available', time: '5 minutes ago', read: false },
+    { id: 2, message: 'You completed a quiz!', time: '2 hours ago', read: true },
+    { id: 3, message: 'Join the Web Development Bootcamp', time: '1 day ago', read: true }
+  ];
+
+  unreadCount = 1;
+
   get currentUser$() {
     return this.authService.currentUser$;
   }
 
-  get isFormateur(): boolean {
-    return this.userRole === 'FORMATEUR';
-  }
-
   get shouldHidePaymentOptions(): boolean {
-    // Hide payment options for FORMATEUR and ADMIN
     return this.userRole === 'FORMATEUR' || this.userRole === 'ADMIN';
   }
-
-  notifications = [
-    { id: 1, message: 'New course "Advanced Angular" is available', time: '5 minutes ago', read: false },
-    { id: 2, message: 'You completed the Python quiz!', time: '2 hours ago', read: true },
-    { id: 3, message: 'Join us for the Web Development Bootcamp', time: '1 day ago', read: true }
-  ];
-
-  unreadCount = 1;
 
   constructor(
     private authService: AuthService,
@@ -52,7 +48,6 @@ export class TopbarComponent implements OnInit {
       this.isDarkMode = isDark;
     });
 
-    // Subscribe to role changes
     this.authService.userRole$.subscribe(role => {
       this.userRole = role;
     });
@@ -73,9 +68,9 @@ export class TopbarComponent implements OnInit {
   }
 
   markAsRead(id: number): void {
-    const notification = this.notifications.find(n => n.id === id);
-    if (notification && !notification.read) {
-      notification.read = true;
+    const notif = this.notifications.find(n => n.id === id);
+    if (notif && !notif.read) {
+      notif.read = true;
       this.unreadCount--;
     }
   }

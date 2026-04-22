@@ -98,7 +98,7 @@ import { QuizBuilderComponent } from '@shared/components/quiz-builder/quiz-build
             <!-- Quiz Analytics Panel (on-demand) -->
             <div class="analytics-panel" *ngIf="expandedAnalytics[lesson.id] && lessonAnalytics[lesson.id]">
               <div class="analytics-header">
-                <span>📊 Quiz Analytics — {{ lessonQuizzes[lesson.id]?.title }}</span>
+                <span>📊 Quiz Analytics — {{ lessonQuizzes[lesson.id].title }}</span>
               </div>
               <div class="analytics-stats">
                 <div class="a-stat">

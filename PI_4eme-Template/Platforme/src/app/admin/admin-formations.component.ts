@@ -52,7 +52,9 @@ export class AdminFormationsComponent implements OnInit {
       level: [CourseLevel.BEGINNER, Validators.required],
       language: ['Français', Validators.required],
       durationMinutes: [60, [Validators.required, Validators.min(1)]],
-      thumbnailUrl: ['']
+      thumbnailUrl: [''],
+      accessLevel: ['BASIC'],
+      status: ['DRAFT']
     });
   }
 
@@ -75,7 +77,9 @@ export class AdminFormationsComponent implements OnInit {
     this.courseForm.reset({
       level: CourseLevel.BEGINNER,
       language: 'Français',
-      durationMinutes: 60
+      durationMinutes: 60,
+      accessLevel: 'BASIC',
+      status: 'DRAFT'
     });
     this.showModal = true;
   }
@@ -169,8 +173,33 @@ export class AdminFormationsComponent implements OnInit {
 
   onConfirmDelete(): void {
     if (!this.pendingDeleteCourse) return;
+    const courseId = this.pendingDeleteCourse.id;
+    const courseTitle = this.pendingDeleteCourse.title;
 
-    this.formationService.deleteCourse(this.pendingDeleteCourse.id).subscribe({
+    // First delete all sessions of this course, then delete the course
+    this.formationService.getCourseSessions(courseId).subscribe({
+      next: (sessions) => {
+        if (sessions && sessions.length > 0) {
+          // Delete all sessions first
+          const deletePromises = sessions.map(s => 
+            this.formationService.deleteSession(s.id).toPromise().catch(() => {})
+          );
+          Promise.all(deletePromises).then(() => {
+            this.doDeleteCourse(courseId, courseTitle);
+          });
+        } else {
+          this.doDeleteCourse(courseId, courseTitle);
+        }
+      },
+      error: () => {
+        // If can't get sessions, try to delete directly
+        this.doDeleteCourse(courseId, courseTitle);
+      }
+    });
+  }
+
+  private doDeleteCourse(courseId: number, courseTitle: string): void {
+    this.formationService.deleteCourse(courseId).subscribe({
       next: () => {
         this.toastService.success('Formation supprimée avec succès');
         this.loadCourses();
@@ -213,6 +242,12 @@ export class AdminFormationsComponent implements OnInit {
 
   closeModal(): void {
     this.showModal = false;
-    this.courseForm.reset();
+    this.courseForm.reset({
+      level: CourseLevel.BEGINNER,
+      language: 'Français',
+      durationMinutes: 60,
+      accessLevel: 'BASIC',
+      status: 'DRAFT'
+    });
   }
 }

@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
 import { Client, IMessage } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { BehaviorSubject } from 'rxjs';
+import { environment } from '../../../../environments/environment';
 
 export interface ChatMessage {
   messageId?: number;
@@ -31,6 +32,7 @@ export interface ParticipantUpdate {
 })
 export class WebSocketService {
   private client: Client | null = null;
+  private currentCompetitionId: number | null = null;
   private connected = new BehaviorSubject<boolean>(false);
   private messages = new BehaviorSubject<ChatMessage[]>([]);
   private participants = new BehaviorSubject<any[]>([]);
@@ -40,12 +42,24 @@ export class WebSocketService {
   participants$ = this.participants.asObservable();
 
   connect(competitionId: number, userId: number, userName: string, userRole: string): void {
-    if (this.client?.connected) {
+    // If already connected to the same competition, skip
+    if (this.client?.connected && this.currentCompetitionId === competitionId) {
       return;
     }
 
+    // Disconnect from previous competition if needed
+    if (this.client?.connected) {
+      this.client.deactivate();
+      this.client = null;
+      this.connected.next(false);
+      this.messages.next([]);
+      this.participants.next([]);
+    }
+
+    this.currentCompetitionId = competitionId;
+
     this.client = new Client({
-      webSocketFactory: () => new SockJS('http://localhost:8080/ws-chat'),
+      webSocketFactory: () => new SockJS(`${environment.wsUrl}/ws-chat`),
       reconnectDelay: 5000,
       heartbeatIncoming: 4000,
       heartbeatOutgoing: 4000,
@@ -115,6 +129,7 @@ export class WebSocketService {
       });
       this.client.deactivate();
       this.client = null;
+      this.currentCompetitionId = null;
       this.connected.next(false);
       this.messages.next([]);
       this.participants.next([]);

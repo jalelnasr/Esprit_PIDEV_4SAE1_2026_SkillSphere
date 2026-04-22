@@ -207,6 +207,34 @@ export class CoursePlayerComponent implements OnInit {
     window.open(this.getResourceUrl(resource.url), '_blank');
   }
 
+  downloadResource(resource: LessonResourceResponse): void {
+    const url = this.getResourceUrl(resource.url);
+    const token = localStorage.getItem('token');
+    
+    fetch(url, {
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+    })
+    .then(response => {
+      if (!response.ok) throw new Error('Download failed');
+      return response.blob();
+    })
+    .then(blob => {
+      const blobUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = resource.title + (resource.type === 'PDF' ? '.pdf' : '');
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(blobUrl);
+    })
+    .catch(err => {
+      console.error('Download error:', err);
+      // Fallback: open in new tab
+      window.open(url, '_blank');
+    });
+  }
+
   getResourceUrl(url: string): string {
     // If it's already a full URL, return as is
     if (url.startsWith('http://') || url.startsWith('https://')) {

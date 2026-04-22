@@ -64,9 +64,24 @@ export class CompetitionApiService {
     return this.http.delete<void>(`${this.baseUrl}/competitions/${competitionId}/register`);
   }
 
-  // ✅ aligné au backend: GET /competitions/my-participations
-  getMyParticipations(): Observable<Competition[]> {
-    return this.http.get<Competition[]>(`${this.baseUrl}/competitions/my-participations`);
+  // ✅ GET /participants/user/{userId} → retourne Participant[]
+  getMyParticipations(): Observable<Participant[]> {
+    const userId = this.getUserIdFromToken();
+    return this.http.get<Participant[]>(`${this.baseUrl}/participants/user/${userId}`);
+  }
+
+  // ✅ GET /participants/my-competition-ids → retourne tous les IDs (individuel + équipe)
+  getMyAllCompetitionIds(): Observable<number[]> {
+    return this.http.get<number[]>(`${this.baseUrl}/participants/my-competition-ids`);
+  }
+
+  private getUserIdFromToken(): number {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    if (!token) return 0;
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.userId ?? 0;
+    } catch { return 0; }
   }
 
   // ✅ GET /competitions/my-created - Compétitions créées par le formateur

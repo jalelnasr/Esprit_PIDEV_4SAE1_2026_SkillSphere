@@ -1,10 +1,16 @@
 import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import { CompetitionApiService } from '../../services/competition-api.service';
 import { Competition } from '../../models/competition.model';
 
 @Component({
   selector: 'app-manage-events',
-  templateUrl: './manage-events.component.html'
+  standalone: true,
+  imports: [CommonModule, RouterModule, FormsModule],
+  templateUrl: './manage-events.component.html',
+  styleUrls: ['./manage-events.component.css']
 })
 export class ManageEventsComponent implements OnInit {
   loading = false;

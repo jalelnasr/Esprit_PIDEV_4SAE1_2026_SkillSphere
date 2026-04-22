@@ -37,6 +37,14 @@ spring:
           filters:
             - StripPrefix=0
 
+        # Route WebSocket pour Competitions Service (SockJS + STOMP)
+        - id: competitions-websocket
+          uri: lb:ws://competitions-service
+          predicates:
+            - Path=/ws-chat/**
+          filters:
+            - StripPrefix=0
+
         # Route pour Formation Service
         - id: formation-service
           uri: lb://FORMATION-SERVICE

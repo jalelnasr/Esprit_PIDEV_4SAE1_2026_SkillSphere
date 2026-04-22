@@ -91,6 +91,24 @@ import { SimpleImageUploadComponent } from '../../../../shared/components/simple
               </div>
             </div>
 
+            <!-- Access Level -->
+            <div class="form-group">
+              <label for="accessLevel">Niveau d'accès <span class="required">*</span></label>
+              <select
+                id="accessLevel"
+                formControlName="accessLevel"
+                [class.error]="formationForm.get('accessLevel')?.invalid && formationForm.get('accessLevel')?.touched"
+              >
+                <option value="">Sélectionnez un niveau d'accès</option>
+                <option value="BASIC">Basique (gratuit)</option>
+                <option value="PLUS">Plus</option>
+                <option value="PREMIUM">Premium</option>
+              </select>
+              <div class="error-message" *ngIf="formationForm.get('accessLevel')?.invalid && formationForm.get('accessLevel')?.touched">
+                Le niveau d'accès est requis
+              </div>
+            </div>
+
             <!-- Duration -->
             <div class="form-group">
               <label for="durationMinutes">Durée (minutes) <span class="required">*</span></label>
@@ -321,7 +339,9 @@ export class FormationModalComponent implements OnInit {
       level: [this.formation?.level || '', Validators.required],
       language: [this.formation?.language || 'fr', Validators.required],
       durationMinutes: [this.formation?.durationMinutes || 60, [Validators.required, Validators.min(1)]],
-      thumbnailUrl: [this.formation?.thumbnailUrl || '']
+      thumbnailUrl: [this.formation?.thumbnailUrl || ''],
+      accessLevel: [this.formation?.accessLevel || 'BASIC', Validators.required],
+      status: [this.formation?.status || 'DRAFT']
     });
   }
 

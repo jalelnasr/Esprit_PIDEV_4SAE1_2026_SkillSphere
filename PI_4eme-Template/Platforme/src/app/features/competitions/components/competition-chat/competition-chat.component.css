@@ -196,9 +196,14 @@
   border-radius: 50%;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  font-size: 1.2rem;
+  font-size: 1.3rem;
+  font-weight: bold;
   cursor: pointer;
   transition: transform 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 .send-btn:hover:not(:disabled) {

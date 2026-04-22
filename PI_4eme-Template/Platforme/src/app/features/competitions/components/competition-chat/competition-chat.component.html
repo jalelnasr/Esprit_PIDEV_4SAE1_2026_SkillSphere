@@ -10,18 +10,11 @@
 
   <!-- FORMATEUR VIEW: Tabs for General and Private -->
   <div *ngIf="currentUserRole === 'FORMATEUR'" class="formateur-view">
-    <!-- Tabs -->
     <div class="chat-tabs">
-      <button 
-        class="tab-btn" 
-        [class.active]="activeTab === 'general'"
-        (click)="activeTab = 'general'">
+      <button class="tab-btn" [class.active]="activeTab === 'general'" (click)="activeTab = 'general'">
         💬 Chat Général
       </button>
-      <button 
-        class="tab-btn" 
-        [class.active]="activeTab === 'private'"
-        (click)="activeTab = 'private'">
+      <button class="tab-btn" [class.active]="activeTab === 'private'" (click)="activeTab = 'private'">
         🔒 Messages Privés
         <span class="badge" *ngIf="privateConversations.size > 0">{{ privateConversations.size }}</span>
       </button>
@@ -33,42 +26,28 @@
         <div *ngFor="let p of participants" class="participant">
           <span class="participant-dot"></span>
           <span>{{ p.userName }}</span>
-          <span class="role-badge" [class.formateur]="p.userRole === 'FORMATEUR'">
-            {{ p.userRole }}
-          </span>
+          <span class="role-badge" [class.formateur]="p.userRole === 'FORMATEUR'">{{ p.userRole }}</span>
         </div>
       </div>
-
       <div class="chat-messages">
-        <div *ngFor="let msg of messages" 
-             class="message" 
-             [class.my-message]="isMyMessage(msg)"
-             [class.other-message]="!isMyMessage(msg)">
+        <div *ngFor="let msg of messages" class="message"
+             [class.my-message]="isMyMessage(msg)" [class.other-message]="!isMyMessage(msg)">
           <div class="message-header">
             <span class="sender-name">{{ msg.senderName }}</span>
             <span class="sender-role">{{ msg.senderRole }}</span>
-            <span class="message-type-badge" *ngIf="msg.recipientType === 'TEAM'">
-              🏆 Équipe
-            </span>
+            <span class="message-type-badge" *ngIf="msg.recipientType === 'TEAM'">🏆 Équipe</span>
             <span class="message-time">{{ msg.sentAt | date: 'HH:mm' }}</span>
           </div>
           <div class="message-text">{{ msg.messageText }}</div>
         </div>
       </div>
-
       <div class="chat-input">
-        <input 
-          type="text" 
-          [(ngModel)]="newMessage"
-          (keyup.enter)="sendMessage()"
-          [disabled]="!connected"
-          placeholder="Message pour le groupe général..."
+        <input type="text" [(ngModel)]="newMessage" (keyup.enter)="selectedRecipientType = 'GENERAL'; sendMessage()"
+          placeholder="{{ connected ? 'Message pour le groupe général...' : 'Connexion en cours...' }}"
           class="message-input">
-        <button 
-          (click)="selectedRecipientType = 'GENERAL'; sendMessage()" 
-          [disabled]="!connected || !newMessage.trim()"
-          class="send-btn">
-          📤
+        <button (click)="selectedRecipientType = 'GENERAL'; sendMessage()"
+          [disabled]="!connected || !newMessage.trim()" class="send-btn">
+          ➤
         </button>
       </div>
     </div>
@@ -76,14 +55,11 @@
     <!-- Private Tab -->
     <div *ngIf="activeTab === 'private'" class="tab-content">
       <div class="private-layout">
-        <!-- List of private conversations -->
         <div class="conversations-list">
           <div class="conversations-header">Conversations privées</div>
-          <div 
-            *ngFor="let conv of getPrivateConversationsList()"
-            class="conversation-item"
-            [class.active]="selectedPrivateUserId === conv.userId"
-            (click)="selectPrivateConversation(conv.userId, conv.userName)">
+          <div *ngFor="let conv of getPrivateConversationsList()" class="conversation-item"
+               [class.active]="selectedPrivateUserId === conv.userId"
+               (click)="selectPrivateConversation(conv.userId, conv.userName)">
             <div class="conv-user">
               <span class="user-avatar">👤</span>
               <span class="user-name">{{ conv.userName }}</span>
@@ -94,19 +70,14 @@
             Aucun message privé
           </div>
         </div>
-
-        <!-- Selected conversation -->
         <div class="conversation-content">
           <div *ngIf="selectedPrivateUserId" class="conversation-header">
             <span class="conv-title">💬 Conversation avec {{ selectedPrivateUserName }}</span>
             <button class="close-conv-btn" (click)="closePrivateConversation()">✖️ Fermer</button>
           </div>
-
           <div class="chat-messages" *ngIf="selectedPrivateUserId">
-            <div *ngFor="let msg of getPrivateMessages()" 
-                 class="message" 
-                 [class.my-message]="isMyMessage(msg)"
-                 [class.other-message]="!isMyMessage(msg)">
+            <div *ngFor="let msg of getPrivateMessages()" class="message"
+                 [class.my-message]="isMyMessage(msg)" [class.other-message]="!isMyMessage(msg)">
               <div class="message-header">
                 <span class="sender-name">{{ msg.senderName }}</span>
                 <span class="message-time">{{ msg.sentAt | date: 'HH:mm' }}</span>
@@ -114,24 +85,13 @@
               <div class="message-text">{{ msg.messageText }}</div>
             </div>
           </div>
-
-          <div *ngIf="!selectedPrivateUserId" class="no-selection">
-            Sélectionnez une conversation
-          </div>
-
+          <div *ngIf="!selectedPrivateUserId" class="no-selection">Sélectionnez une conversation</div>
           <div class="chat-input" *ngIf="selectedPrivateUserId">
-            <input 
-              type="text" 
-              [(ngModel)]="newMessage"
-              (keyup.enter)="sendMessage()"
-              [disabled]="!connected"
-              placeholder="Répondre en privé..."
-              class="message-input">
-            <button 
-              (click)="selectedRecipientType = 'PRIVATE'; sendMessage()" 
-              [disabled]="!connected || !newMessage.trim()"
-              class="send-btn">
-              📤
+            <input type="text" [(ngModel)]="newMessage" (keyup.enter)="selectedRecipientType = 'PRIVATE'; sendMessage()"
+              placeholder="Répondre en privé..." class="message-input">
+            <button (click)="selectedRecipientType = 'PRIVATE'; sendMessage()"
+              [disabled]="!connected || !newMessage.trim()" class="send-btn">
+              ➤
             </button>
           </div>
         </div>
@@ -141,25 +101,14 @@
 
   <!-- PARTICIPANT VIEW: Tabs for General, Team, and Private -->
   <div *ngIf="currentUserRole !== 'FORMATEUR'" class="participant-view">
-    <!-- Tabs -->
     <div class="chat-tabs">
-      <button 
-        class="tab-btn" 
-        [class.active]="activeTab === 'general'"
-        (click)="activeTab = 'general'">
+      <button class="tab-btn" [class.active]="activeTab === 'general'" (click)="activeTab = 'general'">
         💬 Chat Général
       </button>
-      <button 
-        class="tab-btn" 
-        [class.active]="activeTab === 'team'"
-        [disabled]="!currentTeamId"
-        (click)="activeTab = 'team'">
+      <button class="tab-btn" [class.active]="activeTab === 'team'" [disabled]="!currentTeamId" (click)="activeTab = 'team'">
         🏆 Mon Équipe
       </button>
-      <button 
-        class="tab-btn" 
-        [class.active]="activeTab === 'private'"
-        (click)="activeTab = 'private'">
+      <button class="tab-btn" [class.active]="activeTab === 'private'" (click)="activeTab = 'private'">
         🔒 Privé (Formateur)
       </button>
     </div>
@@ -170,17 +119,12 @@
         <div *ngFor="let p of participants" class="participant">
           <span class="participant-dot"></span>
           <span>{{ p.userName }}</span>
-          <span class="role-badge" [class.formateur]="p.userRole === 'FORMATEUR'">
-            {{ p.userRole }}
-          </span>
+          <span class="role-badge" [class.formateur]="p.userRole === 'FORMATEUR'">{{ p.userRole }}</span>
         </div>
       </div>
-
       <div class="chat-messages">
-        <div *ngFor="let msg of getGeneralMessages()" 
-             class="message" 
-             [class.my-message]="isMyMessage(msg)"
-             [class.other-message]="!isMyMessage(msg)">
+        <div *ngFor="let msg of getGeneralMessages()" class="message"
+             [class.my-message]="isMyMessage(msg)" [class.other-message]="!isMyMessage(msg)">
           <div class="message-header">
             <span class="sender-name">{{ msg.senderName }}</span>
             <span class="sender-role">{{ msg.senderRole }}</span>
@@ -189,20 +133,13 @@
           <div class="message-text">{{ msg.messageText }}</div>
         </div>
       </div>
-
       <div class="chat-input">
-        <input 
-          type="text" 
-          [(ngModel)]="newMessage"
-          (keyup.enter)="sendMessage()"
-          [disabled]="!connected"
-          placeholder="Message pour le groupe général..."
+        <input type="text" [(ngModel)]="newMessage" (keyup.enter)="selectedRecipientType = 'GENERAL'; sendMessage()"
+          placeholder="{{ connected ? 'Message pour le groupe général...' : 'Connexion en cours...' }}"
           class="message-input">
-        <button 
-          (click)="selectedRecipientType = 'GENERAL'; sendMessage()" 
-          [disabled]="!connected || !newMessage.trim()"
-          class="send-btn">
-          📤
+        <button (click)="selectedRecipientType = 'GENERAL'; sendMessage()"
+          [disabled]="!connected || !newMessage.trim()" class="send-btn">
+          ➤
         </button>
       </div>
     </div>
@@ -210,10 +147,8 @@
     <!-- Team Tab -->
     <div *ngIf="activeTab === 'team'" class="tab-content">
       <div class="chat-messages">
-        <div *ngFor="let msg of getTeamMessages()" 
-             class="message" 
-             [class.my-message]="isMyMessage(msg)"
-             [class.other-message]="!isMyMessage(msg)">
+        <div *ngFor="let msg of getTeamMessages()" class="message"
+             [class.my-message]="isMyMessage(msg)" [class.other-message]="!isMyMessage(msg)">
           <div class="message-header">
             <span class="sender-name">{{ msg.senderName }}</span>
             <span class="message-time">{{ msg.sentAt | date: 'HH:mm' }}</span>
@@ -221,20 +156,12 @@
           <div class="message-text">{{ msg.messageText }}</div>
         </div>
       </div>
-
       <div class="chat-input">
-        <input 
-          type="text" 
-          [(ngModel)]="newMessage"
-          (keyup.enter)="sendMessage()"
-          [disabled]="!connected || !currentTeamId"
-          placeholder="Message pour mon équipe..."
-          class="message-input">
-        <button 
-          (click)="selectedRecipientType = 'TEAM'; sendMessage()" 
-          [disabled]="!connected || !newMessage.trim() || !currentTeamId"
-          class="send-btn">
-          📤
+        <input type="text" [(ngModel)]="newMessage" (keyup.enter)="selectedRecipientType = 'TEAM'; sendMessage()"
+          placeholder="Message pour mon équipe..." class="message-input">
+        <button (click)="selectedRecipientType = 'TEAM'; sendMessage()"
+          [disabled]="!connected || !newMessage.trim() || !currentTeamId" class="send-btn">
+          ➤
         </button>
       </div>
     </div>
@@ -242,10 +169,8 @@
     <!-- Private Tab -->
     <div *ngIf="activeTab === 'private'" class="tab-content">
       <div class="chat-messages">
-        <div *ngFor="let msg of getPrivateMessagesForParticipant()" 
-             class="message" 
-             [class.my-message]="isMyMessage(msg)"
-             [class.other-message]="!isMyMessage(msg)">
+        <div *ngFor="let msg of getPrivateMessagesForParticipant()" class="message"
+             [class.my-message]="isMyMessage(msg)" [class.other-message]="!isMyMessage(msg)">
           <div class="message-header">
             <span class="sender-name">{{ msg.senderName }}</span>
             <span class="message-time">{{ msg.sentAt | date: 'HH:mm' }}</span>
@@ -253,20 +178,13 @@
           <div class="message-text">{{ msg.messageText }}</div>
         </div>
       </div>
-
       <div class="chat-input">
-        <input 
-          type="text" 
-          [(ngModel)]="newMessage"
-          (keyup.enter)="sendMessage()"
-          [disabled]="!connected"
-          placeholder="Message privé au formateur..."
+        <input type="text" [(ngModel)]="newMessage" (keyup.enter)="selectedRecipientType = 'PRIVATE'; sendMessage()"
+          placeholder="{{ connected ? 'Message privé au formateur...' : 'Connexion en cours...' }}"
           class="message-input">
-        <button 
-          (click)="selectedRecipientType = 'PRIVATE'; sendMessage()" 
-          [disabled]="!connected || !newMessage.trim()"
-          class="send-btn">
-          📤
+        <button (click)="selectedRecipientType = 'PRIVATE'; sendMessage()"
+          [disabled]="!connected || !newMessage.trim()" class="send-btn">
+          ➤
         </button>
       </div>
     </div>

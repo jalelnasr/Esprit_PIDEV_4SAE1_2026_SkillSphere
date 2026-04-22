@@ -112,12 +112,9 @@
                     <button class="btn-view" (click)="viewPdf(resource)">
                       <i class="fas fa-eye"></i> Voir
                     </button>
-                    <a
-                      [href]="getResourceUrl(resource.url)"
-                      [download]="resource.title + '.pdf'"
-                      class="btn-download">
+                    <button class="btn-download" (click)="downloadResource(resource)">
                       <i class="fas fa-download"></i> Télécharger
-                    </a>
+                    </button>
                   </div>
                 </div>
               </div>

@@ -2,7 +2,7 @@
 .chatbot-button {
   position: fixed;
   bottom: 20px;
-  right: 20px;
+  left: 20px;
   width: 60px;
   height: 60px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -38,7 +38,7 @@
 .chatbot-window {
   position: fixed;
   bottom: 20px;
-  right: 20px;
+  left: 20px;
   width: 380px;
   height: 550px;
   background: white;
@@ -304,11 +304,11 @@
     width: calc(100vw - 40px);
     height: calc(100vh - 40px);
     bottom: 20px;
-    right: 20px;
+    left: 20px;
   }
 
   .chatbot-button {
     bottom: 16px;
-    right: 16px;
+    left: 16px;
   }
 }

@@ -3,7 +3,7 @@ export const environment = {
   apiUrl: 'http://localhost:8080/api',
   formationApi: 'http://localhost:8080/formation-service/api',
   competitionsApiUrl: 'http://localhost:8080/api',
-  wsUrl: 'ws://localhost:8080',
+  wsUrl: 'http://localhost:8087',
   appName: 'SkillSphere',
   version: '1.0.0',
   features: {

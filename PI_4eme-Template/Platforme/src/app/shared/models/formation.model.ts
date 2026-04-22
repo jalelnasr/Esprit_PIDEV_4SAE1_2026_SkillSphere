@@ -58,10 +58,12 @@ export interface CourseRequest {
   title: string;
   description: string;
   level: CourseLevel;
+  accessLevel: AccessLevel;
   language: string;
   durationMinutes: number;
   thumbnailUrl?: string;
   createdBy: number;
+  status?: CourseStatus;
 }
 
 // ============ Session ============

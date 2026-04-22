@@ -58,34 +58,60 @@ export class CompetitionListComponent implements OnInit {
     console.log('🔍 viewMode:', this.viewMode);
     console.log('🔍 isFormateur:', this.isFormateur);
     
-    let apiCall;
-    
     if (this.viewMode === 'my-participations') {
-      // Mes participations (apprenant)
-      apiCall = this.competitionService.getMyParticipations();
-      console.log('📡 API Call: getMyParticipations');
+      // Mes participations → fetch all competition IDs (individual + team)
+      console.log('📡 API Call: getMyAllCompetitionIds');
+      this.competitionService.getMyAllCompetitionIds().subscribe({
+        next: (ids: number[]) => {
+          if (ids.length === 0) {
+            this.competitions = [];
+            this.loading = false;
+            return;
+          }
+          Promise.all(
+            ids.map(id => this.competitionService.getCompetitionById(id).toPromise())
+          ).then(comps => {
+            this.competitions = (comps.filter(c => c !== undefined) as Competition[]);
+            this.loading = false;
+          }).catch(() => {
+            this.loading = false;
+          });
+        },
+        error: (err: any) => {
+          console.error('❌ Erreur:', err);
+          this.error = 'Erreur lors du chargement des participations';
+          this.loading = false;
+        }
+      });
     } else if (this.viewMode === 'manage') {
-      // Mes compétitions créées (formateur)
-      apiCall = this.competitionService.getMyCreatedCompetitions();
       console.log('📡 API Call: getMyCreatedCompetitions');
+      this.competitionService.getMyCreatedCompetitions().subscribe({
+        next: (data: Competition[]) => {
+          console.log('✅ Données reçues:', data);
+          this.competitions = data;
+          this.loading = false;
+        },
+        error: (err: any) => {
+          console.error('❌ Erreur:', err);
+          this.error = 'Erreur lors du chargement des compétitions';
+          this.loading = false;
+        }
+      });
     } else {
-      // Toutes les compétitions (browse)
-      apiCall = this.competitionService.getAllCompetitions();
       console.log('📡 API Call: getAllCompetitions');
+      this.competitionService.getAllCompetitions().subscribe({
+        next: (data: Competition[]) => {
+          console.log('✅ Données reçues:', data);
+          this.competitions = data;
+          this.loading = false;
+        },
+        error: (err: any) => {
+          console.error('❌ Erreur:', err);
+          this.error = 'Erreur lors du chargement des compétitions';
+          this.loading = false;
+        }
+      });
     }
-    
-    apiCall.subscribe({
-      next: (data) => {
-        console.log('✅ Données reçues:', data);
-        this.competitions = data;
-        this.loading = false;
-      },
-      error: (err) => {
-        console.error('❌ Erreur:', err);
-        this.error = 'Erreur lors du chargement des compétitions';
-        this.loading = false;
-      }
-    });
   }
 
   getStatusBadgeClass(status: string): string {

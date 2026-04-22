@@ -17,13 +17,13 @@ import * as L from 'leaflet';
   selector: 'app-competition-detail',
   standalone: true,
   imports: [
-    CommonModule, 
-    RouterModule, 
-    ReactiveFormsModule, 
-    FormsModule, 
-    TeamCardsManagerComponent, 
-    CompetitionChatComponent, 
-    LanguageSelectorComponent, 
+    CommonModule,
+    RouterModule,
+    ReactiveFormsModule,
+    FormsModule,
+    TeamCardsManagerComponent,
+    CompetitionChatComponent,
+    LanguageSelectorComponent,
     TranslateModule,
     SanitizeUrlPipe,
     StreamManagerComponent
@@ -38,12 +38,10 @@ export class CompetitionDetailComponent implements OnInit, AfterViewInit {
 
   isRegistered = false;
   myParticipation: Participant | null = null;
-
   myTeamMember: TeamMemberDTO | null = null;
 
   showJoinTeamModal = false;
   availableTeams: Team[] = [];
-
   teamForm: FormGroup;
 
   currentUserId: number | null = null;
@@ -58,6 +56,8 @@ export class CompetitionDetailComponent implements OnInit, AfterViewInit {
   // Map for PHYSICAL events
   private map?: L.Map;
   mapId = `event-map-${Math.random().toString(36).substr(2, 9)}`;
+  private mapInitRetries = 0;
+  private readonly MAX_MAP_RETRIES = 5;
 
   // Stream for ONLINE events
   stream: CompetitionStream | null = null;
@@ -88,7 +88,7 @@ export class CompetitionDetailComponent implements OnInit, AfterViewInit {
     });
   }
 
-  ngOnInit() {
+  ngOnInit(): void {
     this.authService.currentUser$.subscribe(user => {
       this.currentUserId = user?.idUser || null;
       this.userRole = user?.role || null;
@@ -98,37 +98,30 @@ export class CompetitionDetailComponent implements OnInit, AfterViewInit {
     if (id) this.loadCompetition(id);
   }
 
-  ngAfterViewInit() {
-    // Map will be initialized after competition data is loaded
-  }
+  ngAfterViewInit(): void {}
 
-  ngOnDestroy() {
+  ngOnDestroy(): void {
     if (this.map) {
       this.map.remove();
     }
   }
 
-  loadCompetition(id: number) {
+  loadCompetition(id: number): void {
     this.loading = true;
     this.competitionService.getCompetitionById(id).subscribe({
       next: (data) => {
         this.competition = data;
         this.loading = false;
-
-        // Check registration first, then initialize map/stream
         this.checkRegistration(id);
-
         if (this.canParticipateAsTeam()) {
           this.loadTeams(id);
           this.loadMyTeam(id);
         }
-
-        // Load stream for ONLINE events (will check canWatch in backend)
         if (this.isOnlineEvent()) {
           this.loadStream(id);
         }
       },
-      error: (err) => {
+      error: (err: any) => {
         this.error = 'Erreur lors du chargement de la compétition';
         this.loading = false;
         console.error(err);
@@ -136,29 +129,24 @@ export class CompetitionDetailComponent implements OnInit, AfterViewInit {
     });
   }
 
-  checkRegistration(competitionId: number) {
+  checkRegistration(competitionId: number): void {
     this.competitionService.getMyRegistration(competitionId).subscribe({
       next: (participant) => {
         this.myParticipation = participant;
         this.isRegistered = true;
-        
-        // ✅ Initialize map ONLY if registered or formateur
-        if ((this.isRegistered || this.isFormateur()) && 
-            this.isPhysicalEvent() && 
-            this.competition?.latitude && 
+        if ((this.isRegistered || this.isFormateur()) &&
+            this.isPhysicalEvent() &&
+            this.competition?.latitude &&
             this.competition?.longitude) {
           setTimeout(() => this.initMap(), 300);
         }
       },
       error: () => {
-        // 404 = pas inscrit
         this.myParticipation = null;
         this.isRegistered = false;
-        
-        // ✅ Initialize map for formateur even if not registered
-        if (this.isFormateur() && 
-            this.isPhysicalEvent() && 
-            this.competition?.latitude && 
+        if (this.isFormateur() &&
+            this.isPhysicalEvent() &&
+            this.competition?.latitude &&
             this.competition?.longitude) {
           setTimeout(() => this.initMap(), 300);
         }
@@ -166,23 +154,34 @@ export class CompetitionDetailComponent implements OnInit, AfterViewInit {
     });
   }
 
-  loadTeams(competitionId: number) {
+  loadTeams(competitionId: number): void {
     this.competitionService.getTeamsByCompetition(competitionId).subscribe({
       next: (teams) => {
         this.availableTeams = (teams ?? []).filter(t => t.currentMembers < t.maxMembers);
       },
-      error: (err) => console.error('Erreur chargement équipes', err)
+      error: (err: any) => console.error('Erreur chargement équipes', err)
     });
   }
 
-  loadMyTeam(competitionId: number) {
+  loadMyTeam(competitionId: number): void {
     this.competitionService.getMyTeam(competitionId).subscribe({
-      next: (dto) => this.myTeamMember = dto,
-      error: () => this.myTeamMember = null
+      next: (dto) => {
+        this.myTeamMember = dto;
+        if (dto) {
+          this.isRegistered = true;
+          if (this.isOnlineEvent()) {
+            this.loadStream(competitionId);
+          }
+          if (this.isPhysicalEvent() && this.competition?.latitude && this.competition?.longitude) {
+            setTimeout(() => this.initMap(), 300);
+          }
+        }
+      },
+      error: () => { this.myTeamMember = null; }
     });
   }
 
-  registerIndividual() {
+  registerIndividual(): void {
     const id = this.competition?.competitionId;
     if (!id) return;
 
@@ -191,21 +190,17 @@ export class CompetitionDetailComponent implements OnInit, AfterViewInit {
         this.myParticipation = participant;
         this.isRegistered = true;
         alert('✅ Inscription réussie !');
-        
-        // ✅ Initialize map after registration for PHYSICAL events
         if (this.isPhysicalEvent() && this.competition?.latitude && this.competition?.longitude) {
           setTimeout(() => this.initMap(), 300);
         }
-        
-        // ✅ Reload stream for ONLINE events to get canWatch=true
         if (this.isOnlineEvent()) {
           this.loadStream(id);
         }
       },
-      error: (err) => {
+      error: (err: any) => {
         console.error('❌ Erreur inscription:', err);
         if (err.status === 400) {
-          alert("❌ Inscription impossible : " + (err.error?.message || "Vérifiez que la compétition est ouverte"));
+          alert('❌ Inscription impossible : ' + (err.error?.message || 'Vérifiez que la compétition est ouverte'));
         } else {
           alert("❌ Erreur lors de l'inscription");
         }
@@ -213,7 +208,7 @@ export class CompetitionDetailComponent implements OnInit, AfterViewInit {
     });
   }
 
-  cancelRegistration() {
+  cancelRegistration(): void {
     const id = this.competition?.competitionId;
     if (!id) return;
     if (!confirm("Êtes-vous sûr de vouloir annuler l'inscription ?")) return;
@@ -224,50 +219,55 @@ export class CompetitionDetailComponent implements OnInit, AfterViewInit {
         this.isRegistered = false;
         alert('✅ Inscription annulée');
       },
-      error: (err) => {
+      error: (err: any) => {
         alert("❌ Erreur lors de l'annulation");
         console.error(err);
       }
     });
   }
 
-  openJoinTeamModal() {
+  openJoinTeamModal(): void {
     this.showJoinTeamModal = true;
   }
 
-  closeJoinTeamModal() {
+  closeJoinTeamModal(): void {
     this.showJoinTeamModal = false;
   }
 
-  joinTeam(teamId: number) {
+  joinTeam(teamId: number): void {
     if (!this.competition) return;
 
     this.competitionService.joinTeam(teamId).subscribe({
       next: (dto) => {
         this.myTeamMember = dto;
+        this.isRegistered = true;
         this.closeJoinTeamModal();
         this.loadTeams(this.competition!.competitionId);
-        alert("✅ Vous avez rejoint le groupe !");
+        if (this.isOnlineEvent()) {
+          this.loadStream(this.competition!.competitionId);
+        }
+        alert('✅ Vous avez rejoint le groupe !');
       },
-      error: (err) => {
-        alert("❌ Erreur lors de rejoindre le groupe");
+      error: (err: any) => {
+        alert('❌ Erreur lors de rejoindre le groupe');
         console.error(err);
       }
     });
   }
 
-  leaveTeam() {
+  leaveTeam(): void {
     if (!this.myTeamMember) return;
-    if (!confirm("Êtes-vous sûr de vouloir quitter le groupe ?")) return;
+    if (!confirm('Êtes-vous sûr de vouloir quitter le groupe ?')) return;
 
     this.competitionService.leaveTeam(this.myTeamMember.teamId).subscribe({
       next: () => {
         this.myTeamMember = null;
+        this.isRegistered = false;
         if (this.competition) this.loadTeams(this.competition.competitionId);
-        alert("✅ Vous avez quitté le groupe");
+        alert('✅ Vous avez quitté le groupe');
       },
-      error: (err) => {
-        alert("❌ Erreur lors de quitter le groupe");
+      error: (err: any) => {
+        alert('❌ Erreur lors de quitter le groupe');
         console.error(err);
       }
     });
@@ -298,72 +298,67 @@ export class CompetitionDetailComponent implements OnInit, AfterViewInit {
     return this.isCompetitionOpen() && !this.myTeamMember;
   }
 
-  viewLeaderboard() {
+  viewLeaderboard(): void {
     if (this.competition) {
       this.router.navigate(['/competitions', this.competition.competitionId, 'leaderboard']);
     }
   }
 
-  toggleSmsPanel() {
+  toggleSmsPanel(): void {
     this.showSmsPanel = !this.showSmsPanel;
   }
 
-  saveUserPhone() {
+  saveUserPhone(): void {
     if (!this.currentUserId || !this.userPhone) {
       alert('❌ Veuillez entrer un numéro de téléphone');
       return;
     }
-
     this.competitionService.updateUserContact(this.currentUserId, this.userPhone, true).subscribe({
-      next: () => {
-        alert('✅ Numéro enregistré avec succès!');
-      },
-      error: (err) => {
-        alert('❌ Erreur lors de l\'enregistrement du numéro');
+      next: () => { alert('✅ Numéro enregistré avec succès!'); },
+      error: (err: any) => {
+        alert("❌ Erreur lors de l'enregistrement du numéro");
         console.error(err);
       }
     });
   }
 
-  sendTestSms() {
+  sendTestSms(): void {
     if (!this.currentUserId || !this.smsMessage) {
       alert('❌ Veuillez entrer un message');
       return;
     }
-
     this.smsSending = true;
     this.competitionService.sendTestSms(this.currentUserId, this.smsMessage).subscribe({
-      next: (response) => {
+      next: (response: any) => {
         this.smsSending = false;
         if (response.success) {
           alert('✅ SMS envoyé avec succès! SID: ' + response.smsLog.twilioSid);
           this.smsMessage = '';
         } else {
-          alert('❌ Échec de l\'envoi: ' + response.message);
+          alert("❌ Échec de l'envoi: " + response.message);
         }
       },
-      error: (err) => {
+      error: (err: any) => {
         this.smsSending = false;
-        alert('❌ Erreur lors de l\'envoi du SMS');
+        alert("❌ Erreur lors de l'envoi du SMS");
         console.error(err);
       }
     });
   }
 
-  // ========== STREAM & MAP HELPERS ==========
+  // ========== STREAM ==========
 
-  loadStream(competitionId: number) {
+  loadStream(competitionId: number): void {
     this.streamLoading = true;
     this.streamError = null;
-    
     this.competitionService.getStream(competitionId).subscribe({
-      next: (data) => {
+      next: (data: any) => {
         this.stream = data;
         this.streamLoading = false;
       },
-      error: (err) => {
+      error: (err: any) => {
         if (err.status === 404) {
-          this.stream = null; // Pas de stream configuré
+          this.stream = null;
         } else {
           this.streamError = 'Erreur lors du chargement du stream';
         }
@@ -385,15 +380,15 @@ export class CompetitionDetailComponent implements OnInit, AfterViewInit {
   }
 
   canViewStream(): boolean {
-    return this.isOnlineEvent() && this.hasStream() && (this.stream?.canWatch || false);
+    return this.isOnlineEvent() && this.hasStream() && ((this.stream as any)?.canWatch || false);
   }
 
   getEmbedStreamUrl(): string {
-    return this.stream?.embedUrl || this.stream?.streamUrl || '';
+    return (this.stream as any)?.embedUrl || (this.stream as any)?.streamUrl || '';
   }
 
   getStreamUrl(): string {
-    return this.stream?.streamUrl || '';
+    return (this.stream as any)?.streamUrl || '';
   }
 
   openStreamManager(): void {
@@ -402,19 +397,15 @@ export class CompetitionDetailComponent implements OnInit, AfterViewInit {
 
   closeStreamManager(): void {
     this.showStreamManager = false;
-    // Recharger le stream après modification
     if (this.competition) {
       this.loadStream(this.competition.competitionId);
     }
   }
 
-  private mapInitRetries = 0;
-  private readonly MAX_MAP_RETRIES = 5;
+  // ========== MAP ==========
 
   private initMap(): void {
     if (!this.competition?.latitude || !this.competition?.longitude) return;
-    
-    // ✅ Only initialize if registered or formateur
     if (!this.isRegistered && !this.isFormateur()) {
       console.log('🔒 Map initialization skipped: user not registered');
       return;
@@ -432,11 +423,9 @@ export class CompetitionDetailComponent implements OnInit, AfterViewInit {
       return;
     }
 
-    // Reset retry counter
     this.mapInitRetries = 0;
-
-    const lat = this.competition.latitude;
-    const lng = this.competition.longitude;
+    const lat = this.competition.latitude!;
+    const lng = this.competition.longitude!;
 
     try {
       this.map = L.map(this.mapId, {
@@ -449,12 +438,7 @@ export class CompetitionDetailComponent implements OnInit, AfterViewInit {
         maxZoom: 19
       }).addTo(this.map);
 
-      // Add marker
-      const marker = L.marker(
-        [lat, lng] as L.LatLngTuple,
-        { icon: this.markerIcon }
-      ).addTo(this.map);
-
+      const marker = L.marker([lat, lng] as L.LatLngTuple, { icon: this.markerIcon }).addTo(this.map);
       const popupContent = `
         <div style="text-align: center;">
           <strong>${this.competition.title}</strong><br>
@@ -463,7 +447,6 @@ export class CompetitionDetailComponent implements OnInit, AfterViewInit {
         </div>
       `;
       marker.bindPopup(popupContent).openPopup();
-      
       console.log('✅ Map initialized successfully');
     } catch (error) {
       console.error('❌ Error initializing map:', error);
