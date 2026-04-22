@@ -1,7 +1,9 @@
 package org.example.professional_events.controller;
 
 import org.example.professional_events.entity.Participant;
+import org.example.professional_events.entity.TeamMember;
 import org.example.professional_events.repository.ParticipantRepository;
+import org.example.professional_events.repository.TeamMemberRepository;
 import org.example.professional_events.security.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -9,8 +11,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/participants")
@@ -19,6 +23,9 @@ public class ParticipantController {
 
     @Autowired
     private ParticipantRepository participantRepository;
+
+    @Autowired
+    private TeamMemberRepository teamMemberRepository;
 
     @Autowired
     private JwtUtil jwtUtil;
@@ -93,6 +100,37 @@ public class ParticipantController {
             return new ResponseEntity<>(participantRepository.findByUserId(userId), HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * GET /api/participants/my-competition-ids
+     * Returns all competition IDs the current user is part of
+     * (both individual registrations AND team memberships)
+     */
+    @GetMapping("/my-competition-ids")
+    public ResponseEntity<List<Long>> getMyCompetitionIds(
+            @RequestHeader("Authorization") String authHeader
+    ) {
+        try {
+            String token = authHeader.replace("Bearer ", "");
+            Long userId = jwtUtil.extractUserId(token);
+
+            List<Long> ids = new ArrayList<>();
+
+            // Individual participations
+            participantRepository.findByUserId(userId)
+                    .forEach(p -> ids.add(p.getCompetitionId()));
+
+            // Team memberships
+            teamMemberRepository.findByUserId(userId).stream()
+                    .map(tm -> tm.getTeam().getCompetition().getCompetitionId())
+                    .filter(id -> !ids.contains(id))
+                    .forEach(ids::add);
+
+            return ResponseEntity.ok(ids);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 

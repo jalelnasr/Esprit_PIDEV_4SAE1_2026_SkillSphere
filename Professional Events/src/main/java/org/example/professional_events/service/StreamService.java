@@ -19,11 +19,20 @@ public class StreamService {
     @Autowired
     private org.example.professional_events.repository.ParticipantRepository participantRepository;
 
+    @Autowired
+    private org.example.professional_events.repository.TeamMemberRepository teamMemberRepository;
+
     /**
      * Vérifier si un utilisateur est participant d'une compétition
+     * (soit inscription individuelle, soit membre d'une équipe)
      */
     public boolean isParticipant(Long userId, Long competitionId) {
-        return participantRepository.findByUserIdAndCompetitionId(userId, competitionId).isPresent();
+        // Check individual registration
+        if (participantRepository.findByUserIdAndCompetitionId(userId, competitionId).isPresent()) {
+            return true;
+        }
+        // Check team membership
+        return teamMemberRepository.existsByTeam_Competition_CompetitionIdAndUserId(competitionId, userId);
     }
 
     /**
