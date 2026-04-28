@@ -32,6 +32,14 @@ export const routes: Routes = [
     loadChildren: () => import('./admin/admin.routes').then(m => m.ADMIN_ROUTES)
   },
 
+  // B2B Corporate Front Office (for company roles: RH, Manager, Employee, Freelance)
+  {
+    path: 'b2b',
+    canActivate: [authGuard, RoleGuard],
+    data: { roles: ['RH_ENTREPRISE', 'MANAGER', 'APPRENANT', 'FORMATEUR'] },
+    loadChildren: () => import('./admin/b2b/b2b.routes').then(m => m.B2B_ROUTES)
+  },
+
   // Main layout (authenticated / app area)
   {
     path: '',
@@ -93,6 +101,39 @@ export const routes: Routes = [
         path: 'user',
         canActivate: [authGuard],
         loadChildren: () => import('./features/user/user.routes').then(m => m.USER_ROUTES)
+      },
+
+      // B2B Front Office pages (accessible to all authenticated users)
+      {
+        path: 'corporate-home',
+        loadComponent: () => import('./features/corporate/pages/corporate-home/corporate-home.component').then(m => m.CorporateHomeComponent)
+      },
+      {
+        path: 'my-company',
+        canActivate: [authGuard],
+        loadComponent: () => import('./features/corporate/pages/my-company/my-company.component').then(m => m.MyCompanyComponent)
+      },
+      {
+        path: 'catalog',
+        loadComponent: () => import('./features/corporate/pages/catalog/catalog.component').then(m => m.CatalogComponent)
+      },
+      {
+        path: 'careers',
+        loadComponent: () => import('./features/corporate/pages/careers/careers.component').then(m => m.CareersComponent)
+      },
+      {
+        path: 'careers/:id',
+        canActivate: [authGuard],
+        loadComponent: () => import('./features/corporate/pages/careers/career-detail.component').then(m => m.CareerDetailComponent)
+      },
+      {
+        path: 'freelance',
+        loadComponent: () => import('./features/corporate/pages/freelance/freelance.component').then(m => m.FreelanceComponent)
+      },
+      {
+        path: 'freelance/:id',
+        canActivate: [authGuard],
+        loadComponent: () => import('./features/corporate/pages/freelance/freelance-detail.component').then(m => m.FreelanceDetailComponent)
       }
     ]
   },
