@@ -1,0 +1,263 @@
+<div class="container-fluid p-4">
+  <div class="row mb-4">
+    <div class="col-md-8">
+      <h2 class="mb-0">
+        <i class="fas fa-calendar-check me-2"></i>Gestion des Entretiens
+      </h2>
+    </div>
+    <div class="col-md-4 text-end">
+      <button class="btn btn-primary" (click)="openModal()">
+        <i class="fas fa-plus me-2"></i>Nouvel Entretien
+      </button>
+    </div>
+  </div>
+
+  <!-- Filtres -->
+  <div class="card mb-4">
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-6">
+          <div class="form-group">
+            <label for="search" class="form-label">Rechercher</label>
+            <input
+              type="text"
+              class="form-control"
+              id="search"
+              placeholder="ID entretien ou candidat..."
+              [(ngModel)]="searchTerm"
+              (input)="onSearchChange()"
+            />
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="form-group">
+            <label for="status" class="form-label">Statut</label>
+            <select
+              class="form-select"
+              id="status"
+              [(ngModel)]="filterStatus"
+              (change)="onStatusChange()"
+            >
+              <option value="ALL">Tous les statuts</option>
+              <option value="SCHEDULED">Planifié</option>
+              <option value="COMPLETED">Complété</option>
+              <option value="CANCELLED">Annulé</option>
+              <option value="RESCHEDULED">Reporté</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tableau des entretiens -->
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>ID</th>
+            <th>Candidat</th>
+            <th>Recruteur</th>
+            <th>Date & Heure</th>
+            <th>Lieu</th>
+            <th>Statut</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngIf="loading">
+            <td colspan="7" class="text-center py-4">
+              <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Chargement...</span>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="!loading && filteredInterviews.length === 0">
+            <td colspan="7" class="text-center py-4 text-muted">
+              Aucun entretien trouvé
+            </td>
+          </tr>
+          <tr *ngFor="let interview of filteredInterviews">
+            <td>
+              <strong>#{{ interview.id }}</strong>
+            </td>
+            <td>
+              <span class="badge bg-info">Candidat #{{ interview.candidateId }}</span>
+            </td>
+            <td>
+              <span class="badge bg-secondary">Recruteur #{{ interview.recruiterId }}</span>
+            </td>
+            <td>
+              {{ formatDateTime(interview.interviewDateTime) }}
+            </td>
+            <td>
+              <small>{{ interview.location }}</small>
+            </td>
+            <td>
+              <span [ngClass]="'badge ' + getStatusBadgeClass(interview.status)">
+                {{ interview.status }}
+              </span>
+            </td>
+            <td>
+              <div class="btn-group btn-group-sm" role="group">
+                <button
+                  class="btn btn-outline-primary"
+                  (click)="openModal(interview)"
+                  title="Modifier"
+                >
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button
+                  class="btn btn-outline-warning"
+                  (click)="cancelInterview(interview.id!)"
+                  *ngIf="interview.status === 'SCHEDULED'"
+                  title="Annuler"
+                >
+                  <i class="fas fa-times"></i>
+                </button>
+                <button
+                  class="btn btn-outline-danger"
+                  (click)="deleteInterview(interview.id!)"
+                  title="Supprimer"
+                >
+                  <i class="fas fa-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal" [class.show]="showModal" [style.display]="showModal ? 'block' : 'none'">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            {{ editingInterview?.id ? 'Modifier l\'entretien' : 'Nouvel entretien' }}
+          </h5>
+          <button
+            type="button"
+            class="btn-close"
+            (click)="closeModal()"
+          ></button>
+        </div>
+        <div class="modal-body" *ngIf="editingInterview">
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="candidateId" class="form-label">ID Candidat *</label>
+                <input
+                  type="number"
+                  class="form-control"
+                  id="candidateId"
+                  [(ngModel)]="editingInterview.candidateId"
+                  required
+                />
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="recruiterId" class="form-label">ID Recruteur *</label>
+                <input
+                  type="number"
+                  class="form-control"
+                  id="recruiterId"
+                  [(ngModel)]="editingInterview.recruiterId"
+                  required
+                />
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="jobOfferId" class="form-label">ID Offre d'emploi *</label>
+                <input
+                  type="number"
+                  class="form-control"
+                  id="jobOfferId"
+                  [(ngModel)]="editingInterview.jobOfferId"
+                  required
+                />
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="interviewDateTime" class="form-label">Date & Heure *</label>
+                <input
+                  type="datetime-local"
+                  class="form-control"
+                  id="interviewDateTime"
+                  [(ngModel)]="editingInterview.interviewDateTime"
+                  required
+                />
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label for="location" class="form-label">Lieu *</label>
+            <input
+              type="text"
+              class="form-control"
+              id="location"
+              placeholder="Bureau, Zoom, Teams, etc."
+              [(ngModel)]="editingInterview.location"
+              required
+            />
+          </div>
+
+          <div class="mb-3">
+            <label for="meetingLink" class="form-label">Lien de réunion</label>
+            <input
+              type="url"
+              class="form-control"
+              id="meetingLink"
+              placeholder="https://zoom.us/j/..."
+              [(ngModel)]="editingInterview.meetingLink"
+            />
+          </div>
+
+          <div class="mb-3">
+            <label for="notes" class="form-label">Notes</label>
+            <textarea
+              class="form-control"
+              id="notes"
+              rows="3"
+              placeholder="Ajouter des notes..."
+              [(ngModel)]="editingInterview.notes"
+            ></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            (click)="closeModal()"
+          >
+            Annuler
+          </button>
+          <button
+            type="button"
+            class="btn btn-primary"
+            (click)="saveInterview()"
+          >
+            <i class="fas fa-save me-2"></i>Enregistrer
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Backdrop -->
+  <div
+    class="modal-backdrop fade"
+    [class.show]="showModal"
+    *ngIf="showModal"
+  ></div>
+</div>
