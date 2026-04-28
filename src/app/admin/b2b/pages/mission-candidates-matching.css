@@ -1,0 +1,397 @@
+/* ===== AI Matching Score Styles ===== */
+
+.matching-score-section {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.05), rgba(139, 92, 246, 0.05));
+  border: 1.5px solid rgba(99, 102, 241, 0.2);
+  border-radius: 12px;
+  padding: 16px;
+  margin: 16px 0;
+}
+
+:root.dark-mode .matching-score-section {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+.matching-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.ai-icon {
+  font-size: 20px;
+}
+
+.matching-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #6366f1;
+}
+
+:root.dark-mode .matching-title {
+  color: #a5b4fc;
+}
+
+.matching-content {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+/* Score Circle */
+.score-circle {
+  flex-shrink: 0;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 4px solid;
+  position: relative;
+  background: white;
+}
+
+:root.dark-mode .score-circle {
+  background: #1e293b;
+}
+
+.score-value {
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.score-max {
+  font-size: 11px;
+  font-weight: 600;
+  opacity: 0.6;
+  margin-top: 2px;
+}
+
+/* Score Classes */
+.score-excellent {
+  border-color: #16a34a;
+  color: #16a34a;
+}
+
+.score-excellent .score-fill {
+  background: linear-gradient(90deg, #16a34a, #22c55e);
+}
+
+.score-excellent .score-recommendation {
+  color: #16a34a;
+  background: rgba(22, 163, 74, 0.1);
+}
+
+.score-good {
+  border-color: #2563eb;
+  color: #2563eb;
+}
+
+.score-good .score-fill {
+  background: linear-gradient(90deg, #2563eb, #3b82f6);
+}
+
+.score-good .score-recommendation {
+  color: #2563eb;
+  background: rgba(37, 99, 235, 0.1);
+}
+
+.score-acceptable {
+  border-color: #f59e0b;
+  color: #f59e0b;
+}
+
+.score-acceptable .score-fill {
+  background: linear-gradient(90deg, #f59e0b, #fbbf24);
+}
+
+.score-acceptable .score-recommendation {
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.score-average {
+  border-color: #f97316;
+  color: #f97316;
+}
+
+.score-average .score-fill {
+  background: linear-gradient(90deg, #f97316, #fb923c);
+}
+
+.score-average .score-recommendation {
+  color: #f97316;
+  background: rgba(249, 115, 22, 0.1);
+}
+
+.score-poor {
+  border-color: #dc2626;
+  color: #dc2626;
+}
+
+.score-poor .score-fill {
+  background: linear-gradient(90deg, #dc2626, #ef4444);
+}
+
+.score-poor .score-recommendation {
+  color: #dc2626;
+  background: rgba(220, 38, 38, 0.1);
+}
+
+/* Score Details */
+.score-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.score-bar {
+  height: 12px;
+  background: rgba(0, 0, 0, 0.08);
+  border-radius: 20px;
+  overflow: hidden;
+  position: relative;
+}
+
+:root.dark-mode .score-bar {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.score-fill {
+  height: 100%;
+  border-radius: 20px;
+  transition: width 0.6s ease-out;
+  position: relative;
+  overflow: hidden;
+}
+
+.score-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.score-recommendation {
+  font-size: 13px;
+  font-weight: 700;
+  padding: 8px 14px;
+  border-radius: 8px;
+  text-align: center;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .matching-content {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .score-circle {
+    width: 70px;
+    height: 70px;
+  }
+  
+  .score-value {
+    font-size: 24px;
+  }
+}
+
+/* ===== Enhanced Score Classes ===== */
+
+/* Exceptional (90-100) */
+.score-exceptional {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
+}
+
+.score-exceptional .score-fill {
+  background: linear-gradient(90deg, #10b981, #059669);
+}
+
+/* Excellent (80-89) */
+.score-excellent {
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: white;
+  box-shadow: 0 4px 20px rgba(34, 197, 94, 0.4);
+}
+
+.score-excellent .score-fill {
+  background: linear-gradient(90deg, #22c55e, #16a34a);
+}
+
+/* Very Good (70-79) */
+.score-very-good {
+  background: linear-gradient(135deg, #84cc16, #65a30d);
+  color: white;
+  box-shadow: 0 4px 20px rgba(132, 204, 22, 0.4);
+}
+
+.score-very-good .score-fill {
+  background: linear-gradient(90deg, #84cc16, #65a30d);
+}
+
+/* Good (60-69) */
+.score-good {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: white;
+  box-shadow: 0 4px 20px rgba(59, 130, 246, 0.4);
+}
+
+.score-good .score-fill {
+  background: linear-gradient(90deg, #3b82f6, #2563eb);
+}
+
+/* Moderate (50-59) */
+.score-moderate {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+  box-shadow: 0 4px 20px rgba(245, 158, 11, 0.4);
+}
+
+.score-moderate .score-fill {
+  background: linear-gradient(90deg, #f59e0b, #d97706);
+}
+
+/* Weak (40-49) */
+.score-weak {
+  background: linear-gradient(135deg, #f97316, #ea580c);
+  color: white;
+  box-shadow: 0 4px 20px rgba(249, 115, 22, 0.4);
+}
+
+.score-weak .score-fill {
+  background: linear-gradient(90deg, #f97316, #ea580c);
+}
+
+/* Poor (0-39) */
+.score-poor {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+  box-shadow: 0 4px 20px rgba(239, 68, 68, 0.4);
+}
+
+.score-poor .score-fill {
+  background: linear-gradient(90deg, #ef4444, #dc2626);
+}
+
+/* ===== Score Badge ===== */
+.score-badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ===== Score Breakdown ===== */
+.score-breakdown {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.breakdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-secondary, #64748b);
+}
+
+:root.dark-mode .breakdown-item {
+  color: #94a3b8;
+}
+
+.breakdown-icon {
+  font-size: 14px;
+}
+
+.breakdown-text {
+  font-weight: 500;
+}
+
+/* ===== Enhanced Matching Header ===== */
+.matching-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(99, 102, 241, 0.1);
+}
+
+:root.dark-mode .matching-header {
+  border-bottom-color: rgba(99, 102, 241, 0.2);
+}
+
+/* ===== Responsive Design ===== */
+@media (max-width: 768px) {
+  .matching-content {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .score-circle {
+    width: 70px;
+    height: 70px;
+  }
+  
+  .score-value {
+    font-size: 18px;
+  }
+  
+  .score-breakdown {
+    margin-top: 8px;
+  }
+  
+  .breakdown-item {
+    font-size: 11px;
+  }
+}
+
+/* ===== Animation Effects ===== */
+.score-circle {
+  transition: all 0.3s ease;
+}
+
+.score-circle:hover {
+  transform: scale(1.05);
+}
+
+.score-fill {
+  transition: width 0.8s ease-in-out;
+}
+
+.matching-score-section {
+  transition: all 0.3s ease;
+}
+
+.matching-score-section:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(99, 102, 241, 0.15);
+}
+
+:root.dark-mode .matching-score-section:hover {
+  box-shadow: 0 8px 25px rgba(99, 102, 241, 0.25);
+}

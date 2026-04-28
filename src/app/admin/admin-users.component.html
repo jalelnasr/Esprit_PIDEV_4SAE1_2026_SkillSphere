@@ -1,0 +1,197 @@
+<div class="users-container">
+  <!-- Header -->
+  <div class="page-header">
+    <div>
+      <h1>User Management</h1>
+      <p>Manage and monitor all platform users</p>
+      <p *ngIf="isLoading" style="margin-top:8px;">Loading...</p>
+      <p *ngIf="errorMsg" style="margin-top:8px; color:#ef4444;">{{ errorMsg }}</p>
+    </div>
+    <button class="btn-primary" (click)="openCreate()">➕ Add New User</button>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters-section">
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input
+        type="text"
+        placeholder="Search by name or email..."
+        [(ngModel)]="searchQuery"
+        (input)="onSearch()"
+        class="search-input"
+      />
+    </div>
+
+    <select [(ngModel)]="selectedRole" (change)="onRoleChange()" class="filter-select">
+      <option value="all">All Roles</option>
+      <option value="ADMIN">ADMIN</option>
+      <option value="FORMATEUR">Trainer</option>
+      <option value="APPRENANT">Learner</option>
+      <option value="RH_ENTREPRISE">Company HR</option>
+      <option value="MANAGER">MANAGER</option>
+    </select>
+
+    <select [(ngModel)]="selectedStatus" (change)="onStatusChange()" class="filter-select">
+      <option value="all">All Status</option>
+      <option value="active">Active</option>
+      <option value="inactive">Inactive</option>
+    </select>
+  </div>
+
+  <!-- Table -->
+  <div class="table-container">
+    <table class="users-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Role</th>
+          <th>Status</th>
+          <th>Join Date</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <tr *ngFor="let u of visibleUsers; trackBy: trackByUserId" class="table-row">
+          <td class="name-col">
+            <div class="user-info">
+              <div class="user-avatar">{{ initials(u) }}</div>
+              <div class="user-details">
+                <div class="user-name">{{ u.prenom }} {{ u.nom }}</div>
+              </div>
+            </div>
+          </td>
+
+          <td>{{ u.email }}</td>
+
+          <td>
+            <span class="badge" [ngClass]="getRoleColor(u.role)">{{ u.role }}</span>
+
+            <!-- quick role change -->
+            <div style="margin-top:8px; display:flex; gap:6px; flex-wrap:wrap;">
+              <button class="btn-icon" title="Set as Learner" (click)="changeRole(u,'APPRENANT')">🎓</button>
+              <button class="btn-icon" title="Set as Trainer" (click)="changeRole(u,'FORMATEUR')">👨‍🏫</button>
+              <button class="btn-icon" title="Set as Company HR" (click)="changeRole(u,'RH_ENTREPRISE')">🏢</button>
+              <button class="btn-icon" title="Set MANAGER" (click)="changeRole(u,'MANAGER')">👔</button>
+              <button class="btn-icon" title="Set ADMIN" (click)="changeRole(u,'ADMIN')">🛡️</button>
+            </div>
+          </td>
+
+          <td>
+            <span class="status-badge" [ngClass]="u.isActive ? 'active' : 'inactive'">
+              {{ u.isActive ? 'active' : 'inactive' }}
+            </span>
+            <div style="margin-top:8px;">
+              <button class="btn-icon" (click)="toggleActive(u)" title="Toggle active">
+                {{ u.isActive ? '⛔' : '✅' }}
+              </button>
+            </div>
+          </td>
+
+          <td>{{ joinDate(u) }}</td>
+
+          <td class="actions-col">
+            <button class="btn-icon" (click)="editUser(u)" title="Edit">✏️</button>
+            <button class="btn-icon" (click)="openResetPassword(u)" title="Reset Password">🔑</button>
+            <button class="btn-icon danger" (click)="deleteUser(u)" title="Delete">🗑️</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div *ngIf="!isLoading && filteredUsers.length === 0" class="empty-state">
+      <div class="empty-icon">👤</div>
+      <p>No users found</p>
+    </div>
+  </div>
+
+  <div class="pagination" *ngIf="filteredUsers.length > pageSize">
+    <button class="pagination-btn" (click)="goToPage(currentPage - 1)" [disabled]="currentPage === 1">Prev</button>
+    <span class="text-center">Page {{ currentPage }} / {{ totalPages }}</span>
+    <button class="pagination-btn" (click)="goToPage(currentPage + 1)" [disabled]="currentPage === totalPages">Next</button>
+  </div>
+</div>
+
+<!-- ===================== CREATE MODAL ===================== -->
+<div *ngIf="showCreateModal" class="modal-overlay">
+  <div class="modal-content">
+    <h2 style="margin:0 0 12px 0;">Create User</h2>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+      <input class="filter-select" placeholder="Last Name" [(ngModel)]="createForm.nom" />
+      <input class="filter-select" placeholder="First Name" [(ngModel)]="createForm.prenom" />
+      <input class="filter-select" placeholder="Email" [(ngModel)]="createForm.email" />
+      <input class="filter-select" placeholder="Password" type="password" [(ngModel)]="createForm.password" />
+      <select class="filter-select" [(ngModel)]="createForm.role" (ngModelChange)="onCreateRoleChange()">
+        <option value="APPRENANT">Learner</option>
+        <option value="FORMATEUR">Trainer</option>
+        <option value="RH_ENTREPRISE">Company HR</option>
+        <option value="MANAGER">MANAGER</option>
+        <option value="ADMIN">ADMIN</option>
+      </select>
+      <select class="filter-select" [(ngModel)]="createForm.isActive">
+        <option [ngValue]="true">Active</option>
+        <option [ngValue]="false">Inactive</option>
+      </select>
+      <input class="filter-select" placeholder="Phone" [(ngModel)]="createForm.phone" />
+      <input class="filter-select" placeholder="Address" [(ngModel)]="createForm.adresse" />
+
+      <!-- Company dropdown: only for RH_ENTREPRISE / MANAGER -->
+      <select *ngIf="needsCompany(createForm.role)" class="filter-select" [(ngModel)]="createForm.companyId"
+        style="grid-column: 1 / -1;">
+        <option [ngValue]="null" disabled>-- Select a company --</option>
+        <option *ngFor="let c of companies" [ngValue]="c.id">{{ c.name }}</option>
+      </select>
+    </div>
+
+    <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:16px;">
+      <button class="pagination-btn" (click)="closeCreate()">Cancel</button>
+      <button class="btn-primary" (click)="submitCreate()">Create</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== EDIT MODAL ===================== -->
+<div *ngIf="showEditModal" class="modal-overlay">
+  <div class="modal-content">
+    <h2 style="margin:0 0 12px 0;">Edit User</h2>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+      <input class="filter-select" placeholder="Last Name" [(ngModel)]="editForm.nom" />
+      <input class="filter-select" placeholder="First Name" [(ngModel)]="editForm.prenom" />
+      <input class="filter-select" placeholder="Email" [(ngModel)]="editForm.email" />
+      <input class="filter-select" placeholder="Phone" [(ngModel)]="editForm.phone" />
+      <input class="filter-select" placeholder="Address" [(ngModel)]="editForm.adresse" />
+
+      <!-- Company dropdown: only for RH_ENTREPRISE / MANAGER -->
+      <select *ngIf="editTarget && needsCompany(editTarget.role)" class="filter-select" [(ngModel)]="editForm.companyId">
+        <option [ngValue]="null" disabled>-- Select a company --</option>
+        <option *ngFor="let c of companies" [ngValue]="c.id">{{ c.name }}</option>
+      </select>
+    </div>
+
+    <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:16px;">
+      <button class="pagination-btn" (click)="closeEdit()">Cancel</button>
+      <button class="btn-primary" (click)="submitEdit()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== RESET PASSWORD MODAL ===================== -->
+<div *ngIf="showResetPasswordModal" class="modal-overlay">
+  <div class="modal-content modal-sm">
+    <h2 style="margin:0 0 12px 0;">Reset Password</h2>
+
+    <div style="display:grid; gap:12px;">
+      <input class="filter-select" placeholder="New password (min 8)" type="password" [(ngModel)]="resetPassword" />
+      <input class="filter-select" placeholder="Confirm password" type="password" [(ngModel)]="resetPassword2" />
+    </div>
+
+    <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:16px;">
+      <button class="pagination-btn" (click)="closeResetPassword()">Cancel</button>
+      <button class="btn-primary" (click)="submitResetPassword()">Reset</button>
+    </div>
+  </div>
+</div>
