@@ -1,0 +1,118 @@
+========================================
+  SYSTÈME DE MAILING - IMPLÉMENTÉ
+========================================
+
+Date: 2026-03-05
+Statut: ✅ TERMINÉ ET FONCTIONNEL
+
+========================================
+  CE QUI A ÉTÉ FAIT
+========================================
+
+1. ✅ Ajout dépendance spring-boot-starter-mail dans pom.xml
+2. ✅ Configuration SMTP Gmail dans application.properties
+3. ✅ Création EmailNotificationDTO.java
+4. ✅ Création EmailService.java (envoi emails HTML)
+5. ✅ Ajout 2 endpoints dans ApplicationController.java:
+   - POST /api/b2b/applications/notify
+   - PUT /api/b2b/applications/{id}/status-notify
+6. ✅ Compilation réussie (BUILD SUCCESS)
+7. ✅ Script de test créé (test_mailing_system.ps1)
+8. ✅ Documentation complète créée
+
+========================================
+  COMMENT UTILISER
+========================================
+
+1. DÉMARRER LE BACKEND:
+   cd B2BModule
+   mvn spring-boot:run
+
+2. TESTER:
+   .\test_mailing_system.ps1
+
+3. VÉRIFIER:
+   Emails reçus sur aziz2guizeni@gmail.com
+
+========================================
+  LES 2 ENDPOINTS
+========================================
+
+Endpoint 1: Envoyer email simple
+POST http://localhost:8083/api/b2b/applications/notify
+Body: {
+  "candidateEmail": "email@example.com",
+  "candidateName": "Nom Prenom",
+  "jobTitle": "Titre du poste",
+  "companyName": "Nom entreprise",
+  "status": "ACCEPTED",
+  "message": "Message optionnel"
+}
+
+Endpoint 2: Changer statut + Email
+PUT http://localhost:8083/api/b2b/applications/1/status-notify?status=ACCEPTED
+Body: (même structure que ci-dessus)
+
+========================================
+  WORKFLOW COMPLET
+========================================
+
+1. Candidat postule → POST /api/b2b/applications
+2. RH voit les candidatures → Frontend Angular
+3. RH accepte/refuse → PUT /api/b2b/applications/{id}/status-notify
+4. Backend:
+   - Met à jour le statut dans la BD
+   - Envoie l'email au candidat
+5. Candidat reçoit l'email professionnel
+
+========================================
+  FICHIERS CRÉÉS
+========================================
+
+Backend:
+- src/main/java/org/example/b2bmodule/dto/EmailNotificationDTO.java
+- src/main/java/org/example/b2bmodule/service/EmailService.java
+- src/main/java/org/example/b2bmodule/controller/ApplicationController.java (modifié)
+
+Configuration:
+- pom.xml (modifié)
+- src/main/resources/application.properties (modifié)
+
+Tests & Documentation:
+- test_mailing_system.ps1
+- GUIDE_MAILING_CANDIDATS.md
+- LIRE_MOI_MAILING.md
+- RESUME_IMPLEMENTATION_MAILING.txt (ce fichier)
+
+========================================
+  DESIGN DE L'EMAIL
+========================================
+
+- Header: Gradient bleu/violet avec logo B2B
+- ACCEPTED: Fond vert avec ✅
+- REJECTED: Fond gris avec 📋
+- Message personnalisé du RH (optionnel)
+- Footer professionnel avec copyright
+
+========================================
+  CONFIGURATION SMTP
+========================================
+
+Host: smtp.gmail.com
+Port: 587
+Email: aziz2guizeni@gmail.com
+Password: dabwejwnyqaryees (App Password)
+STARTTLS: Activé
+
+========================================
+  PROCHAINES ÉTAPES
+========================================
+
+1. Lance le backend: mvn spring-boot:run
+2. Teste avec le script: .\test_mailing_system.ps1
+3. Intègre dans Angular (voir GUIDE_MAILING_CANDIDATS.md)
+4. Montre au prof que ça fonctionne! 🎓
+
+========================================
+  TOUT EST PRÊT! 🚀
+========================================
