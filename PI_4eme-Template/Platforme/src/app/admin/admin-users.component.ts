@@ -155,7 +155,8 @@ export class AdminUsersComponent implements OnInit {
       ADMIN: 'danger',
       FORMATEUR: 'warning',
       RH_ENTREPRISE: 'warning',
-      APPRENANT: 'info'
+      APPRENANT: 'info',
+      MANAGER: 'primary'
     };
     return colors[role] ?? 'info';
   }

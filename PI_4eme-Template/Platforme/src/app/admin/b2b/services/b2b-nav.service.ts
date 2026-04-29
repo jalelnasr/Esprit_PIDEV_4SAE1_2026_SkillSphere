@@ -2,18 +2,23 @@ import { Injectable } from '@angular/core';
 import { AuthService } from '../../../core/services/auth.service';
 
 /**
- * Provides the correct base path for B2B internal navigation.
- * - ADMIN accesses B2B via /admin/corporate (Back Office)
- * - Other roles access via /corporate (Front Office)
+ * Service pour gérer la navigation dans le module B2B
+ * Détermine le basePath selon le rôle de l'utilisateur
  */
-@Injectable({ providedIn: 'root' })
+@Injectable({
+  providedIn: 'root'
+})
 export class B2bNavService {
+  basePath = '/b2b'; // Valeur par défaut
 
-  constructor(private authService: AuthService) {}
-
-  /** Returns '/admin/corporate' for ADMIN, '/corporate' for others */
-  get basePath(): string {
-    const role = this.authService.getUserRole();
-    return role === 'ADMIN' ? '/admin/corporate' : '/corporate';
+  constructor(private authService: AuthService) {
+    // Écouter les changements de rôle pour mettre à jour le basePath
+    this.authService.userRole$.subscribe(role => {
+      if (role === 'ADMIN') {
+        this.basePath = '/admin/corporate';
+      } else {
+        this.basePath = '/b2b';
+      }
+    });
   }
 }

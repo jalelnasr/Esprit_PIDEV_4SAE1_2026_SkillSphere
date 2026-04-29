@@ -1,15 +1,16 @@
-export type BackendRole = 'APPRENANT' | 'FORMATEUR' | 'RH_ENTREPRISE' | 'ADMIN';
+export type BackendRole = 'APPRENANT' | 'FORMATEUR' | 'RH_ENTREPRISE' | 'ADMIN' | 'MANAGER';
 
 export interface BackendUser {
   idUser: number;
-  nom: string;     // backend: nom
-  prenom: string;  // backend: prenom
+  nom: string;
+  prenom: string;
   email: string;
   role: BackendRole;
   phone?: string | null;
   adresse?: string | null;
   isActive?: boolean;
   createdAt?: string;
+  companyId?: number | null;
 }
 
 export interface LoginRequest {

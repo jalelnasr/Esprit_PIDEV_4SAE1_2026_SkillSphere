@@ -4,6 +4,7 @@ import { RouterModule } from '@angular/router';
 import { B2bContractService } from '../../../../admin/b2b/services/contract.service';
 import { Contract } from '../../../../admin/b2b/models/b2b.models';
 import { AuthService } from '../../../../core/services/auth.service';
+import { B2bNavService } from '../../../../admin/b2b/services/b2b-nav.service';
 
 @Component({
   selector: 'app-my-contracts',
@@ -55,7 +56,7 @@ import { AuthService } from '../../../../core/services/auth.service';
 
           <div class="contract-actions">
             <a 
-              [routerLink]="['/corporate/contracts', contract.id, 'view']" 
+              [routerLink]="[navSvc.basePath + '/contracts', contract.id, 'sign']" 
               class="btn-view">
               👁️ Voir le contrat
             </a>
@@ -333,12 +334,13 @@ export class MyContractsComponent implements OnInit {
 
   constructor(
     private contractSvc: B2bContractService,
-    private authSvc: AuthService
+    private authSvc: AuthService,
+    public navSvc: B2bNavService
   ) {}
 
   ngOnInit() {
     this.authSvc.currentUser$.subscribe(user => {
-      this.currentUserId = user?.id || null;
+      this.currentUserId = user?.idUser || null;
       if (this.currentUserId) {
         this.loadMyContracts();
       }

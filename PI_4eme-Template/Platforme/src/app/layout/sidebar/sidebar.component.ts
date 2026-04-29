@@ -4,7 +4,7 @@ import { RouterModule, Router } from '@angular/router';
 import { AuthService } from '@core/services';
 import { ThemeService } from '../../services/theme.service';
 
-type BackendRole = 'APPRENANT' | 'FORMATEUR' | 'RH_ENTREPRISE' | 'ADMIN';
+type BackendRole = 'APPRENANT' | 'FORMATEUR' | 'RH_ENTREPRISE' | 'ADMIN' | 'MANAGER';
 
 interface MenuItem {
   icon: string;
@@ -101,6 +101,35 @@ export class SidebarComponent implements OnInit {
       label: 'Professional Events',
       route: '/competitions',
       roles: ['APPRENANT', 'FORMATEUR']
+    },
+
+    // B2B Module
+    {
+      icon: '🏭',
+      label: 'B2B Corporate',
+      route: '/b2b/dashboard',
+      roles: ['RH_ENTREPRISE', 'MANAGER'],
+      subItems: [
+        { label: 'Dashboard', route: '/b2b/dashboard' },
+        { label: 'Companies', route: '/b2b/companies' },
+        { label: 'Employees', route: '/b2b/employees' },
+        { label: 'Job Offers', route: '/b2b/jobs' },
+        { label: 'Missions', route: '/b2b/missions' },
+        { label: 'Interviews', route: '/b2b/interviews' },
+        { label: 'Contracts', route: '/b2b/contracts' },
+        { label: 'Assignments', route: '/b2b/assignments' },
+      ]
+    },
+    {
+      icon: '💼',
+      label: 'My Company',
+      route: '/my-company',
+      roles: ['RH_ENTREPRISE', 'MANAGER', 'APPRENANT', 'FORMATEUR'],
+      subItems: [
+        { label: 'Company Info', route: '/my-company' },
+        { label: 'Job Offers', route: '/careers' },
+        { label: 'Freelance', route: '/freelance' },
+      ]
     }
   ];
 

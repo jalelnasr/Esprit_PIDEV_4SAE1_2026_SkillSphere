@@ -210,7 +210,7 @@ export class B2bSidebarComponent implements OnInit {
   userRole = '';
   roleName = '';
   brandText = 'Corporate';
-  basePath = '/corporate'; // '/corporate' for FO roles, '/admin/corporate' for ADMIN
+  basePath = '/admin/corporate'; // Will be set dynamically based on role
 
   // Computed brand text based on role
   private updateBrand() {
@@ -289,8 +289,7 @@ export class B2bSidebarComponent implements OnInit {
         items: [
           { icon: '💼', label: 'Job Offers', path: p + '/jobs', roles: ['ADMIN','RH_ENTREPRISE'] },
           { icon: '👤', label: 'Candidates', path: p + '/candidates', roles: ['ADMIN','RH_ENTREPRISE'] },
-          { icon: '📅', label: 'Interviews', path: '/admin/corporate-admin/interviews', roles: ['ADMIN','RH_ENTREPRISE'] }
-        ]
+          { icon: '📅', label: 'Interviews', path: p + '/interviews', roles: ['ADMIN','RH_ENTREPRISE'] }        ]
       },
 
       // ── Freelance: RH manages, FORMATEUR browses ──
@@ -317,13 +316,19 @@ export class B2bSidebarComponent implements OnInit {
 
   constructor(private authService: AuthService) {}
 
-  ngOnInit() {
-    this.authService.userRole$.subscribe(role => {
-      this.userRole = role || 'APPRENANT';
-      // ADMIN uses /admin/corporate, others use /corporate
-      this.basePath = this.userRole === 'ADMIN' ? '/admin/corporate' : '/corporate';
-      this.roleName = this.roleLabel(this.userRole);
-      this.updateBrand();
+ ngOnInit() {
+  this.authService.userRole$.subscribe(role => {
+    this.userRole = role || 'APPRENANT';
+    
+    // ✅ Utiliser le bon basePath selon le rôle
+    if (this.userRole === 'ADMIN') {
+      this.basePath = '/admin/corporate';
+    } else {
+      this.basePath = '/b2b';
+    }
+    
+    this.roleName = this.roleLabel(this.userRole);
+    this.updateBrand();
       const groups = this.buildGroups();
       this.visibleGroups = groups
         .map(g => ({

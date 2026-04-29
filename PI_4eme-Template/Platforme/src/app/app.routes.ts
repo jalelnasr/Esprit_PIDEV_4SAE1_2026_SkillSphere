@@ -32,11 +32,11 @@ export const routes: Routes = [
     loadChildren: () => import('./admin/admin.routes').then(m => m.ADMIN_ROUTES)
   },
 
-  // B2B Corporate Front Office (for company roles: RH, Manager, Employee, Freelance)
+  // B2B Corporate Front Office (for company roles: RH, Manager, Employee, Freelance + ADMIN)
   {
     path: 'b2b',
     canActivate: [authGuard, RoleGuard],
-    data: { roles: ['RH_ENTREPRISE', 'MANAGER', 'APPRENANT', 'FORMATEUR'] },
+    data: { roles: ['ADMIN', 'RH_ENTREPRISE', 'MANAGER', 'APPRENANT', 'FORMATEUR'] },
     loadChildren: () => import('./admin/b2b/b2b.routes').then(m => m.B2B_ROUTES)
   },
 

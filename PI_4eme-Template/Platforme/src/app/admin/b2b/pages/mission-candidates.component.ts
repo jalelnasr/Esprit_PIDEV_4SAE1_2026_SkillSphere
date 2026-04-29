@@ -5,6 +5,7 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { B2bMissionService } from '../services/mission.service';
 import { B2bContractService } from '../services/contract.service';
 import { B2bCandidateService } from '../services/candidate.service';
+import { B2bNavService } from '../services/b2b-nav.service';
 import { Mission, MissionApplication, ContractRequest } from '../models/b2b.models';
 
 @Component({
@@ -331,7 +332,8 @@ export class MissionCandidatesComponent implements OnInit {
     private router: Router,
     private missionSvc: B2bMissionService,
     private contractSvc: B2bContractService,
-    private candidateSvc: B2bCandidateService
+    private candidateSvc: B2bCandidateService,
+    private navSvc: B2bNavService
   ) {}
 
   ngOnInit() {
@@ -463,7 +465,7 @@ export class MissionCandidatesComponent implements OnInit {
   }
 
   goBack() {
-    this.router.navigate(['/admin/corporate/missions']);
+    this.router.navigate([this.navSvc.basePath + '/missions']);
   }
 
   openContractModal(app: MissionApplication) {
@@ -554,16 +556,13 @@ export class MissionCandidatesComponent implements OnInit {
           // Show success message
           alert('✓ Contract created successfully! Redirecting to signature page...');
           
-          // Determine correct path based on role
-          const userRole = localStorage.getItem('role');
-          const basePath = userRole === 'ADMIN' ? '/admin/corporate' : '/corporate';
-          const signatureUrl = `${basePath}/contracts/${contract.id}/sign`;
+          // Use navSvc.basePath for correct routing
+          const signatureUrl = `${this.navSvc.basePath}/contracts/${contract.id}/sign`;
           
-          console.log('User role:', userRole);
           console.log('Redirecting to:', signatureUrl);
           
-          // Use window.location.href for complete navigation
-          window.location.href = signatureUrl;
+          // Navigate to signature page
+          this.router.navigate([signatureUrl]);
         },
         error: (e) => {
           console.error('Error creating contract:', e);

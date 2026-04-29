@@ -3,13 +3,11 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { FormationService, AuthService } from '@core/services';
 import { Course } from '@shared/models/formation.model';
-import { CourseReviewsListComponent } from '../../components/course-reviews-list.component';
-import { CourseReviewModalComponent } from '../../components/course-review-modal.component';
 
 @Component({
   selector: 'app-course-details',
   standalone: true,
-  imports: [CommonModule, RouterModule, CourseReviewsListComponent, CourseReviewModalComponent],
+  imports: [CommonModule, RouterModule],
   templateUrl: './course-details.component.html',
   styleUrls: ['./course-details.component.css']
 })

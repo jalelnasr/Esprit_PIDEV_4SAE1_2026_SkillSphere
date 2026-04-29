@@ -1,11 +1,12 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router } from '@angular/router';
 import { B2bMissionService } from '../../../../admin/b2b/services/mission.service';
 import { B2bContractService } from '../../../../admin/b2b/services/contract.service';
 import { Mission, MissionApplication, Contract } from '../../../../admin/b2b/models/b2b.models';
 import { AuthService } from '../../../../core/services/auth.service';
+import { B2bNavService } from '../../../../admin/b2b/services/b2b-nav.service';
 
 @Component({
   selector: 'app-freelance',
@@ -1533,7 +1534,9 @@ export class FreelanceComponent implements OnInit {
   constructor(
     private missionSvc: B2bMissionService,
     private contractSvc: B2bContractService,
-    private authService: AuthService
+    private authService: AuthService,
+    private router: Router,
+    public navSvc: B2bNavService
   ) {}
 
   ngOnInit() {
@@ -1790,12 +1793,10 @@ export class FreelanceComponent implements OnInit {
 
   viewFullContract(contract: Contract) {
     // Navigate to contract signature page to view the full contract
-    const userRole = localStorage.getItem('role');
-    const basePath = userRole === 'ADMIN' ? '/admin/corporate' : '/corporate';
-    const contractUrl = `${basePath}/contracts/${contract.id}/sign`;
+    const contractUrl = `${this.navSvc.basePath}/contracts/${contract.id}/sign`;
     
-    // Open in new tab to view the contract
-    window.open(contractUrl, '_blank');
+    // Navigate to the contract page
+    this.router.navigate([contractUrl]);
   }
 
   downloadContract(contract: Contract) {

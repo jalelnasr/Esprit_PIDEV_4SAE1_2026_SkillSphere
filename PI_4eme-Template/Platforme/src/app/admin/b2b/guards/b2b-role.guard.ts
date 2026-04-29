@@ -40,10 +40,10 @@ export const b2bRoleGuard: CanActivateFn = (route, _state) => {
         return true;
       }
 
-      // Redirect to B2B dashboard if user doesn't have permission
+      // Redirect to appropriate dashboard based on role
       console.warn('[b2bRoleGuard] Role does not match, redirecting to dashboard');
-      const basePath = role === 'ADMIN' ? '/admin/corporate' : '/corporate';
-      router.navigate([basePath + '/dashboard']);
+      const dashboardPath = role === 'ADMIN' ? '/admin/corporate/dashboard' : '/b2b/dashboard';
+      router.navigate([dashboardPath]);
       return false;
     })
   );

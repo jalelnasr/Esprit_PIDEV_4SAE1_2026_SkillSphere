@@ -58,7 +58,7 @@ export const B2B_ROUTES: Routes = [
 
       // Contracts (Admin + RH + Formateur)
       { path: 'contracts', canActivate: [b2bRoleGuard], data: { allowedRoles: ['ADMIN','RH','RH_ENTREPRISE','FORMATEUR'] }, loadComponent: () => import('./contracts/contract-list/contract-list.component').then(m => m.ContractListComponent) },
-      { path: 'contracts/:id/sign', loadComponent: () => import('./pages/contract-signature.component').then(m => m.ContractSignatureComponent) },
+      { path: 'contracts/:id/sign', canActivate: [b2bRoleGuard], data: { allowedRoles: ['ADMIN','RH','RH_ENTREPRISE','FORMATEUR','APPRENANT'] }, loadComponent: () => import('./pages/contract-signature.component').then(m => m.ContractSignatureComponent) },
 
       // Account Management (RH only)
       { path: 'accounts', canActivate: [b2bRoleGuard], data: { allowedRoles: ['ADMIN','RH_ENTREPRISE'] }, loadComponent: () => import('./accounts/account-management.component').then(m => m.AccountManagementComponent) },

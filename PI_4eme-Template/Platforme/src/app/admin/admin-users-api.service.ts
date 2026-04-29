@@ -3,7 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
-export type BackendRole = 'ADMIN' | 'FORMATEUR' | 'APPRENANT' | 'RH_ENTREPRISE';
+export type BackendRole = 'ADMIN' | 'FORMATEUR' | 'APPRENANT' | 'RH_ENTREPRISE' | 'MANAGER';
 
 export interface UserResponse {
   idUser: number;
@@ -15,6 +15,7 @@ export interface UserResponse {
   adresse?: string | null;
   isActive?: boolean | null;
   createdAt?: string | null;
+  companyId?: number | null;
 }
 
 export interface AdminCreateUserRequest {
@@ -26,6 +27,7 @@ export interface AdminCreateUserRequest {
   phone?: string | null;
   adresse?: string | null;
   isActive?: boolean | null;
+  companyId?: number | null;
 }
 
 export interface AdminUpdateUserRequest {
@@ -74,5 +76,14 @@ export class AdminUsersApiService {
 
   delete(idUser: number): Observable<void> {
     return this.http.delete<void>(`${this.base}/${idUser}`);
+  }
+
+  getById(idUser: number): Observable<UserResponse> {
+    return this.http.get<UserResponse>(`${this.base}/${idUser}`);
+  }
+
+  getUsersByCompany(companyId: number): Observable<UserResponse[]> {
+    const params = new HttpParams().set('companyId', String(companyId));
+    return this.http.get<UserResponse[]>(`${this.base}/by-company`, { params });
   }
 }

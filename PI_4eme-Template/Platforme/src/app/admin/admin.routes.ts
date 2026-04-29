@@ -7,6 +7,10 @@ import { AdminSessionsComponent } from './admin-sessions.component';
 import { AdminPaymentsComponent } from './admin-payments.component';
 
 export const ADMIN_ROUTES: Routes = [
+  // B2B Corporate - uses its own B2B layout (sidebar + header), NOT nested in AdminLayout
+  { path: 'corporate', loadChildren: () => import('./b2b/b2b.routes').then(m => m.B2B_ROUTES) },
+
+  // Everything else wrapped in AdminLayout
   {
     path: '',
     component: AdminLayoutComponent,
@@ -20,7 +24,6 @@ export const ADMIN_ROUTES: Routes = [
       // Placeholder routes for other admin modules
       { path: 'courses', component: AdminDashboardComponent },
       { path: 'analytics', component: AdminDashboardComponent },
-      { path: 'corporate', component: AdminDashboardComponent },
       { path: 'certifications', component: AdminDashboardComponent },
       { path: 'settings', component: AdminDashboardComponent }
     ]
