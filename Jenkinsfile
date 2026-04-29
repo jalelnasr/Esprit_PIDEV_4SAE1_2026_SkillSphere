@@ -33,7 +33,7 @@ pipeline {
             steps {
                 echo 'Archiving artifact...'
 
-                dir('Community 2') {
+                dir('community__f/Community 2') {
                     archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
                 }
             }
