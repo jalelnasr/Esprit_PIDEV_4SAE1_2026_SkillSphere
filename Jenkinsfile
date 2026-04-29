@@ -13,7 +13,7 @@ pipeline {
             steps {
                 echo 'Building community microservice...'
 
-                dir('Community 2') {
+                dir('community__f/Community 2') {
                     sh 'mvn clean package -DskipTests'
                 }
             }
@@ -23,7 +23,7 @@ pipeline {
             steps {
                 echo 'Running tests...'
 
-                dir('Community 2') {
+                dir('community__f/Community 2') {
                     sh 'mvn test'
                 }
             }
