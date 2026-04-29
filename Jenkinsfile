@@ -31,17 +31,14 @@ pipeline {
 
         stage('Archive Artifact') {
             steps {
-                dir('community_f') {
+                echo 'Archiving JAR...'
+
+                dir('community_f/community 2') {
                     archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
                 }
             }
         }
 
-        stage('Success') {
-            steps {
-                echo 'Build successful 🚀'
-            }
-        }
     }
 
     post {
