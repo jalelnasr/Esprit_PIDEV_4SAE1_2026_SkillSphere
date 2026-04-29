@@ -13,7 +13,7 @@ pipeline {
             steps {
                 echo 'Building community microservice...'
 
-                dir('community_f/Community 2') {
+                dir('Community 2') {
                     sh 'mvn clean package -DskipTests'
                 }
             }
@@ -23,7 +23,7 @@ pipeline {
             steps {
                 echo 'Running tests...'
 
-                dir('community_f/Community 2') {
+                dir('Community 2') {
                     sh 'mvn test'
                 }
             }
@@ -33,7 +33,7 @@ pipeline {
             steps {
                 echo 'Archiving artifact...'
 
-                dir('community_f/Community 2') {
+                dir('Community 2') {
                     archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
                 }
             }
