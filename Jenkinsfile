@@ -68,8 +68,7 @@ pipeline {
                 always {
                     // Publish test results
                     junit 'target/surefire-reports/*.xml'
-                    // Publish code coverage
-                    jacoco(execPattern: 'target/jacoco.exec')
+                    // Note: JaCoCo plugin not installed, skipping code coverage report
                 }
             }
         }
