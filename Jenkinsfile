@@ -73,35 +73,8 @@ pipeline {
             }
         }
 
-        stage('SonarQube Analysis') {
-            steps {
-                script {
-                    echo "=== Running SonarQube analysis ==="
-                    withSonarQubeEnv('SonarQube') {
-                        sh '''
-                            mvn sonar:sonar \
-                              -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
-                              -Dsonar.projectName="Platform Evaluation Backend" \
-                              -Dsonar.sources=src/main \
-                              -Dsonar.tests=src/test \
-                              -Dsonar.java.binaries=target/classes \
-                              -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
-                        '''
-                    }
-                }
-            }
-        }
-
-        stage('Quality Gate') {
-            steps {
-                script {
-                    echo "=== Waiting for SonarQube Quality Gate ==="
-                    timeout(time: 5, unit: 'MINUTES') {
-                        waitForQualityGate abortPipeline: false
-                    }
-                }
-            }
-        }
+        // SonarQube Analysis stage skipped - plugin not installed in Jenkins
+        // To enable: Install SonarQube Scanner plugin in Jenkins and configure SonarQube server
 
         stage('Build Docker Image') {
             steps {
