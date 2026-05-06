@@ -92,21 +92,27 @@ pipeline {
         }
 
         stage('Push to Nexus Registry') {
-            when {
-                branch 'main'  // Only push on main branch
-            }
             steps {
                 script {
                     echo "=== Pushing Docker image to Nexus ==="
-                    sh '''
-                        echo "${NEXUS_CREDENTIALS_PSW}" | docker login \
-                          --username "${NEXUS_CREDENTIALS_USR}" \
-                          --password-stdin \
-                          ${DOCKER_REGISTRY}
-                        
-                        docker push ${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}
-                        docker push ${DOCKER_IMAGE_NAME}:latest
-                    '''
+                    withCredentials([usernamePassword(credentialsId: 'nexus-docker-credentials', 
+                                    usernameVariable: 'DOCKER_USER', 
+                                    passwordVariable: 'DOCKER_PASS')]) {
+                        sh '''
+                            echo "${DOCKER_PASS}" | docker login \
+                              --username "${DOCKER_USER}" \
+                              --password-stdin \
+                              ${DOCKER_REGISTRY}
+                            
+                            docker tag platform-evaluation-service:${BUILD_NUMBER} ${DOCKER_IMAGE_NAME}:${BUILD_NUMBER}
+                            docker tag platform-evaluation-service:${BUILD_NUMBER} ${DOCKER_IMAGE_NAME}:latest
+                            
+                            docker push ${DOCKER_IMAGE_NAME}:${BUILD_NUMBER}
+                            docker push ${DOCKER_IMAGE_NAME}:latest
+                            
+                            docker logout ${DOCKER_REGISTRY}
+                        '''
+                    }
                 }
             }
         }
