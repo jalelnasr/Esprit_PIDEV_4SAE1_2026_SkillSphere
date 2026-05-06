@@ -5,11 +5,13 @@ import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '@core/services';
 import { ThemeService } from '../../services/theme.service';
 import { RouterLink } from '@angular/router';
+import { ALL_MENU_ITEMS, MenuItem, BackendRole } from '../menu.config';
+import { filter } from 'rxjs/operators';
 
 @Component({
   selector: 'app-topbar',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, RouterLink],
   templateUrl: './topbar.component.html',
   styleUrls: ['./topbar.component.css']
 })
@@ -18,6 +20,8 @@ export class TopbarComponent implements OnInit {
   showNotifications = false;
   showUserMenu = false;
   isDarkMode = false;
+  userRole: BackendRole | null = null;
+  menuItems: MenuItem[] = [];
 
   get currentUser$() {
     return this.authService.currentUser$;
@@ -41,6 +45,24 @@ export class TopbarComponent implements OnInit {
     this.themeService.isDarkMode$.subscribe(isDark => {
       this.isDarkMode = isDark;
     });
+    this.authService.userRole$.pipe(filter(Boolean)).subscribe((r: any) => {
+      this.userRole = r as BackendRole;
+      this.updateMenuItems();
+    });
+    this.updateMenuItems();
+  }
+
+  updateMenuItems(): void {
+    if (this.userRole) {
+      this.menuItems = ALL_MENU_ITEMS
+        .filter(item => item.roles.includes(this.userRole!))
+        .map(item => ({
+          ...item,
+          subItems: item.subItems?.filter(si => !si.roles || si.roles.includes(this.userRole!))
+        }));
+    } else {
+      this.menuItems = [];
+    }
   }
 
   toggleTheme(): void {

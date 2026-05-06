@@ -1,11 +1,11 @@
 .topbar {
   height: 64px;
-  background: var(--navbar-bg);
-  border-bottom: 1px solid var(--border-color);
+  background: linear-gradient(90deg, #0891b2 0%, #06b6d4 100%);
+  border-bottom: 1px solid #0680a0;
   display: flex;
   align-items: center;
   padding: 0 2rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 12px rgba(8, 145, 178, 0.2);
   position: fixed;
   top: 0;
   left: 0;
@@ -25,15 +25,15 @@
   flex: 1;
   max-width: 500px;
   display: flex;
-  background: var(--bg-primary);
-  border: 2px solid var(--border-color);
+  background: rgba(255, 255, 255, 0.95);
+  border: 2px solid rgba(255, 255, 255, 0.3);
   border-radius: 8px;
   overflow: hidden;
   transition: all 0.3s ease;
 
   &:focus-within {
-    border-color: #0891b2;
-    box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.1);
+    border-color: #fff;
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2);
   }
 }
 
@@ -43,11 +43,11 @@
   outline: none;
   padding: 0.75rem 1rem;
   font-size: 14px;
-  color: var(--text-primary);
-  background: var(--bg-primary);
+  color: #0f172a;
+  background: rgba(255, 255, 255, 0.95);
 
   &::placeholder {
-    color: var(--text-secondary);
+    color: #a0a0a0;
   }
 }
 
@@ -338,4 +338,12 @@
     padding-left: 1.25rem;
   }
 }
+
+.logo-section { display:flex; align-items:center; gap:8px; margin-right:24px; color:#fff; font-weight:800; font-size:16px; }
+.logo-icon { font-size:24px; }
+.logo-text { letter-spacing:0.5px; }
+.top-nav { display:flex; gap:12px; align-items:center; margin-right:12px; }
+.nav-link { color: #fff; text-decoration:none; padding:8px 10px; border-radius:8px; font-weight:600; transition:all 0.3s; }
+.nav-link.active { background: rgba(255,255,255,0.2); color: #fff; }
+.nav-link:hover { background: rgba(255,255,255,0.15); }
 

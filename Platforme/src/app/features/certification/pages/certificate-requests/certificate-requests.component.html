@@ -1,0 +1,93 @@
+<div class="cr-container">
+  <div class="cr-header">
+    <div>
+      <h1>Certificate Requests</h1>
+      <p class="muted">Manage learner certificate requests and issue PDFs.</p>
+    </div>
+    <div class="cr-toolbar">
+      <input type="search" placeholder="Search by name or evaluation" [(ngModel)]="searchTerm" aria-label="Search requests" />
+      <select [(ngModel)]="statusFilter" (change)="loadRequests()" aria-label="Filter by status">
+        <option value="">All statuses</option>
+        <option value="PENDING">Pending</option>
+        <option value="APPROVED">Approved</option>
+        <option value="REJECTED">Rejected</option>
+      </select>
+      <button class="btn" (click)="loadRequests()">Refresh</button>
+    </div>
+  </div>
+
+  <div *ngIf="error" class="cr-error" role="alert">{{ error }}</div>
+
+  <div *ngIf="loading" class="cr-loading">Loading requests…</div>
+
+  <div *ngIf="!loading && requests.length === 0" class="cr-empty">No certificate requests found.</div>
+
+  <!-- Table for larger screens -->
+  <table class="cr-table" *ngIf="!loading && requests.length">
+    <thead>
+      <tr>
+        <th>Apprenant</th>
+        <th>Evaluation</th>
+        <th>Score</th>
+        <th>Passed</th>
+        <th>Requested</th>
+        <th>Status</th>
+        <th class="actions-col">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let req of requests">
+        <td>{{ req.apprenantFirstName }} {{ req.apprenantLastName }}</td>
+        <td>{{ req.evaluationTitle }}</td>
+        <td>{{ req.bestScore }}%</td>
+        <td>{{ req.passed ? 'Yes' : 'No' }}</td>
+        <td>{{ req.requestedAt | date:'short' }}</td>
+        <td><span class="badge" [ngClass]="{'badge-pending': req.status === 'PENDING', 'badge-approved': req.status === 'APPROVED', 'badge-rejected': req.status === 'REJECTED'}">{{ req.status }}</span></td>
+        <td class="actions-col">
+          <div class="actions">
+            <button *ngIf="req.status === 'PENDING'" class="btn-primary" (click)="openConfirm(req, 'APPROVE')">Approve</button>
+            <button *ngIf="req.status === 'PENDING'" class="btn-danger" (click)="openConfirm(req, 'REJECT')">Reject</button>
+            <button *ngIf="req.status === 'APPROVED'" class="btn" (click)="download(req)">Download</button>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Card list for small screens -->
+  <div class="cr-cards" *ngIf="!loading && requests.length">
+    <div class="cr-card" *ngFor="let req of requests">
+      <div class="cr-card-head">
+        <div>
+          <div class="name">{{ req.apprenantFirstName }} {{ req.apprenantLastName }}</div>
+          <div class="eval">{{ req.evaluationTitle }}</div>
+        </div>
+        <div class="status-small">{{ req.status }}</div>
+      </div>
+      <div class="cr-card-body">
+        <div><strong>Score:</strong> {{ req.bestScore }}%</div>
+        <div><strong>Passed:</strong> {{ req.passed ? 'Yes' : 'No' }}</div>
+        <div><strong>Requested:</strong> {{ req.requestedAt | date:'short' }}</div>
+      </div>
+      <div class="cr-card-actions">
+        <button *ngIf="req.status === 'PENDING'" class="btn-primary" (click)="openConfirm(req, 'APPROVE')">Approve</button>
+        <button *ngIf="req.status === 'PENDING'" class="btn-danger" (click)="openConfirm(req, 'REJECT')">Reject</button>
+        <button *ngIf="req.status === 'APPROVED'" class="btn" (click)="download(req)">Download</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirm modal -->
+  <div class="cr-modal-backdrop" *ngIf="modalOpen">
+    <div class="cr-modal" role="dialog" aria-modal="true">
+      <h3>{{ modalAction === 'APPROVE' ? 'Approve Request' : 'Reject Request' }}</h3>
+      <p *ngIf="modalRequest"><strong>{{ modalRequest.apprenantFirstName }} {{ modalRequest.apprenantLastName }}</strong> — {{ modalRequest.evaluationTitle }}</p>
+      <label for="note">Note (optional)</label>
+      <textarea id="note" [(ngModel)]="modalNote" rows="4" placeholder="Add a note to include with the decision"></textarea>
+      <div class="modal-actions">
+        <button class="btn" (click)="cancelModal()">Cancel</button>
+        <button class="btn-primary" (click)="confirmAction()">Confirm</button>
+      </div>
+    </div>
+  </div>
+</div>

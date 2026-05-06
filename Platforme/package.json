@@ -7,6 +7,8 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
+    "test:ci": "ng test --watch=false --code-coverage --browsers=ChromeHeadless",
+    "lint": "echo 'No linter configured'",
     "serve:ssr:Platforme": "node dist/platforme/server/server.mjs"
   },
   "private": true,

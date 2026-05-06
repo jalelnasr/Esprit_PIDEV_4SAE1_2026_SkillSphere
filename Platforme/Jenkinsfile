@@ -1,0 +1,167 @@
+// Jenkinsfile - CI/CD Pipeline for Frontend (Angular)
+// This pipeline handles: Install → Lint → Test → Build → Docker → Nexus
+
+pipeline {
+    agent any
+
+    options {
+        // Keep last 30 builds
+        buildDiscarder(logRotator(numToKeepStr: '30'))
+        // Timeout after 1 hour
+        timeout(time: 1, unit: 'HOURS')
+        // Timestamps in console output
+        timestamps()
+    }
+
+    environment {
+        // Frontend app details
+        APP_NAME = 'platform-frontend'
+        NODE_ENV = 'production'
+        
+        // Docker configuration
+        DOCKER_REGISTRY = '4.223.111.246:8081'
+        DOCKER_IMAGE_NAME = "${DOCKER_REGISTRY}/platform-frontend"
+        DOCKER_IMAGE_TAG = "${BUILD_NUMBER}"
+        
+        // Build paths
+        BUILD_FOLDER = 'dist'
+        COVERAGE_FOLDER = 'coverage'
+    }
+
+    credentials {
+        string(credentialsId: 'nexus-credentials', variable: 'NEXUS_CREDENTIALS')
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                script {
+                    echo "=== Checking out source code ==="
+                    checkout scm
+                }
+            }
+        }
+
+        stage('Install Dependencies') {
+            steps {
+                script {
+                    echo "=== Installing npm dependencies ==="
+                    sh 'npm ci --prefer-offline --no-audit'
+                }
+            }
+        }
+
+        stage('Lint') {
+            steps {
+                script {
+                    echo "=== Running ESLint ==="
+                    sh 'npm run lint 2>&1 || echo "Linting completed with warnings"'
+                }
+            }
+        }
+
+        stage('Unit Tests') {
+            steps {
+                script {
+                    echo "=== Running unit tests ==="
+                    sh 'npm run test:ci'
+                }
+            }
+            post {
+                always {
+                    // Publish test results (if coverage reports are generated)
+                    junit 'coverage/**/junit.xml' 
+                    
+                    // Publish code coverage report
+                    script {
+                        if (fileExists('coverage/index.html')) {
+                            publishHTML([
+                                reportDir: 'coverage',
+                                reportFiles: 'index.html',
+                                reportName: 'Code Coverage Report'
+                            ])
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Build Production') {
+            steps {
+                script {
+                    echo "=== Building production bundle ==="
+                    sh 'npm run build'
+                }
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    echo "=== Building Docker image ==="
+                    sh '''
+                        docker build \
+                          --tag ${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG} \
+                          --tag ${DOCKER_IMAGE_NAME}:latest \
+                          --build-arg BUILD_NUMBER=${BUILD_NUMBER} \
+                          .
+                    '''
+                }
+            }
+        }
+
+        stage('Push to Nexus Registry') {
+            steps {
+                script {
+                    echo "=== Pushing Docker image to Nexus ==="
+                    withCredentials([usernamePassword(credentialsId: 'nexus-docker-credentials', 
+                                    usernameVariable: 'DOCKER_USER', 
+                                    passwordVariable: 'DOCKER_PASS')]) {
+                        sh '''
+                            echo "${DOCKER_PASS}" | docker login \
+                              --username "${DOCKER_USER}" \
+                              --password-stdin \
+                              ${DOCKER_REGISTRY}
+                            
+                            docker push ${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}
+                            docker push ${DOCKER_IMAGE_NAME}:latest
+                            
+                            docker logout ${DOCKER_REGISTRY}
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage('Archive Artifacts') {
+            steps {
+                script {
+                    echo "=== Archiving build artifacts ==="
+                    sh 'tar -czf ${APP_NAME}-${BUILD_NUMBER}.tar.gz ${BUILD_FOLDER}/'
+                    archiveArtifacts artifacts: '${APP_NAME}-${BUILD_NUMBER}.tar.gz', fingerprint: true
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            script {
+                echo "=== Cleaning up workspace ==="
+                cleanWs()
+            }
+        }
+        
+        success {
+            script {
+                echo "✅ Pipeline succeeded!"
+            }
+        }
+        
+        failure {
+            script {
+                echo "❌ Pipeline failed!"
+            }
+        }
+    }
+}

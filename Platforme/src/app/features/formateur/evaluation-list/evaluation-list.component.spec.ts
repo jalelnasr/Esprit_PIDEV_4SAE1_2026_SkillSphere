@@ -1,10 +1,12 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { of } from 'rxjs';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 
 import { EvaluationListComponent } from './evaluation-list.component';
 import { EvaluationApiService } from '../../../services/evaluation-api.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { CertificateApiService } from '../../../services/certificate-api.service';
 
 describe('EvaluationListComponent', () => {
   let component: EvaluationListComponent;
@@ -12,7 +14,7 @@ describe('EvaluationListComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [EvaluationListComponent],
+      imports: [EvaluationListComponent, HttpClientTestingModule],
       providers: [
         provideRouter([]),
         {
@@ -33,7 +35,14 @@ describe('EvaluationListComponent', () => {
         {
           provide: AuthService,
           useValue: {
-            currentUser$: of(null)
+            currentUser$: of(null),
+            userRole$: of('FORMATEUR')
+          }
+        },
+        {
+          provide: CertificateApiService,
+          useValue: {
+            getAll: () => of([])
           }
         }
       ]
@@ -42,10 +51,10 @@ describe('EvaluationListComponent', () => {
 
     fixture = TestBed.createComponent(EvaluationListComponent);
     component = fixture.componentInstance;
-    fixture.detectChanges();
   });
 
   it('should create', () => {
+    fixture.detectChanges();
     expect(component).toBeTruthy();
   });
 });

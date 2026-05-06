@@ -1,5 +1,12 @@
 <header class="topbar" (click)="closeMenus()">
   <div class="topbar-content">
+    <div class="logo-section">
+      <span class="logo-icon">🌐</span>
+      <span class="logo-text">SkillSphere</span>
+    </div>
+    <nav class="top-nav">
+      <a *ngFor="let m of menuItems" [routerLink]="m.route" class="nav-link" routerLinkActive="active">{{ m.icon }} {{ m.label }}</a>
+    </nav>
     <!-- Search Bar -->
     <div class="search-bar">
       <input
